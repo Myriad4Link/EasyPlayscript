@@ -1,0 +1,183 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Antlr4.Runtime;
+using EasyPlayscript.core.playscript.definition;
+using Xunit;
+
+namespace EasyPlayscript.Tests;
+
+public class PlayscriptParserTests
+{
+    private const string Example = """
+        # This is a comment.
+
+        # This is a external function call. All statements starts with a @ is considered as an external tool call
+        # which calls the corresponding C# code. The string inside its paranthesis is the parameter. The content
+        # inside the square bracket is a "script block".
+        @script("load tooltip")[
+        # "aaa \n bbb" is seen as one sentence. For example, the following structure should be parsed as "您好。这里是……？"
+        你好。
+        这里是……？
+
+        # "aaa \n\n bbb" is seen as two sentences. For example, the following structure should be parsed as "啊、您好\n请问你是？"
+        啊、您好！
+
+        请问你是？
+
+        # External function calls can also be made from inside the script block. For example:
+        @transistion("fade_out")
+
+        # But script blocks cannot be nested in another script block. For example, the following is illegal:
+        # @script("something inside load tooltip")[...] <-- ILLEGAL FOR NESTED BLOCKS!
+        ]
+        """;
+
+    private static (PlayScriptParser parser, List<string> errors) Parse(string input)
+    {
+        var inputStream = new AntlrInputStream(input);
+        var lexer = new PlayScriptLexer(inputStream);
+        var tokens = new CommonTokenStream(lexer);
+        var parser = new PlayScriptParser(tokens);
+
+        var errors = new List<string>();
+        lexer.RemoveErrorListeners();
+        parser.RemoveErrorListeners();
+        lexer.AddErrorListener(new CollectingErrorListener(errors));
+        parser.AddErrorListener(new CollectingErrorListener(errors));
+
+        return (parser, errors);
+    }
+
+    private class CollectingErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
+    {
+        private readonly List<string> _errors;
+
+        public CollectingErrorListener(List<string> errors)
+        {
+            _errors = errors;
+        }
+
+        public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol,
+            int line, int charPositionInLine, string msg, RecognitionException e)
+        {
+            _errors.Add($"Lexer error at {line}:{charPositionInLine} - {msg}");
+        }
+
+        public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol,
+            int line, int charPositionInLine, string msg, RecognitionException e)
+        {
+            _errors.Add($"Parser error at {line}:{charPositionInLine} - {msg}");
+        }
+    }
+
+    [Fact]
+    public void ExampleFile_ParsesWithoutErrors()
+    {
+        var input = Example;
+        var (parser, errors) = Parse(input);
+        parser.playscript();
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ExampleFile_HasOneStatement()
+    {
+        var input = Example;
+        var (parser, errors) = Parse(input);
+        var tree = parser.playscript();
+
+        var statements = tree.statement();
+        Assert.Single(statements);
+    }
+
+    [Fact]
+    public void ExampleFile_ScriptBlock_HasCorrectExternalCall()
+    {
+        var input = Example;
+        var (parser, _) = Parse(input);
+        var tree = parser.playscript();
+
+        var scriptBlock = tree.statement(0).scriptBlock();
+        Assert.NotNull(scriptBlock);
+
+        var externalCall = scriptBlock.externalCall();
+        Assert.NotNull(externalCall);
+        Assert.Equal("\"load tooltip\"", externalCall.STRING_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void ExampleFile_ScriptBlock_Sentence1_MultiLineConcat()
+    {
+        var input = Example;
+        var (parser, _) = Parse(input);
+        var tree = parser.playscript();
+
+        var scriptBlock = tree.statement(0).scriptBlock();
+        var contents = scriptBlock.scriptContent();
+
+        var sentence1 = contents[2].sentence();
+        Assert.NotNull(sentence1);
+
+        var parts = sentence1.sentencePart();
+        Assert.Equal(2, parts.Length);
+        Assert.Equal("你好。", parts[0].GetText());
+        Assert.Equal("这里是……？", parts[1].GetText());
+
+        Assert.Single(sentence1.SINGLE_NEWLINE());
+    }
+
+    [Fact]
+    public void ExampleFile_ScriptBlock_Sentence2_SingleLine()
+    {
+        var input = Example;
+        var (parser, _) = Parse(input);
+        var tree = parser.playscript();
+
+        var scriptBlock = tree.statement(0).scriptBlock();
+        var contents = scriptBlock.scriptContent();
+
+        var sentence2 = contents[5].sentence();
+        Assert.NotNull(sentence2);
+
+        var parts = sentence2.sentencePart();
+        Assert.Single(parts);
+        Assert.Equal("啊、您好！", parts[0].GetText());
+    }
+
+    [Fact]
+    public void ExampleFile_ScriptBlock_Sentence3_SingleLine()
+    {
+        var input = Example;
+        var (parser, _) = Parse(input);
+        var tree = parser.playscript();
+
+        var scriptBlock = tree.statement(0).scriptBlock();
+        var contents = scriptBlock.scriptContent();
+
+        var sentence3 = contents[7].sentence();
+        Assert.NotNull(sentence3);
+
+        var parts = sentence3.sentencePart();
+        Assert.Single(parts);
+        Assert.Equal("请问你是？", parts[0].GetText());
+    }
+
+    [Fact]
+    public void ExampleFile_ScriptBlock_HasInternalCall()
+    {
+        var input = Example;
+        var (parser, _) = Parse(input);
+        var tree = parser.playscript();
+
+        var scriptBlock = tree.statement(0).scriptBlock();
+        var contents = scriptBlock.scriptContent();
+
+        var internalCall = contents
+            .Select(c => c.internalCall())
+            .FirstOrDefault(ic => ic != null);
+        Assert.NotNull(internalCall);
+        Assert.Equal("\"fade_out\"", internalCall.STRING_LITERAL().GetText());
+    }
+}

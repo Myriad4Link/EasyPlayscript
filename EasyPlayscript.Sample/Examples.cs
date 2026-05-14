@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Entities;
+using EasyPlayscript.Generated;
 
 namespace EasyPlayscript.Sample;
 
@@ -24,5 +25,13 @@ public class Examples
     public IEnumerable<string> CreateEntityReport(SampleEntity entity)
     {
         return entity.Report();
+    }
+
+    // Use the generated PlayscriptRunner
+    public void RunPlayscript()
+    {
+        var runner = new PlayscriptRunner();
+        var block = new ScriptBlock();
+        runner.Script("load tooltip", block);
     }
 }

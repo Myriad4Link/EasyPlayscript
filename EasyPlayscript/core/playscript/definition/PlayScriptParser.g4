@@ -1,6 +1,6 @@
-parser grammar PlayScriptParser;
+parser grammar PlayscriptParser;
 
-options { tokenVocab = PlayScriptLexer; }
+options { tokenVocab = PlayscriptLexer; }
 
 @header { namespace EasyPlayscript.core.playscript.definition; }
 

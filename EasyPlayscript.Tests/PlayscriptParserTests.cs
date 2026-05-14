@@ -33,12 +33,12 @@ public class PlayscriptParserTests
         ]
         """;
 
-    private static (PlayScriptParser parser, List<string> errors) Parse(string input)
+    private static (PlayscriptParser parser, List<string> errors) Parse(string input)
     {
         var inputStream = new AntlrInputStream(input);
-        var lexer = new PlayScriptLexer(inputStream);
+        var lexer = new PlayscriptLexer(inputStream);
         var tokens = new CommonTokenStream(lexer);
-        var parser = new PlayScriptParser(tokens);
+        var parser = new PlayscriptParser(tokens);
 
         var errors = new List<string>();
         lexer.RemoveErrorListeners();
@@ -84,8 +84,7 @@ public class PlayscriptParserTests
     [Fact]
     public void ExampleFile_HasOneStatement()
     {
-        var input = Example;
-        var (parser, errors) = Parse(input);
+        var (parser, errors) = Parse(Example);
         var tree = parser.playscript();
 
         var statements = tree.statement();
@@ -95,8 +94,7 @@ public class PlayscriptParserTests
     [Fact]
     public void ExampleFile_ScriptBlock_HasCorrectExternalCall()
     {
-        var input = Example;
-        var (parser, _) = Parse(input);
+        var (parser, _) = Parse(Example);
         var tree = parser.playscript();
 
         var scriptBlock = tree.statement(0).scriptBlock();

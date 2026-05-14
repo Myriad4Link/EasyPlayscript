@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from PlayScriptParser.g4 by ANTLR 4.13.2
+// Generated from EasyPlayscript/EasyPlayscript/core/playscript/definition/PlayscriptParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -26,7 +26,7 @@ using IToken = Antlr4.Runtime.IToken;
 using ParserRuleContext = Antlr4.Runtime.ParserRuleContext;
 
 /// <summary>
-/// This class provides an empty implementation of <see cref="IPlayScriptParserVisitor{Result}"/>,
+/// This class provides an empty implementation of <see cref="IPlayscriptParserVisitor{Result}"/>,
 /// which can be extended to create a visitor which only needs to handle a subset
 /// of the available methods.
 /// </summary>
@@ -34,9 +34,9 @@ using ParserRuleContext = Antlr4.Runtime.ParserRuleContext;
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.13.2")]
 [System.Diagnostics.DebuggerNonUserCode]
 [System.CLSCompliant(false)]
-public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisitor<Result>, IPlayScriptParserVisitor<Result> {
+public partial class PlayscriptParserBaseVisitor<Result> : AbstractParseTreeVisitor<Result>, IPlayscriptParserVisitor<Result> {
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.playscript"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.playscript"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -44,9 +44,9 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitPlayscript([NotNull] PlayScriptParser.PlayscriptContext context) { return VisitChildren(context); }
+	public virtual Result VisitPlayscript([NotNull] PlayscriptParser.PlayscriptContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.statement"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -54,9 +54,9 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitStatement([NotNull] PlayScriptParser.StatementContext context) { return VisitChildren(context); }
+	public virtual Result VisitStatement([NotNull] PlayscriptParser.StatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.externalCall"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.externalCall"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -64,9 +64,9 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitExternalCall([NotNull] PlayScriptParser.ExternalCallContext context) { return VisitChildren(context); }
+	public virtual Result VisitExternalCall([NotNull] PlayscriptParser.ExternalCallContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.scriptBlock"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.scriptBlock"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -74,9 +74,9 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitScriptBlock([NotNull] PlayScriptParser.ScriptBlockContext context) { return VisitChildren(context); }
+	public virtual Result VisitScriptBlock([NotNull] PlayscriptParser.ScriptBlockContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.scriptContent"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.scriptContent"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -84,9 +84,9 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitScriptContent([NotNull] PlayScriptParser.ScriptContentContext context) { return VisitChildren(context); }
+	public virtual Result VisitScriptContent([NotNull] PlayscriptParser.ScriptContentContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.sentence"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.sentence"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -94,9 +94,9 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitSentence([NotNull] PlayScriptParser.SentenceContext context) { return VisitChildren(context); }
+	public virtual Result VisitSentence([NotNull] PlayscriptParser.SentenceContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.sentencePart"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.sentencePart"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -104,9 +104,9 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitSentencePart([NotNull] PlayScriptParser.SentencePartContext context) { return VisitChildren(context); }
+	public virtual Result VisitSentencePart([NotNull] PlayscriptParser.SentencePartContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayScriptParser.internalCall"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptParser.internalCall"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -114,5 +114,5 @@ public partial class PlayScriptParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitInternalCall([NotNull] PlayScriptParser.InternalCallContext context) { return VisitChildren(context); }
+	public virtual Result VisitInternalCall([NotNull] PlayscriptParser.InternalCallContext context) { return VisitChildren(context); }
 }

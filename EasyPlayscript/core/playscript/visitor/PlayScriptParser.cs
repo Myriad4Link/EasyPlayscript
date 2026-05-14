@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from PlayScriptParser.g4 by ANTLR 4.13.2
+// Generated from EasyPlayscript/EasyPlayscript/core/playscript/definition/PlayscriptParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -33,7 +33,7 @@ using DFA = Antlr4.Runtime.Dfa.DFA;
 
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.13.2")]
 [System.CLSCompliant(false)]
-public partial class PlayScriptParser : Parser {
+public partial class PlayscriptParser : Parser {
 	protected static DFA[] decisionToDFA;
 	protected static PredictionContextCache sharedContextCache = new PredictionContextCache();
 	public const int
@@ -67,29 +67,29 @@ public partial class PlayScriptParser : Parser {
 		}
 	}
 
-	public override string GrammarFileName { get { return "PlayScriptParser.g4"; } }
+	public override string GrammarFileName { get { return "PlayscriptParser.g4"; } }
 
 	public override string[] RuleNames { get { return ruleNames; } }
 
 	public override int[] SerializedAtn { get { return _serializedATN; } }
 
-	static PlayScriptParser() {
+	static PlayscriptParser() {
 		decisionToDFA = new DFA[_ATN.NumberOfDecisions];
 		for (int i = 0; i < _ATN.NumberOfDecisions; i++) {
 			decisionToDFA[i] = new DFA(_ATN.GetDecisionState(i), i);
 		}
 	}
 
-		public PlayScriptParser(ITokenStream input) : this(input, Console.Out, Console.Error) { }
+		public PlayscriptParser(ITokenStream input) : this(input, Console.Out, Console.Error) { }
 
-		public PlayScriptParser(ITokenStream input, TextWriter output, TextWriter errorOutput)
+		public PlayscriptParser(ITokenStream input, TextWriter output, TextWriter errorOutput)
 		: base(input, output, errorOutput)
 	{
 		Interpreter = new ParserATNSimulator(this, _ATN, decisionToDFA, sharedContextCache);
 	}
 
 	public partial class PlayscriptContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode Eof() { return GetToken(PlayScriptParser.Eof, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode Eof() { return GetToken(PlayscriptParser.Eof, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public StatementContext[] statement() {
 			return GetRuleContexts<StatementContext>();
 		}
@@ -103,7 +103,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_playscript; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitPlayscript(this);
 			else return visitor.VisitChildren(this);
 		}
@@ -160,7 +160,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_statement; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitStatement(this);
 			else return visitor.VisitChildren(this);
 		}
@@ -202,11 +202,11 @@ public partial class PlayScriptParser : Parser {
 	}
 
 	public partial class ExternalCallContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode AT() { return GetToken(PlayScriptParser.AT, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayScriptParser.IDENTIFIER, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayScriptParser.LPAREN, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayScriptParser.STRING_LITERAL, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RPAREN() { return GetToken(PlayScriptParser.RPAREN, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode AT() { return GetToken(PlayscriptParser.AT, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayscriptParser.IDENTIFIER, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayscriptParser.LPAREN, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayscriptParser.STRING_LITERAL, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RPAREN() { return GetToken(PlayscriptParser.RPAREN, 0); }
 		public ExternalCallContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
@@ -214,7 +214,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_externalCall; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitExternalCall(this);
 			else return visitor.VisitChildren(this);
 		}
@@ -254,8 +254,8 @@ public partial class PlayScriptParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public ExternalCallContext externalCall() {
 			return GetRuleContext<ExternalCallContext>(0);
 		}
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LBRACKET() { return GetToken(PlayScriptParser.LBRACKET, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RBRACKET() { return GetToken(PlayScriptParser.RBRACKET, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LBRACKET() { return GetToken(PlayscriptParser.LBRACKET, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RBRACKET() { return GetToken(PlayscriptParser.RBRACKET, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ScriptContentContext[] scriptContent() {
 			return GetRuleContexts<ScriptContentContext>();
 		}
@@ -269,7 +269,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_scriptBlock; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitScriptBlock(this);
 			else return visitor.VisitChildren(this);
 		}
@@ -323,8 +323,8 @@ public partial class PlayScriptParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public InternalCallContext internalCall() {
 			return GetRuleContext<InternalCallContext>(0);
 		}
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode BLANK_LINE() { return GetToken(PlayScriptParser.BLANK_LINE, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode SINGLE_NEWLINE() { return GetToken(PlayScriptParser.SINGLE_NEWLINE, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode BLANK_LINE() { return GetToken(PlayscriptParser.BLANK_LINE, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode SINGLE_NEWLINE() { return GetToken(PlayscriptParser.SINGLE_NEWLINE, 0); }
 		public ScriptContentContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
@@ -332,7 +332,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_scriptContent; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitScriptContent(this);
 			else return visitor.VisitChildren(this);
 		}
@@ -396,9 +396,9 @@ public partial class PlayScriptParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public SentencePartContext sentencePart(int i) {
 			return GetRuleContext<SentencePartContext>(i);
 		}
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] SINGLE_NEWLINE() { return GetTokens(PlayScriptParser.SINGLE_NEWLINE); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] SINGLE_NEWLINE() { return GetTokens(PlayscriptParser.SINGLE_NEWLINE); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode SINGLE_NEWLINE(int i) {
-			return GetToken(PlayScriptParser.SINGLE_NEWLINE, i);
+			return GetToken(PlayscriptParser.SINGLE_NEWLINE, i);
 		}
 		public SentenceContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
@@ -407,7 +407,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_sentence; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitSentence(this);
 			else return visitor.VisitChildren(this);
 		}
@@ -455,9 +455,9 @@ public partial class PlayScriptParser : Parser {
 	}
 
 	public partial class SentencePartContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] TEXT() { return GetTokens(PlayScriptParser.TEXT); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] TEXT() { return GetTokens(PlayscriptParser.TEXT); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode TEXT(int i) {
-			return GetToken(PlayScriptParser.TEXT, i);
+			return GetToken(PlayscriptParser.TEXT, i);
 		}
 		public SentencePartContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
@@ -466,7 +466,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_sentencePart; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitSentencePart(this);
 			else return visitor.VisitChildren(this);
 		}
@@ -514,11 +514,11 @@ public partial class PlayScriptParser : Parser {
 	}
 
 	public partial class InternalCallContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode AT() { return GetToken(PlayScriptParser.AT, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayScriptParser.IDENTIFIER, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayScriptParser.LPAREN, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayScriptParser.STRING_LITERAL, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RPAREN() { return GetToken(PlayScriptParser.RPAREN, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode AT() { return GetToken(PlayscriptParser.AT, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayscriptParser.IDENTIFIER, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayscriptParser.LPAREN, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayscriptParser.STRING_LITERAL, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RPAREN() { return GetToken(PlayscriptParser.RPAREN, 0); }
 		public InternalCallContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
@@ -526,7 +526,7 @@ public partial class PlayScriptParser : Parser {
 		public override int RuleIndex { get { return RULE_internalCall; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			IPlayScriptParserVisitor<TResult> typedVisitor = visitor as IPlayScriptParserVisitor<TResult>;
+			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitInternalCall(this);
 			else return visitor.VisitChildren(this);
 		}

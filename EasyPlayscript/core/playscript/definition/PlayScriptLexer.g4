@@ -1,4 +1,4 @@
-lexer grammar PlayScriptLexer;
+lexer grammar PlayscriptLexer;
 
 @header { namespace EasyPlayscript.core.playscript.definition; }
 

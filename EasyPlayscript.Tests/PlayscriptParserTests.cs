@@ -1,8 +1,5 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using Antlr4.Runtime;
-using EasyPlayscript.core.playscript.definition;
+using EasyPlayscript.core.playscript;
 using Xunit;
 
 namespace EasyPlayscript.Tests;
@@ -33,49 +30,11 @@ public class PlayscriptParserTests
         ]
         """;
 
-    private static (PlayscriptParser parser, List<string> errors) Parse(string input)
-    {
-        var inputStream = new AntlrInputStream(input);
-        var lexer = new PlayscriptLexer(inputStream);
-        var tokens = new CommonTokenStream(lexer);
-        var parser = new PlayscriptParser(tokens);
-
-        var errors = new List<string>();
-        lexer.RemoveErrorListeners();
-        parser.RemoveErrorListeners();
-        lexer.AddErrorListener(new CollectingErrorListener(errors));
-        parser.AddErrorListener(new CollectingErrorListener(errors));
-
-        return (parser, errors);
-    }
-
-    private class CollectingErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
-    {
-        private readonly List<string> _errors;
-
-        public CollectingErrorListener(List<string> errors)
-        {
-            _errors = errors;
-        }
-
-        public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e)
-        {
-            _errors.Add($"Lexer error at {line}:{charPositionInLine} - {msg}");
-        }
-
-        public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e)
-        {
-            _errors.Add($"Parser error at {line}:{charPositionInLine} - {msg}");
-        }
-    }
-
     [Fact]
     public void ExampleFile_ParsesWithoutErrors()
     {
         var input = Example;
-        var (parser, errors) = Parse(input);
+        var (parser, errors) = PlayscriptParserHelper.Parse(input);
         parser.playscript();
 
         Assert.Empty(errors);
@@ -84,7 +43,7 @@ public class PlayscriptParserTests
     [Fact]
     public void ExampleFile_HasOneStatement()
     {
-        var (parser, errors) = Parse(Example);
+        var (parser, errors) = PlayscriptParserHelper.Parse(Example);
         var tree = parser.playscript();
 
         var statements = tree.statement();
@@ -94,7 +53,7 @@ public class PlayscriptParserTests
     [Fact]
     public void ExampleFile_ScriptBlock_HasCorrectExternalCall()
     {
-        var (parser, _) = Parse(Example);
+        var (parser, _) = PlayscriptParserHelper.Parse(Example);
         var tree = parser.playscript();
 
         var scriptBlock = tree.statement(0).scriptBlock();
@@ -109,7 +68,7 @@ public class PlayscriptParserTests
     public void ExampleFile_ScriptBlock_Sentence1_MultiLineConcat()
     {
         var input = Example;
-        var (parser, _) = Parse(input);
+        var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
         var scriptBlock = tree.statement(0).scriptBlock();
@@ -130,7 +89,7 @@ public class PlayscriptParserTests
     public void ExampleFile_ScriptBlock_Sentence2_SingleLine()
     {
         var input = Example;
-        var (parser, _) = Parse(input);
+        var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
         var scriptBlock = tree.statement(0).scriptBlock();
@@ -148,7 +107,7 @@ public class PlayscriptParserTests
     public void ExampleFile_ScriptBlock_Sentence3_SingleLine()
     {
         var input = Example;
-        var (parser, _) = Parse(input);
+        var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
         var scriptBlock = tree.statement(0).scriptBlock();
@@ -166,7 +125,7 @@ public class PlayscriptParserTests
     public void ExampleFile_ScriptBlock_HasInternalCall()
     {
         var input = Example;
-        var (parser, _) = Parse(input);
+        var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
         var scriptBlock = tree.statement(0).scriptBlock();

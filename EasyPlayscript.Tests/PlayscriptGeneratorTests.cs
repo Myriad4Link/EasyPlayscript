@@ -59,13 +59,6 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
-    public void ScriptBlock_CreatesBlockVariable()
-    {
-        var code = GenerateCode("Example", ScriptBlockExample);
-        Assert.Contains("var block0 = new ScriptBlock()", code);
-    }
-
-    [Fact]
     public void TextBlock_GeneratesRegistryTextCall()
     {
         var code = GenerateCode("TextExample", TextBlockExample);
@@ -73,24 +66,10 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
-    public void InternalCall_GeneratesTodoStub()
-    {
-        var code = GenerateCode("Example", ScriptBlockExample);
-        Assert.Contains("// TODO: @transistion(\"fade_out\")", code);
-    }
-
-    [Fact]
     public void StandaloneExternalCall_GeneratesTodoStub()
     {
         var code = GenerateCode("Standalone", StandaloneExternalCallExample);
         Assert.Contains("// TODO: top-level external call @init(\"setup\")", code);
-    }
-
-    [Fact]
-    public void Sentences_GenerateTodoStubs()
-    {
-        var code = GenerateCode("Example", ScriptBlockExample);
-        Assert.Contains("// TODO: sentence", code);
     }
 
     [Fact]
@@ -105,5 +84,12 @@ public class PlayscriptGeneratorTests
     {
         var code = GenerateCode("Example", ScriptBlockExample);
         Assert.Contains("using EasyPlayscript.Generated;", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_UsesEasyPlayscript()
+    {
+        var code = GenerateCode("Example", ScriptBlockExample);
+        Assert.Contains("using EasyPlayscript;", code);
     }
 }

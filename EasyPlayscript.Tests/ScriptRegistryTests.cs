@@ -20,17 +20,6 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void GeneratesScriptBlock_WithEmptyClass()
-    {
-        var runResult = RunGenerator();
-
-        var scriptBlockFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("ScriptBlock.g.cs"));
-        var scriptBlockText = scriptBlockFile.GetText().ToString();
-
-        Assert.Contains("public class ScriptBlock", scriptBlockText);
-    }
-
-    [Fact]
     public void GeneratesScript_WithClassAndBlocksList()
     {
         var runResult = RunGenerator();

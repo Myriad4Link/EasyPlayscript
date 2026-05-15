@@ -44,7 +44,7 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void GeneratesScriptRegistry_WithClassAndDictionary()
+    public void GeneratesScriptRegistry_WithClassAndDictionaries()
     {
         var runResult = RunGenerator();
 
@@ -53,5 +53,6 @@ public class ScriptRegistryTests
 
         Assert.Contains("public class ScriptRegistry", registryText);
         Assert.Contains("public Dictionary<string, Script> Scripts", registryText);
+        Assert.Contains("public Dictionary<string, Text> Texts", registryText);
     }
 }

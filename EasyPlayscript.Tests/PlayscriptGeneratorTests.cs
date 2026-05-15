@@ -29,67 +29,65 @@ public class PlayscriptGeneratorTests
         ]
         """;
 
-    private const string StandaloneExternalCallExample = """
-        @init("setup")
-        """;
-
-    private static string GenerateCode(string fileName, string content)
+    private static string GenerateCode(params (string name, string content)[] files)
     {
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
 
-        driver = driver.AddAdditionalTexts(
-            ImmutableArray.Create<AdditionalText>(
-                new TestAdditionalFile($"./{fileName}.scpt", content)));
+        var additionalFiles = files
+            .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
+            .ToImmutableArray<AdditionalText>();
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
 
         var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests));
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out _);
 
         var generatedFile = newCompilation.SyntaxTrees
-            .Single(t => Path.GetFileName(t.FilePath) == $"{fileName}.g.cs");
+            .Single(t => Path.GetFileName(t.FilePath) == "Registry.g.cs");
 
         return generatedFile.GetText().ToString();
     }
 
     [Fact]
-    public void ScriptBlock_GeneratesRegistryScriptCall()
+    public void ScriptBlock_GeneratesStaticProperty()
     {
-        var code = GenerateCode("Example", ScriptBlockExample);
-        Assert.Contains("// TODO: Script(\"load tooltip\")", code);
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains("public static Script LOAD_TOOLTIP", code);
     }
 
     [Fact]
-    public void TextBlock_GeneratesRegistryTextCall()
+    public void TextBlock_GeneratesStaticProperty()
     {
-        var code = GenerateCode("TextExample", TextBlockExample);
-        Assert.Contains("// TODO: Text(\"intro text\")", code);
+        var code = GenerateCode(("TextExample", TextBlockExample));
+        Assert.Contains("public static Text INTRO_TEXT", code);
     }
 
     [Fact]
-    public void StandaloneExternalCall_GeneratesTodoStub()
+    public void GeneratedCode_ContainsRegistryClass()
     {
-        var code = GenerateCode("Standalone", StandaloneExternalCallExample);
-        Assert.Contains("// TODO: top-level external call @init(\"setup\")", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_ContainsRunMethod()
-    {
-        var code = GenerateCode("Example", ScriptBlockExample);
-        Assert.Contains("public static void Run(ScriptRegistry registry)", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_UsesScriptRegistry()
-    {
-        var code = GenerateCode("Example", ScriptBlockExample);
-        Assert.Contains("using EasyPlayscript.Generated;", code);
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains("public static class Registry", code);
     }
 
     [Fact]
     public void GeneratedCode_UsesEasyPlayscript()
     {
-        var code = GenerateCode("Example", ScriptBlockExample);
+        var code = GenerateCode(("Example", ScriptBlockExample));
         Assert.Contains("using EasyPlayscript;", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_UsesScriptRegistry()
+    {
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains("using EasyPlayscript.Generated;", code);
+    }
+
+    [Fact]
+    public void ScriptBlock_ContentIsPopulated()
+    {
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains("new ScriptBlock { Content = { \"你好。这里是……？\"", code);
     }
 }

@@ -4,6 +4,9 @@ using Antlr4.Runtime;
 
 namespace EasyPlayscript.Parsing;
 
+/// <summary>
+/// Creates ANTLR lexer/parser instances from playscript source text and collects syntax errors.
+/// </summary>
 public static class PlayscriptParserHelper
 {
     public static (PlayscriptParser parser, List<string> errors) Parse(string input)

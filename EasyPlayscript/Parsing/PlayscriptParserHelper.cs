@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
 using Antlr4.Runtime;
-using EasyPlayscript.core.playscript.definition;
 
-namespace EasyPlayscript.core.playscript;
+namespace EasyPlayscript.Parsing;
 
 public static class PlayscriptParserHelper
 {
@@ -23,25 +22,18 @@ public static class PlayscriptParserHelper
         return (parser, errors);
     }
 
-    private class CollectingErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
+    private class CollectingErrorListener(List<string> errors) : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
-        private readonly List<string> _errors;
-
-        public CollectingErrorListener(List<string> errors)
-        {
-            _errors = errors;
-        }
-
         public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol,
             int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            _errors.Add($"Lexer error at {line}:{charPositionInLine} - {msg}");
+            errors.Add($"Lexer error at {line}:{charPositionInLine} - {msg}");
         }
 
         public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol,
             int line, int charPositionInLine, string msg, RecognitionException e)
         {
-            _errors.Add($"Parser error at {line}:{charPositionInLine} - {msg}");
+            errors.Add($"Parser error at {line}:{charPositionInLine} - {msg}");
         }
     }
 }

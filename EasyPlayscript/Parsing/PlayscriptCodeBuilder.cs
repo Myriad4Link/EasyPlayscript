@@ -1,9 +1,8 @@
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Text;
-using EasyPlayscript.core.playscript.definition;
 
-namespace EasyPlayscript.core.playscript;
+namespace EasyPlayscript.Parsing;
 
 public class PlayscriptCodeBuilder(string fileName) : PlayscriptParserBaseVisitor<string>
 {
@@ -85,15 +84,12 @@ public class PlayscriptCodeBuilder(string fileName) : PlayscriptParserBaseVisito
             }
         }
 
-        switch (identifier)
+        return identifier switch
         {
-            case "script":
-                return PlayscriptHandlers.Script(cleanArg, block);
-            case "text":
-                return PlayscriptHandlers.Text(cleanArg, block);
-            default:
-                return $"// TODO: @{identifier}(\"{cleanArg}\")\n";
-        }
+            "script" => PlayscriptHandlers.Script(cleanArg, block),
+            "text" => PlayscriptHandlers.Text(cleanArg, block),
+            _ => $"// TODO: @{identifier}(\"{cleanArg}\")\n"
+        };
     }
 
     public override string VisitExternalCall(PlayscriptParser.ExternalCallContext context)

@@ -1,6 +1,6 @@
 lexer grammar PlayscriptLexer;
 
-@header { namespace EasyPlayscript.core.playscript.definition; }
+@header { namespace EasyPlayscript.Parsing; }
 
 // ─── DEFAULT MODE ────────────────────────────────────────────────────────────
 

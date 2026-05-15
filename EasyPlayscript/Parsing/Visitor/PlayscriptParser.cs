@@ -19,7 +19,7 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
- namespace EasyPlayscript.core.playscript.definition; 
+ namespace EasyPlayscript.Parsing; 
 using System;
 using System.IO;
 using System.Text;

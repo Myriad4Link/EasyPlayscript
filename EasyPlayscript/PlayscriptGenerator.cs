@@ -1,6 +1,6 @@
 using System.IO;
 using System.Text;
-using EasyPlayscript.core.playscript;
+using EasyPlayscript.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 

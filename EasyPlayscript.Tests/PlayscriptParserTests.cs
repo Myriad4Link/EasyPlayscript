@@ -1,5 +1,5 @@
 using System.Linq;
-using EasyPlayscript.core.playscript;
+using EasyPlayscript.Parsing;
 using Xunit;
 
 namespace EasyPlayscript.Tests;

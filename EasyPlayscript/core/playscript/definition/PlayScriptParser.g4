@@ -2,7 +2,7 @@ parser grammar PlayscriptParser;
 
 options { tokenVocab = PlayscriptLexer; }
 
-@header { namespace EasyPlayscript.core.playscript.definition; }
+@header { namespace EasyPlayscript.Parsing; }
 
 // ─── Entry Point ────────────────────────────────────────────────────────────
 

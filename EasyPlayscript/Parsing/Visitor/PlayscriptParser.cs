@@ -120,7 +120,7 @@ public partial class PlayscriptParser : Parser {
 			State = 19;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
-			while (_la==AT) {
+			while (_la==AT || _la==LBRACKET) {
 				{
 				{
 				State = 16;
@@ -173,21 +173,23 @@ public partial class PlayscriptParser : Parser {
 		try {
 			State = 26;
 			ErrorHandler.Sync(this);
-			switch ( Interpreter.AdaptivePredict(TokenStream,1,Context) ) {
-			case 1:
+			switch (TokenStream.LA(1)) {
+			case AT:
 				EnterOuterAlt(_localctx, 1);
 				{
 				State = 24;
 				externalCall();
 				}
 				break;
-			case 2:
+			case LBRACKET:
 				EnterOuterAlt(_localctx, 2);
 				{
 				State = 25;
 				scriptBlock();
 				}
 				break;
+			default:
+				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -251,9 +253,6 @@ public partial class PlayscriptParser : Parser {
 	}
 
 	public partial class ScriptBlockContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public ExternalCallContext externalCall() {
-			return GetRuleContext<ExternalCallContext>(0);
-		}
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LBRACKET() { return GetToken(PlayscriptParser.LBRACKET, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RBRACKET() { return GetToken(PlayscriptParser.RBRACKET, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ScriptContentContext[] scriptContent() {
@@ -284,24 +283,22 @@ public partial class PlayscriptParser : Parser {
 			EnterOuterAlt(_localctx, 1);
 			{
 			State = 34;
-			externalCall();
-			State = 35;
 			Match(LBRACKET);
-			State = 39;
+			State = 38;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 14340L) != 0)) {
 				{
 				{
-				State = 36;
+				State = 35;
 				scriptContent();
 				}
 				}
-				State = 41;
+				State = 40;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			}
-			State = 42;
+			State = 41;
 			Match(RBRACKET);
 			}
 		}
@@ -343,34 +340,34 @@ public partial class PlayscriptParser : Parser {
 		ScriptContentContext _localctx = new ScriptContentContext(Context, State);
 		EnterRule(_localctx, 8, RULE_scriptContent);
 		try {
-			State = 48;
+			State = 47;
 			ErrorHandler.Sync(this);
 			switch (TokenStream.LA(1)) {
 			case TEXT:
 				EnterOuterAlt(_localctx, 1);
 				{
-				State = 44;
+				State = 43;
 				sentence();
 				}
 				break;
 			case AT:
 				EnterOuterAlt(_localctx, 2);
 				{
-				State = 45;
+				State = 44;
 				internalCall();
 				}
 				break;
 			case BLANK_LINE:
 				EnterOuterAlt(_localctx, 3);
 				{
-				State = 46;
+				State = 45;
 				Match(BLANK_LINE);
 				}
 				break;
 			case SINGLE_NEWLINE:
 				EnterOuterAlt(_localctx, 4);
 				{
-				State = 47;
+				State = 46;
 				Match(SINGLE_NEWLINE);
 				}
 				break;
@@ -421,23 +418,23 @@ public partial class PlayscriptParser : Parser {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 50;
+			State = 49;
 			sentencePart();
-			State = 55;
+			State = 54;
 			ErrorHandler.Sync(this);
 			_alt = Interpreter.AdaptivePredict(TokenStream,4,Context);
 			while ( _alt!=2 && _alt!=global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER ) {
 				if ( _alt==1 ) {
 					{
 					{
-					State = 51;
+					State = 50;
 					Match(SINGLE_NEWLINE);
-					State = 52;
+					State = 51;
 					sentencePart();
 					}
 					} 
 				}
-				State = 57;
+				State = 56;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,4,Context);
 			}
@@ -480,7 +477,7 @@ public partial class PlayscriptParser : Parser {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 59;
+			State = 58;
 			ErrorHandler.Sync(this);
 			_alt = 1;
 			do {
@@ -488,7 +485,7 @@ public partial class PlayscriptParser : Parser {
 				case 1:
 					{
 					{
-					State = 58;
+					State = 57;
 					Match(TEXT);
 					}
 					}
@@ -496,7 +493,7 @@ public partial class PlayscriptParser : Parser {
 				default:
 					throw new NoViableAltException(this);
 				}
-				State = 61;
+				State = 60;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,5,Context);
 			} while ( _alt!=2 && _alt!=global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER );
@@ -539,15 +536,15 @@ public partial class PlayscriptParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 63;
+			State = 62;
 			Match(AT);
-			State = 64;
+			State = 63;
 			Match(IDENTIFIER);
-			State = 65;
+			State = 64;
 			Match(LPAREN);
-			State = 66;
+			State = 65;
 			Match(STRING_LITERAL);
-			State = 67;
+			State = 66;
 			Match(RPAREN);
 			}
 		}
@@ -563,26 +560,25 @@ public partial class PlayscriptParser : Parser {
 	}
 
 	private static int[] _serializedATN = {
-		4,1,14,70,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,7,
+		4,1,14,69,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,7,
 		7,7,1,0,5,0,18,8,0,10,0,12,0,21,9,0,1,0,1,0,1,1,1,1,3,1,27,8,1,1,2,1,2,
-		1,2,1,2,1,2,1,2,1,3,1,3,1,3,5,3,38,8,3,10,3,12,3,41,9,3,1,3,1,3,1,4,1,
-		4,1,4,1,4,3,4,49,8,4,1,5,1,5,1,5,5,5,54,8,5,10,5,12,5,57,9,5,1,6,4,6,60,
-		8,6,11,6,12,6,61,1,7,1,7,1,7,1,7,1,7,1,7,1,7,0,0,8,0,2,4,6,8,10,12,14,
-		0,0,69,0,19,1,0,0,0,2,26,1,0,0,0,4,28,1,0,0,0,6,34,1,0,0,0,8,48,1,0,0,
-		0,10,50,1,0,0,0,12,59,1,0,0,0,14,63,1,0,0,0,16,18,3,2,1,0,17,16,1,0,0,
-		0,18,21,1,0,0,0,19,17,1,0,0,0,19,20,1,0,0,0,20,22,1,0,0,0,21,19,1,0,0,
-		0,22,23,5,0,0,1,23,1,1,0,0,0,24,27,3,4,2,0,25,27,3,6,3,0,26,24,1,0,0,0,
-		26,25,1,0,0,0,27,3,1,0,0,0,28,29,5,2,0,0,29,30,5,7,0,0,30,31,5,3,0,0,31,
-		32,5,8,0,0,32,33,5,4,0,0,33,5,1,0,0,0,34,35,3,4,2,0,35,39,5,5,0,0,36,38,
-		3,8,4,0,37,36,1,0,0,0,38,41,1,0,0,0,39,37,1,0,0,0,39,40,1,0,0,0,40,42,
-		1,0,0,0,41,39,1,0,0,0,42,43,5,6,0,0,43,7,1,0,0,0,44,49,3,10,5,0,45,49,
-		3,14,7,0,46,49,5,11,0,0,47,49,5,12,0,0,48,44,1,0,0,0,48,45,1,0,0,0,48,
-		46,1,0,0,0,48,47,1,0,0,0,49,9,1,0,0,0,50,55,3,12,6,0,51,52,5,12,0,0,52,
-		54,3,12,6,0,53,51,1,0,0,0,54,57,1,0,0,0,55,53,1,0,0,0,55,56,1,0,0,0,56,
-		11,1,0,0,0,57,55,1,0,0,0,58,60,5,13,0,0,59,58,1,0,0,0,60,61,1,0,0,0,61,
-		59,1,0,0,0,61,62,1,0,0,0,62,13,1,0,0,0,63,64,5,2,0,0,64,65,5,7,0,0,65,
-		66,5,3,0,0,66,67,5,8,0,0,67,68,5,4,0,0,68,15,1,0,0,0,6,19,26,39,48,55,
-		61
+		1,2,1,2,1,2,1,2,1,3,1,3,5,3,37,8,3,10,3,12,3,40,9,3,1,3,1,3,1,4,1,4,1,
+		4,1,4,3,4,48,8,4,1,5,1,5,1,5,5,5,53,8,5,10,5,12,5,56,9,5,1,6,4,6,59,8,
+		6,11,6,12,6,60,1,7,1,7,1,7,1,7,1,7,1,7,1,7,0,0,8,0,2,4,6,8,10,12,14,0,
+		0,68,0,19,1,0,0,0,2,26,1,0,0,0,4,28,1,0,0,0,6,34,1,0,0,0,8,47,1,0,0,0,
+		10,49,1,0,0,0,12,58,1,0,0,0,14,62,1,0,0,0,16,18,3,2,1,0,17,16,1,0,0,0,
+		18,21,1,0,0,0,19,17,1,0,0,0,19,20,1,0,0,0,20,22,1,0,0,0,21,19,1,0,0,0,
+		22,23,5,0,0,1,23,1,1,0,0,0,24,27,3,4,2,0,25,27,3,6,3,0,26,24,1,0,0,0,26,
+		25,1,0,0,0,27,3,1,0,0,0,28,29,5,2,0,0,29,30,5,7,0,0,30,31,5,3,0,0,31,32,
+		5,8,0,0,32,33,5,4,0,0,33,5,1,0,0,0,34,38,5,5,0,0,35,37,3,8,4,0,36,35,1,
+		0,0,0,37,40,1,0,0,0,38,36,1,0,0,0,38,39,1,0,0,0,39,41,1,0,0,0,40,38,1,
+		0,0,0,41,42,5,6,0,0,42,7,1,0,0,0,43,48,3,10,5,0,44,48,3,14,7,0,45,48,5,
+		11,0,0,46,48,5,12,0,0,47,43,1,0,0,0,47,44,1,0,0,0,47,45,1,0,0,0,47,46,
+		1,0,0,0,48,9,1,0,0,0,49,54,3,12,6,0,50,51,5,12,0,0,51,53,3,12,6,0,52,50,
+		1,0,0,0,53,56,1,0,0,0,54,52,1,0,0,0,54,55,1,0,0,0,55,11,1,0,0,0,56,54,
+		1,0,0,0,57,59,5,13,0,0,58,57,1,0,0,0,59,60,1,0,0,0,60,58,1,0,0,0,60,61,
+		1,0,0,0,61,13,1,0,0,0,62,63,5,2,0,0,63,64,5,7,0,0,64,65,5,3,0,0,65,66,
+		5,8,0,0,66,67,5,4,0,0,67,15,1,0,0,0,6,19,26,38,47,54,60
 	};
 
 	public static readonly ATN _ATN =

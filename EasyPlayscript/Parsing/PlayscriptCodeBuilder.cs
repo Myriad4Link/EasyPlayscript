@@ -9,35 +9,47 @@ namespace EasyPlayscript.Parsing;
 /// </summary>
 public class PlayscriptCodeBuilder : PlayscriptParserBaseVisitor<string>
 {
-    private readonly PlayscriptResult _result = new PlayscriptResult();
-
-    public PlayscriptResult Result => _result;
+    public PlayscriptResult Result { get; } = new PlayscriptResult();
+    public List<(int line, int col, string msg)> Errors { get; } = new List<(int, int, string)>();
 
     public override string VisitPlayscript(PlayscriptParser.PlayscriptContext context)
     {
+        string? pendingIdentifier = null;
+        string? pendingArg = null;
+
         foreach (var statement in context.statement())
         {
-            Visit(statement);
+            if (statement.scriptBlock() != null)
+            {
+                if (pendingIdentifier != null)
+                {
+                    ProcessScriptBlock(statement.scriptBlock(), pendingIdentifier, pendingArg);
+                    pendingIdentifier = null;
+                    pendingArg = null;
+                }
+                else
+                {
+                    var lbracket = statement.scriptBlock().LBRACKET().Symbol;
+                    Errors.Add((lbracket.Line, lbracket.Column, "Script block must follow an external call"));
+                }
+            }
+            else if (statement.externalCall() != null)
+            {
+                pendingIdentifier = statement.externalCall().IDENTIFIER().GetText();
+                pendingArg = statement.externalCall().STRING_LITERAL().GetText().Trim('"');
+            }
         }
+
         return string.Empty;
     }
 
-    public override string VisitStatement(PlayscriptParser.StatementContext context)
+    public override string VisitExternalCall(PlayscriptParser.ExternalCallContext context)
     {
-        if (context.scriptBlock() != null)
-            return Visit(context.scriptBlock());
-        if (context.externalCall() != null)
-            return Visit(context.externalCall());
         return string.Empty;
     }
 
-    public override string VisitScriptBlock(PlayscriptParser.ScriptBlockContext context)
+    private void ProcessScriptBlock(PlayscriptParser.ScriptBlockContext context, string identifier, string cleanArg)
     {
-        var externalCall = context.externalCall();
-        var identifier = externalCall.IDENTIFIER().GetText();
-        var arg = externalCall.STRING_LITERAL().GetText();
-        var cleanArg = arg.Trim('"');
-
         var block = new ScriptBlock();
 
         foreach (var content in context.scriptContent())
@@ -69,13 +81,13 @@ public class PlayscriptCodeBuilder : PlayscriptParserBaseVisitor<string>
         switch (identifier)
         {
             case "script":
-                target = _result.Scripts;
+                target = Result.Scripts;
                 break;
             case "text":
-                target = _result.Texts;
+                target = Result.Texts;
                 break;
             default:
-                return string.Empty;
+                return;
         }
 
         if (!target.TryGetValue(cleanArg, out var list))
@@ -84,12 +96,5 @@ public class PlayscriptCodeBuilder : PlayscriptParserBaseVisitor<string>
             target[cleanArg] = list;
         }
         list.Add(block);
-
-        return string.Empty;
-    }
-
-    public override string VisitExternalCall(PlayscriptParser.ExternalCallContext context)
-    {
-        return string.Empty;
     }
 }

@@ -1,4 +1,5 @@
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,34 +24,67 @@ public class PlayscriptGenerator : IIncrementalGenerator
             {
                 var text = file.GetText(ct);
                 var content = text?.ToString() ?? string.Empty;
-                var (parser, errors) = PlayscriptParserHelper.Parse(content);
+                var filePath = file.Path;
+                var (parser, parseErrors) = PlayscriptParserHelper.Parse(content);
                 var tree = parser.playscript();
                 var builder = new PlayscriptCodeBuilder();
                 builder.Visit(tree);
-                return builder.Result;
+
+                var diagnostics = new List<Diagnostic>();
+
+                foreach (var (line, col, msg, isLexer) in parseErrors)
+                {
+                    var descriptor = isLexer
+                        ? PlayscriptDiagnostics.UnexpectedToken
+                        : PlayscriptDiagnostics.MismatchedInput;
+                    var location = MakeLocation(filePath, line, col);
+                    diagnostics.Add(Diagnostic.Create(descriptor, location, msg));
+                }
+
+                foreach (var (line, col, msg) in builder.Errors)
+                {
+                    var location = MakeLocation(filePath, line, col);
+                    diagnostics.Add(Diagnostic.Create(PlayscriptDiagnostics.OrphanedScriptBlock, location, msg));
+                }
+
+                return (builder.Result, filePath, diagnostics);
             });
 
         var allFilesProvider = scptProvider.Collect();
 
         context.RegisterSourceOutput(allFilesProvider, static (spc, allResults) =>
         {
+            var hasErrors = false;
+            foreach (var result in allResults)
+            {
+                foreach (var diag in result.diagnostics)
+                {
+                    spc.ReportDiagnostic(diag);
+                    if (diag.Severity == DiagnosticSeverity.Error)
+                        hasErrors = true;
+                }
+            }
+
+            if (hasErrors)
+                return;
+
             var merged = new PlayscriptResult();
             foreach (var result in allResults)
             {
-                foreach (var kvp in result.Scripts)
+                foreach (var kvp in result.Result.Scripts)
                 {
                     if (!merged.Scripts.TryGetValue(kvp.Key, out var list))
                     {
-                        list = new System.Collections.Generic.List<ScriptBlock>();
+                        list = new List<ScriptBlock>();
                         merged.Scripts[kvp.Key] = list;
                     }
                     list.AddRange(kvp.Value);
                 }
-                foreach (var kvp in result.Texts)
+                foreach (var kvp in result.Result.Texts)
                 {
                     if (!merged.Texts.TryGetValue(kvp.Key, out var list))
                     {
-                        list = new System.Collections.Generic.List<ScriptBlock>();
+                        list = new List<ScriptBlock>();
                         merged.Texts[kvp.Key] = list;
                     }
                     list.AddRange(kvp.Value);
@@ -60,6 +94,12 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var code = GenerateRegistryClass(merged);
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
         });
+    }
+
+    private static Location MakeLocation(string filePath, int line, int col)
+    {
+        var linePosition = new LinePosition(line - 1, col);
+        return Location.Create(filePath, default, new LinePositionSpan(linePosition, linePosition));
     }
 
     private static string ToScreamingSnakeCase(string name)
@@ -114,7 +154,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return writer.ToString();
     }
 
-    private static void WriteBlocksInitializer(IndentedTextWriter indented, string typeName, System.Collections.Generic.List<ScriptBlock> blocks)
+    private static void WriteBlocksInitializer(IndentedTextWriter indented, string typeName, List<ScriptBlock> blocks)
     {
         indented.WriteLine($"new {typeName}");
         indented.WriteLine("{");

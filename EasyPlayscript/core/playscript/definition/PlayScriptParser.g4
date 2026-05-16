@@ -22,7 +22,7 @@ externalCall
     ;
 
 scriptBlock
-    : externalCall LBRACKET scriptContent* RBRACKET
+    : LBRACKET scriptContent* RBRACKET
     ;
 
 // ─── Script Block Content ───────────────────────────────────────────────────

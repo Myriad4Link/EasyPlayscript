@@ -41,27 +41,34 @@ public class PlayscriptParserTests
     }
 
     [Fact]
-    public void ExampleFile_HasOneStatement()
+    public void ExampleFile_HasTwoStatements()
     {
         var (parser, errors) = PlayscriptParserHelper.Parse(Example);
         var tree = parser.playscript();
 
         var statements = tree.statement();
-        Assert.Single(statements);
+        Assert.Equal(2, statements.Length);
     }
 
     [Fact]
-    public void ExampleFile_ScriptBlock_HasCorrectExternalCall()
+    public void ExampleFile_FirstStatement_IsExternalCall()
     {
         var (parser, _) = PlayscriptParserHelper.Parse(Example);
         var tree = parser.playscript();
 
-        var scriptBlock = tree.statement(0).scriptBlock();
-        Assert.NotNull(scriptBlock);
-
-        var externalCall = scriptBlock.externalCall();
+        var externalCall = tree.statement(0).externalCall();
         Assert.NotNull(externalCall);
         Assert.Equal("\"load tooltip\"", externalCall.STRING_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void ExampleFile_SecondStatement_IsScriptBlock()
+    {
+        var (parser, _) = PlayscriptParserHelper.Parse(Example);
+        var tree = parser.playscript();
+
+        var scriptBlock = tree.statement(1).scriptBlock();
+        Assert.NotNull(scriptBlock);
     }
 
     [Fact]
@@ -71,7 +78,7 @@ public class PlayscriptParserTests
         var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
-        var scriptBlock = tree.statement(0).scriptBlock();
+        var scriptBlock = tree.statement(1).scriptBlock();
         var contents = scriptBlock.scriptContent();
 
         var sentence1 = contents[2].sentence();
@@ -92,7 +99,7 @@ public class PlayscriptParserTests
         var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
-        var scriptBlock = tree.statement(0).scriptBlock();
+        var scriptBlock = tree.statement(1).scriptBlock();
         var contents = scriptBlock.scriptContent();
 
         var sentence2 = contents[5].sentence();
@@ -110,7 +117,7 @@ public class PlayscriptParserTests
         var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
-        var scriptBlock = tree.statement(0).scriptBlock();
+        var scriptBlock = tree.statement(1).scriptBlock();
         var contents = scriptBlock.scriptContent();
 
         var sentence3 = contents[7].sentence();
@@ -128,7 +135,7 @@ public class PlayscriptParserTests
         var (parser, _) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
 
-        var scriptBlock = tree.statement(0).scriptBlock();
+        var scriptBlock = tree.statement(1).scriptBlock();
         var contents = scriptBlock.scriptContent();
 
         var internalCall = contents
@@ -136,5 +143,57 @@ public class PlayscriptParserTests
             .FirstOrDefault(ic => ic != null);
         Assert.NotNull(internalCall);
         Assert.Equal("\"fade_out\"", internalCall.STRING_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void OrphanedScriptBlock_ReportsSCPT001()
+    {
+        var input = """
+            [
+            Hello world
+            ]
+            """;
+        var (parser, _) = PlayscriptParserHelper.Parse(input);
+        var tree = parser.playscript();
+
+        var builder = new PlayscriptCodeBuilder();
+        builder.Visit(tree);
+
+        Assert.Single(builder.Errors);
+        Assert.Contains("Script block must follow an external call", builder.Errors[0].msg);
+    }
+
+    [Fact]
+    public void ValidPairing_NoSCPT001()
+    {
+        var input = """
+            @script("test")[
+            Hello world
+            ]
+            """;
+        var (parser, _) = PlayscriptParserHelper.Parse(input);
+        var tree = parser.playscript();
+
+        var builder = new PlayscriptCodeBuilder();
+        builder.Visit(tree);
+
+        Assert.Empty(builder.Errors);
+        Assert.Single(builder.Result.Scripts["test"]);
+    }
+
+    [Fact]
+    public void StandaloneExternalCall_NoError()
+    {
+        var input = """
+            @script("test")
+            """;
+        var (parser, _) = PlayscriptParserHelper.Parse(input);
+        var tree = parser.playscript();
+
+        var builder = new PlayscriptCodeBuilder();
+        builder.Visit(tree);
+
+        Assert.Empty(builder.Errors);
+        Assert.Empty(builder.Result.Scripts);
     }
 }

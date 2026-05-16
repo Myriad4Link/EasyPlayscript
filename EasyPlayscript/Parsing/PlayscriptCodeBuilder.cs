@@ -10,35 +10,24 @@ namespace EasyPlayscript.Parsing;
 public class PlayscriptCodeBuilder : PlayscriptParserBaseVisitor<string>
 {
     public PlayscriptResult Result { get; } = new PlayscriptResult();
-    public List<(int line, int col, string msg)> Errors { get; } = new List<(int, int, string)>();
 
     public override string VisitPlayscript(PlayscriptParser.PlayscriptContext context)
     {
-        string? pendingIdentifier = null;
-        string? pendingArg = null;
-
         foreach (var statement in context.statement())
         {
-            if (statement.scriptBlock() != null)
-            {
-                if (pendingIdentifier != null)
-                {
-                    ProcessScriptBlock(statement.scriptBlock(), pendingIdentifier, pendingArg);
-                    pendingIdentifier = null;
-                    pendingArg = null;
-                }
-                else
-                {
-                    var lbracket = statement.scriptBlock().LBRACKET().Symbol;
-                    Errors.Add((lbracket.Line, lbracket.Column, "Script block must follow an external call"));
-                }
-            }
-            else if (statement.externalCall() != null)
-            {
-                pendingIdentifier = statement.externalCall().IDENTIFIER().GetText();
-                pendingArg = statement.externalCall().STRING_LITERAL().GetText().Trim('"');
-            }
+            Visit(statement);
         }
+        return string.Empty;
+    }
+
+    public override string VisitStatement(PlayscriptParser.StatementContext context)
+    {
+        var externalCall = context.externalCall();
+        var identifier = externalCall.IDENTIFIER().GetText();
+        var cleanArg = externalCall.STRING_LITERAL().GetText().Trim('"');
+
+        if (context.scriptBlock() != null)
+            ProcessScriptBlock(context.scriptBlock(), identifier, cleanArg);
 
         return string.Empty;
     }

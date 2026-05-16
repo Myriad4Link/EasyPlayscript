@@ -41,12 +41,6 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     diagnostics.Add(Diagnostic.Create(descriptor, location, msg));
                 }
 
-                foreach (var (line, col, msg) in builder.Errors)
-                {
-                    var location = MakeLocation(filePath, line, col);
-                    diagnostics.Add(Diagnostic.Create(PlayscriptDiagnostics.OrphanedScriptBlock, location, msg));
-                }
-
                 return (builder.Result, filePath, diagnostics);
             });
 

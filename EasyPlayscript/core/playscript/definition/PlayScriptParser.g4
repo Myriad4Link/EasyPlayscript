@@ -13,8 +13,7 @@ playscript
 // ─── Top-Level Statements ───────────────────────────────────────────────────
 
 statement
-    : externalCall
-    | scriptBlock
+    : externalCall scriptBlock?
     ;
 
 externalCall

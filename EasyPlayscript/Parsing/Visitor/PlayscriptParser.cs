@@ -120,7 +120,7 @@ public partial class PlayscriptParser : Parser {
 			State = 19;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
-			while (_la==AT || _la==LBRACKET) {
+			while (_la==AT) {
 				{
 				{
 				State = 16;
@@ -170,26 +170,22 @@ public partial class PlayscriptParser : Parser {
 	public StatementContext statement() {
 		StatementContext _localctx = new StatementContext(Context, State);
 		EnterRule(_localctx, 2, RULE_statement);
+		int _la;
 		try {
+			EnterOuterAlt(_localctx, 1);
+			{
+			State = 24;
+			externalCall();
 			State = 26;
 			ErrorHandler.Sync(this);
-			switch (TokenStream.LA(1)) {
-			case AT:
-				EnterOuterAlt(_localctx, 1);
-				{
-				State = 24;
-				externalCall();
-				}
-				break;
-			case LBRACKET:
-				EnterOuterAlt(_localctx, 2);
+			_la = TokenStream.LA(1);
+			if (_la==LBRACKET) {
 				{
 				State = 25;
 				scriptBlock();
 				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+			}
+
 			}
 		}
 		catch (RecognitionException re) {
@@ -565,11 +561,11 @@ public partial class PlayscriptParser : Parser {
 		1,2,1,2,1,2,1,2,1,3,1,3,5,3,37,8,3,10,3,12,3,40,9,3,1,3,1,3,1,4,1,4,1,
 		4,1,4,3,4,48,8,4,1,5,1,5,1,5,5,5,53,8,5,10,5,12,5,56,9,5,1,6,4,6,59,8,
 		6,11,6,12,6,60,1,7,1,7,1,7,1,7,1,7,1,7,1,7,0,0,8,0,2,4,6,8,10,12,14,0,
-		0,68,0,19,1,0,0,0,2,26,1,0,0,0,4,28,1,0,0,0,6,34,1,0,0,0,8,47,1,0,0,0,
+		0,68,0,19,1,0,0,0,2,24,1,0,0,0,4,28,1,0,0,0,6,34,1,0,0,0,8,47,1,0,0,0,
 		10,49,1,0,0,0,12,58,1,0,0,0,14,62,1,0,0,0,16,18,3,2,1,0,17,16,1,0,0,0,
 		18,21,1,0,0,0,19,17,1,0,0,0,19,20,1,0,0,0,20,22,1,0,0,0,21,19,1,0,0,0,
-		22,23,5,0,0,1,23,1,1,0,0,0,24,27,3,4,2,0,25,27,3,6,3,0,26,24,1,0,0,0,26,
-		25,1,0,0,0,27,3,1,0,0,0,28,29,5,2,0,0,29,30,5,7,0,0,30,31,5,3,0,0,31,32,
+		22,23,5,0,0,1,23,1,1,0,0,0,24,26,3,4,2,0,25,27,3,6,3,0,26,25,1,0,0,0,26,
+		27,1,0,0,0,27,3,1,0,0,0,28,29,5,2,0,0,29,30,5,7,0,0,30,31,5,3,0,0,31,32,
 		5,8,0,0,32,33,5,4,0,0,33,5,1,0,0,0,34,38,5,5,0,0,35,37,3,8,4,0,36,35,1,
 		0,0,0,37,40,1,0,0,0,38,36,1,0,0,0,38,39,1,0,0,0,39,41,1,0,0,0,40,38,1,
 		0,0,0,41,42,5,6,0,0,42,7,1,0,0,0,43,48,3,10,5,0,44,48,3,14,7,0,45,48,5,

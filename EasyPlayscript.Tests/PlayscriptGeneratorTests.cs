@@ -11,7 +11,7 @@ namespace EasyPlayscript.Tests;
 public class PlayscriptGeneratorTests
 {
     private const string ScriptBlockExample = """
-        @script("load tooltip")[
+        .script("load tooltip")[
         你好。
         这里是……？
 
@@ -24,7 +24,7 @@ public class PlayscriptGeneratorTests
         """;
 
     private const string TextBlockExample = """
-        @text("intro text")[
+        .text("intro text")[
         你好，欢迎来到这个世界。
         ]
         """;
@@ -112,10 +112,10 @@ public class PlayscriptGeneratorTests
     public void DuplicateScriptName_SameFile_ReportsSCPT004()
     {
         var content = """
-            @script("foo")[
+            .script("foo")[
             Hello
             ]
-            @script("foo")[
+            .script("foo")[
             World
             ]
             """;
@@ -127,10 +127,10 @@ public class PlayscriptGeneratorTests
     public void DuplicateTextName_SameFile_ReportsSCPT004()
     {
         var content = """
-            @text("intro")[
+            .text("intro")[
             Hello
             ]
-            @text("intro")[
+            .text("intro")[
             World
             ]
             """;
@@ -142,12 +142,12 @@ public class PlayscriptGeneratorTests
     public void DuplicateScriptName_CrossFile_ReportsSCPT004()
     {
         var fileA = """
-            @script("shared")[
+            .script("shared")[
             From file A
             ]
             """;
         var fileB = """
-            @script("shared")[
+            .script("shared")[
             From file B
             ]
             """;
@@ -159,12 +159,12 @@ public class PlayscriptGeneratorTests
     public void DuplicateTextName_CrossFile_ReportsSCPT004()
     {
         var fileA = """
-            @text("shared")[
+            .text("shared")[
             From file A
             ]
             """;
         var fileB = """
-            @text("shared")[
+            .text("shared")[
             From file B
             ]
             """;
@@ -176,12 +176,12 @@ public class PlayscriptGeneratorTests
     public void NoDuplicate_NoSCPT004()
     {
         var fileA = """
-            @script("alpha")[
+            .script("alpha")[
             Alpha
             ]
             """;
         var fileB = """
-            @script("beta")[
+            .script("beta")[
             Beta
             ]
             """;

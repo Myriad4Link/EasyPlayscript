@@ -2,13 +2,15 @@ lexer grammar PlayscriptLexer;
 
 @header { namespace EasyPlayscript.Parsing; }
 
+tokens { AT }
+
 // ─── DEFAULT MODE ────────────────────────────────────────────────────────────
 
 COMMENT
     : '#' ~[\r\n]* -> channel(HIDDEN)
     ;
 
-AT          : '@' ;
+DOT         : '.' ;
 LPAREN      : '(' ;
 RPAREN      : ')' ;
 LBRACKET    : '[' -> pushMode(IN_SCRIPT) ;

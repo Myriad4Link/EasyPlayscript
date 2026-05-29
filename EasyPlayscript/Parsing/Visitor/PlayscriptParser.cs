@@ -37,9 +37,9 @@ public partial class PlayscriptParser : Parser {
 	protected static DFA[] decisionToDFA;
 	protected static PredictionContextCache sharedContextCache = new PredictionContextCache();
 	public const int
-		COMMENT=1, AT=2, LPAREN=3, RPAREN=4, LBRACKET=5, RBRACKET=6, IDENTIFIER=7, 
-		STRING_LITERAL=8, WS=9, NEWLINE=10, BLANK_LINE=11, SINGLE_NEWLINE=12, 
-		TEXT=13, C_WS=14;
+		AT=1, COMMENT=2, DOT=3, LPAREN=4, RPAREN=5, LBRACKET=6, RBRACKET=7, IDENTIFIER=8, 
+		STRING_LITERAL=9, WS=10, NEWLINE=11, BLANK_LINE=12, SINGLE_NEWLINE=13, 
+		TEXT=14, C_WS=15;
 	public const int
 		RULE_playscript = 0, RULE_statement = 1, RULE_externalCall = 2, RULE_scriptBlock = 3, 
 		RULE_scriptContent = 4, RULE_sentence = 5, RULE_sentencePart = 6, RULE_internalCall = 7;
@@ -49,12 +49,12 @@ public partial class PlayscriptParser : Parser {
 	};
 
 	private static readonly string[] _LiteralNames = {
-		null, null, "'@'", null, null, "'['"
+		null, null, null, "'.'", null, null, "'['"
 	};
 	private static readonly string[] _SymbolicNames = {
-		null, "COMMENT", "AT", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", "IDENTIFIER", 
-		"STRING_LITERAL", "WS", "NEWLINE", "BLANK_LINE", "SINGLE_NEWLINE", "TEXT", 
-		"C_WS"
+		null, "AT", "COMMENT", "DOT", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", 
+		"IDENTIFIER", "STRING_LITERAL", "WS", "NEWLINE", "BLANK_LINE", "SINGLE_NEWLINE", 
+		"TEXT", "C_WS"
 	};
 	public static readonly IVocabulary DefaultVocabulary = new Vocabulary(_LiteralNames, _SymbolicNames);
 
@@ -120,7 +120,7 @@ public partial class PlayscriptParser : Parser {
 			State = 19;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
-			while (_la==AT) {
+			while (_la==DOT) {
 				{
 				{
 				State = 16;
@@ -200,7 +200,7 @@ public partial class PlayscriptParser : Parser {
 	}
 
 	public partial class ExternalCallContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode AT() { return GetToken(PlayscriptParser.AT, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode DOT() { return GetToken(PlayscriptParser.DOT, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayscriptParser.IDENTIFIER, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayscriptParser.LPAREN, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayscriptParser.STRING_LITERAL, 0); }
@@ -226,7 +226,7 @@ public partial class PlayscriptParser : Parser {
 			EnterOuterAlt(_localctx, 1);
 			{
 			State = 28;
-			Match(AT);
+			Match(DOT);
 			State = 29;
 			Match(IDENTIFIER);
 			State = 30;
@@ -283,7 +283,7 @@ public partial class PlayscriptParser : Parser {
 			State = 38;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 14340L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 28674L) != 0)) {
 				{
 				{
 				State = 35;
@@ -556,7 +556,7 @@ public partial class PlayscriptParser : Parser {
 	}
 
 	private static int[] _serializedATN = {
-		4,1,14,69,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,7,
+		4,1,15,69,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,7,
 		7,7,1,0,5,0,18,8,0,10,0,12,0,21,9,0,1,0,1,0,1,1,1,1,3,1,27,8,1,1,2,1,2,
 		1,2,1,2,1,2,1,2,1,3,1,3,5,3,37,8,3,10,3,12,3,40,9,3,1,3,1,3,1,4,1,4,1,
 		4,1,4,3,4,48,8,4,1,5,1,5,1,5,5,5,53,8,5,10,5,12,5,56,9,5,1,6,4,6,59,8,
@@ -565,16 +565,16 @@ public partial class PlayscriptParser : Parser {
 		10,49,1,0,0,0,12,58,1,0,0,0,14,62,1,0,0,0,16,18,3,2,1,0,17,16,1,0,0,0,
 		18,21,1,0,0,0,19,17,1,0,0,0,19,20,1,0,0,0,20,22,1,0,0,0,21,19,1,0,0,0,
 		22,23,5,0,0,1,23,1,1,0,0,0,24,26,3,4,2,0,25,27,3,6,3,0,26,25,1,0,0,0,26,
-		27,1,0,0,0,27,3,1,0,0,0,28,29,5,2,0,0,29,30,5,7,0,0,30,31,5,3,0,0,31,32,
-		5,8,0,0,32,33,5,4,0,0,33,5,1,0,0,0,34,38,5,5,0,0,35,37,3,8,4,0,36,35,1,
+		27,1,0,0,0,27,3,1,0,0,0,28,29,5,3,0,0,29,30,5,8,0,0,30,31,5,4,0,0,31,32,
+		5,9,0,0,32,33,5,5,0,0,33,5,1,0,0,0,34,38,5,6,0,0,35,37,3,8,4,0,36,35,1,
 		0,0,0,37,40,1,0,0,0,38,36,1,0,0,0,38,39,1,0,0,0,39,41,1,0,0,0,40,38,1,
-		0,0,0,41,42,5,6,0,0,42,7,1,0,0,0,43,48,3,10,5,0,44,48,3,14,7,0,45,48,5,
-		11,0,0,46,48,5,12,0,0,47,43,1,0,0,0,47,44,1,0,0,0,47,45,1,0,0,0,47,46,
-		1,0,0,0,48,9,1,0,0,0,49,54,3,12,6,0,50,51,5,12,0,0,51,53,3,12,6,0,52,50,
+		0,0,0,41,42,5,7,0,0,42,7,1,0,0,0,43,48,3,10,5,0,44,48,3,14,7,0,45,48,5,
+		12,0,0,46,48,5,13,0,0,47,43,1,0,0,0,47,44,1,0,0,0,47,45,1,0,0,0,47,46,
+		1,0,0,0,48,9,1,0,0,0,49,54,3,12,6,0,50,51,5,13,0,0,51,53,3,12,6,0,52,50,
 		1,0,0,0,53,56,1,0,0,0,54,52,1,0,0,0,54,55,1,0,0,0,55,11,1,0,0,0,56,54,
-		1,0,0,0,57,59,5,13,0,0,58,57,1,0,0,0,59,60,1,0,0,0,60,58,1,0,0,0,60,61,
-		1,0,0,0,61,13,1,0,0,0,62,63,5,2,0,0,63,64,5,7,0,0,64,65,5,3,0,0,65,66,
-		5,8,0,0,66,67,5,4,0,0,67,15,1,0,0,0,6,19,26,38,47,54,60
+		1,0,0,0,57,59,5,14,0,0,58,57,1,0,0,0,59,60,1,0,0,0,60,58,1,0,0,0,60,61,
+		1,0,0,0,61,13,1,0,0,0,62,63,5,1,0,0,63,64,5,8,0,0,64,65,5,4,0,0,65,66,
+		5,9,0,0,66,67,5,5,0,0,67,15,1,0,0,0,6,19,26,38,47,54,60
 	};
 
 	public static readonly ATN _ATN =

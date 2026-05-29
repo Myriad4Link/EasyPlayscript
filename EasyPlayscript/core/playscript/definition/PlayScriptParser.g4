@@ -17,7 +17,7 @@ statement
     ;
 
 externalCall
-    : AT IDENTIFIER LPAREN STRING_LITERAL RPAREN
+    : DOT IDENTIFIER LPAREN STRING_LITERAL RPAREN
     ;
 
 scriptBlock

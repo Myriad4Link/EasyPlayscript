@@ -9,10 +9,10 @@ public class PlayscriptParserTests
     private const string Example = """
         # This is a comment.
 
-        # This is a external function call. All statements starts with a @ is considered as an external tool call
-        # which calls the corresponding C# code. The string inside its paranthesis is the parameter. The content
+        # This is a compiler external call. All statements starting with . is a compiler directive
+        # which generates C# code. The string inside its parenthesis is the parameter. The content
         # inside the square bracket is a "script block".
-        @script("load tooltip")[
+        .script("load tooltip")[
         # "aaa \n bbb" is seen as one sentence. For example, the following structure should be parsed as "您好。这里是……？"
         你好。
         这里是……？
@@ -26,7 +26,7 @@ public class PlayscriptParserTests
         @transistion("fade_out")
 
         # But script blocks cannot be nested in another script block. For example, the following is illegal:
-        # @script("something inside load tooltip")[...] <-- ILLEGAL FOR NESTED BLOCKS!
+        # .script("something inside load tooltip")[...] <-- ILLEGAL FOR NESTED BLOCKS!
         ]
         """;
 
@@ -157,7 +157,7 @@ public class PlayscriptParserTests
     public void ValidPairing_ParsesSuccessfully()
     {
         var input = """
-            @script("test")[
+            .script("test")[
             Hello world
             ]
             """;
@@ -176,7 +176,7 @@ public class PlayscriptParserTests
     public void StandaloneExternalCall_ParsesSuccessfully()
     {
         var input = """
-            @script("test")
+            .script("test")
             """;
         var (parser, errors) = PlayscriptParserHelper.Parse(input);
         var tree = parser.playscript();
@@ -185,5 +185,35 @@ public class PlayscriptParserTests
         Assert.Single(tree.statement());
         Assert.NotNull(tree.statement(0).externalCall());
         Assert.Null(tree.statement(0).scriptBlock());
+    }
+
+    [Fact]
+    public void DotPrefixedExternalCall_ParsesSuccessfully()
+    {
+        var input = """
+            .script("my script")[
+            Hello
+            ]
+            """;
+        var (parser, errors) = PlayscriptParserHelper.Parse(input);
+        var tree = parser.playscript();
+
+        Assert.Empty(errors);
+        Assert.Single(tree.statement());
+        Assert.Equal("\"my script\"", tree.statement(0).externalCall().STRING_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void TopLevelAtSign_FailsParsing()
+    {
+        var input = """
+            @script("test")[
+            Hello
+            ]
+            """;
+        var (parser, errors) = PlayscriptParserHelper.Parse(input);
+        parser.playscript();
+
+        Assert.NotEmpty(errors);
     }
 }

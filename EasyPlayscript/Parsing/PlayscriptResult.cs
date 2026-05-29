@@ -8,6 +8,8 @@ namespace EasyPlayscript.Parsing;
 /// </summary>
 public class PlayscriptResult
 {
-    public Dictionary<string, List<ScriptBlock>> Scripts { get; } = new Dictionary<string, List<ScriptBlock>>();
-    public Dictionary<string, List<ScriptBlock>> Texts { get; } = new Dictionary<string, List<ScriptBlock>>();
+    public Dictionary<string, List<ScriptBlock>> Scripts { get; } = new();
+    public Dictionary<string, List<ScriptBlock>> Texts { get; } = new();
+    public Dictionary<string, (int line, int col)> ScriptLocations { get; } = new();
+    public Dictionary<string, (int line, int col)> TextLocations { get; } = new();
 }

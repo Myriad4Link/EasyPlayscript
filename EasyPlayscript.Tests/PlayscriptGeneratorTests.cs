@@ -90,4 +90,102 @@ public class PlayscriptGeneratorTests
         var code = GenerateCode(("Example", ScriptBlockExample));
         Assert.Contains("new ScriptBlock { Content = { \"你好。这里是……？\"", code);
     }
+
+    private static ImmutableArray<Diagnostic> GenerateDiagnostics(params (string name, string content)[] files)
+    {
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
+
+        var additionalFiles = files
+            .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
+            .ToImmutableArray<AdditionalText>();
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
+
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests));
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        return diagnostics;
+    }
+
+    [Fact]
+    public void DuplicateScriptName_SameFile_ReportsSCPT004()
+    {
+        var content = """
+            @script("foo")[
+            Hello
+            ]
+            @script("foo")[
+            World
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("dup", content));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+    }
+
+    [Fact]
+    public void DuplicateTextName_SameFile_ReportsSCPT004()
+    {
+        var content = """
+            @text("intro")[
+            Hello
+            ]
+            @text("intro")[
+            World
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("dup", content));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+    }
+
+    [Fact]
+    public void DuplicateScriptName_CrossFile_ReportsSCPT004()
+    {
+        var fileA = """
+            @script("shared")[
+            From file A
+            ]
+            """;
+        var fileB = """
+            @script("shared")[
+            From file B
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+    }
+
+    [Fact]
+    public void DuplicateTextName_CrossFile_ReportsSCPT004()
+    {
+        var fileA = """
+            @text("shared")[
+            From file A
+            ]
+            """;
+        var fileB = """
+            @text("shared")[
+            From file B
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+    }
+
+    [Fact]
+    public void NoDuplicate_NoSCPT004()
+    {
+        var fileA = """
+            @script("alpha")[
+            Alpha
+            ]
+            """;
+        var fileB = """
+            @script("beta")[
+            Beta
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT004");
+    }
 }

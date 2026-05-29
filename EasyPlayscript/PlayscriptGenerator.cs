@@ -25,20 +25,34 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 var text = file.GetText(ct);
                 var content = text?.ToString() ?? string.Empty;
                 var filePath = file.Path;
+
+                ct.ThrowIfCancellationRequested();
                 var (parser, parseErrors) = PlayscriptParserHelper.Parse(content);
+
+                ct.ThrowIfCancellationRequested();
                 var tree = parser.playscript();
-                var builder = new PlayscriptCodeBuilder();
+
+                ct.ThrowIfCancellationRequested();
+                var builder = new PlayscriptCodeBuilder(ct);
                 builder.Visit(tree);
 
                 var diagnostics = new List<Diagnostic>();
 
                 foreach (var (line, col, msg, isLexer) in parseErrors)
                 {
+                    ct.ThrowIfCancellationRequested();
                     var descriptor = isLexer
                         ? PlayscriptDiagnostics.UnexpectedToken
                         : PlayscriptDiagnostics.MismatchedInput;
                     var location = MakeLocation(filePath, line, col);
                     diagnostics.Add(Diagnostic.Create(descriptor, location, msg));
+                }
+
+                foreach (var (identifier, name, dupLine, dupCol) in builder.DuplicateErrors)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var location = MakeLocation(filePath, dupLine, dupCol);
+                    diagnostics.Add(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, identifier, name));
                 }
 
                 return (builder.Result, filePath, diagnostics);
@@ -49,28 +63,32 @@ public class PlayscriptGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(allFilesProvider, static (spc, allResults) =>
         {
             var hasErrors = false;
-            foreach (var result in allResults)
+            foreach (var diag in allResults.SelectMany(result => result.diagnostics))
             {
-                foreach (var diag in result.diagnostics)
-                {
-                    spc.ReportDiagnostic(diag);
-                    if (diag.Severity == DiagnosticSeverity.Error)
-                        hasErrors = true;
-                }
+                spc.CancellationToken.ThrowIfCancellationRequested();
+                spc.ReportDiagnostic(diag);
+                if (diag.Severity == DiagnosticSeverity.Error)
+                    hasErrors = true;
             }
-
-            if (hasErrors)
-                return;
 
             var merged = new PlayscriptResult();
             foreach (var result in allResults)
             {
+                spc.CancellationToken.ThrowIfCancellationRequested();
                 foreach (var kvp in result.Result.Scripts)
                 {
                     if (!merged.Scripts.TryGetValue(kvp.Key, out var list))
                     {
-                        list = new List<ScriptBlock>();
+                        list = [];
                         merged.Scripts[kvp.Key] = list;
+                        merged.ScriptLocations[kvp.Key] = result.Result.ScriptLocations[kvp.Key];
+                    }
+                    else
+                    {
+                        var (dupLine, dupCol) = result.Result.ScriptLocations[kvp.Key];
+                        var location = MakeLocation(result.filePath, dupLine, dupCol);
+                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, "script", kvp.Key));
+                        hasErrors = true;
                     }
                     list.AddRange(kvp.Value);
                 }
@@ -78,14 +96,28 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 {
                     if (!merged.Texts.TryGetValue(kvp.Key, out var list))
                     {
-                        list = new List<ScriptBlock>();
+                        list = [];
                         merged.Texts[kvp.Key] = list;
+                        merged.TextLocations[kvp.Key] = result.Result.TextLocations[kvp.Key];
+                    }
+                    else
+                    {
+                        var (dupLine, dupCol) = result.Result.TextLocations[kvp.Key];
+                        var location = MakeLocation(result.filePath, dupLine, dupCol);
+                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, "text", kvp.Key));
+                        hasErrors = true;
                     }
                     list.AddRange(kvp.Value);
                 }
             }
 
+            if (hasErrors)
+                return;
+
+            spc.CancellationToken.ThrowIfCancellationRequested();
             var code = GenerateRegistryClass(merged);
+            
+            spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
         });
     }
@@ -101,7 +133,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         var sb = new StringBuilder();
         foreach (var c in name)
         {
-            if (c == ' ' || c == '-')
+            if (c is ' ' or '-')
                 sb.Append('_');
             else
                 sb.Append(char.ToUpperInvariant(c));

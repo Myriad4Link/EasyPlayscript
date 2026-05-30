@@ -14,7 +14,7 @@
 请问你是？
 
 # External function calls can also be made from inside the script block. For example:
-@transistion("fade_out")
+@transition("fade_out")
 
 # But script blocks cannot be nested in another script block. For example, the following is illegal:
 # .script("something inside load tooltip")[...] <-- ILLEGAL FOR NESTED BLOCKS!

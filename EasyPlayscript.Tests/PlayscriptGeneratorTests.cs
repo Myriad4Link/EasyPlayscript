@@ -19,7 +19,7 @@ public class PlayscriptGeneratorTests
 
         请问你是？
 
-        @transistion("fade_out")
+        @transition("fade_out")
         ]
         """;
 
@@ -78,7 +78,7 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
-    public void GeneratedCode_UsesScriptRegistry()
+    public void GeneratedCode_UsesGeneratedNamespace()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
         Assert.Contains("using EasyPlayscript.Generated;", code);
@@ -88,7 +88,7 @@ public class PlayscriptGeneratorTests
     public void ScriptBlock_ContentIsPopulated()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("new ScriptBlock { Content = { \"你好。这里是……？\"", code);
+        Assert.Contains("Block = new ScriptBlock { Content = { \"你好。这里是……？\"", code);
     }
 
     private static ImmutableArray<Diagnostic> GenerateDiagnostics(params (string name, string content)[] files)
@@ -111,14 +111,14 @@ public class PlayscriptGeneratorTests
     [Fact]
     public void DuplicateScriptName_SameFile_ReportsSCPT004()
     {
-        var content = """
-            .script("foo")[
-            Hello
-            ]
-            .script("foo")[
-            World
-            ]
-            """;
+        const string content = """
+                               .script("foo")[
+                               Hello
+                               ]
+                               .script("foo")[
+                               World
+                               ]
+                               """;
         var diagnostics = GenerateDiagnostics(("dup", content));
         Assert.Contains(diagnostics, d => d.Id == "SCPT004");
     }
@@ -126,14 +126,14 @@ public class PlayscriptGeneratorTests
     [Fact]
     public void DuplicateTextName_SameFile_ReportsSCPT004()
     {
-        var content = """
-            .text("intro")[
-            Hello
-            ]
-            .text("intro")[
-            World
-            ]
-            """;
+        const string content = """
+                               .text("intro")[
+                               Hello
+                               ]
+                               .text("intro")[
+                               World
+                               ]
+                               """;
         var diagnostics = GenerateDiagnostics(("dup", content));
         Assert.Contains(diagnostics, d => d.Id == "SCPT004");
     }

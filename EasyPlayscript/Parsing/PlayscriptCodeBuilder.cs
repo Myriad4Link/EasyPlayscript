@@ -69,7 +69,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
             }
         }
 
-        Dictionary<string, List<ScriptBlock>> target;
+        Dictionary<string, ScriptBlock> target;
         Dictionary<string, (int line, int col)> locations;
         switch (identifier)
         {
@@ -85,20 +85,18 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                 return;
         }
 
-        if (!target.TryGetValue(cleanArg, out var list))
-        {
-            list = [];
-            target[cleanArg] = list;
-            locations[cleanArg] = (line, col);
-        }
-        else if (list.Count > 0)
+        if (target.ContainsKey(cleanArg))
         {
             DuplicateErrors.Add((identifier, cleanArg, line, col));
         }
+        else
+        {
+            locations[cleanArg] = (line, col);
+        }
 
         // Duplicate names are detected and reported as errors (SCPT004) above.
-        // We still accumulate the block here intentionally — the generator skips
+        // We still assign the block here intentionally — the generator skips
         // code emission on errors, so duplicates never reach generated code.
-        list.Add(block);
+        target[cleanArg] = block;
     }
 }

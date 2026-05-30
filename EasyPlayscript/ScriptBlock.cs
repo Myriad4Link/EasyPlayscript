@@ -7,5 +7,5 @@ namespace EasyPlayscript;
 /// </summary>
 public class ScriptBlock
 {
-    public List<string> Content { get; } = new List<string>();
+    public List<string> Content { get; } = [];
 }

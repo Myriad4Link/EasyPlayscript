@@ -20,7 +20,7 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void GeneratesScript_WithClassAndBlocksList()
+    public void GeneratesScript_WithClassAndBlock()
     {
         var runResult = RunGenerator();
 
@@ -28,11 +28,11 @@ public class ScriptRegistryTests
         var scriptText = scriptFile.GetText().ToString();
 
         Assert.Contains("public class Script", scriptText);
-        Assert.Contains("public List<ScriptBlock> Blocks", scriptText);
+        Assert.Contains("public ScriptBlock Block { get; set; }", scriptText);
     }
 
     [Fact]
-    public void GeneratesText_WithClassAndBlocksList()
+    public void GeneratesText_WithClassAndBlock()
     {
         var runResult = RunGenerator();
 
@@ -40,19 +40,6 @@ public class ScriptRegistryTests
         var textText = textFile.GetText().ToString();
 
         Assert.Contains("public class Text", textText);
-        Assert.Contains("public List<ScriptBlock> Blocks", textText);
-    }
-
-    [Fact]
-    public void GeneratesScriptRegistry_WithClassAndDictionaries()
-    {
-        var runResult = RunGenerator();
-
-        var registryFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("ScriptRegistry.g.cs"));
-        var registryText = registryFile.GetText().ToString();
-
-        Assert.Contains("public class ScriptRegistry", registryText);
-        Assert.Contains("public Dictionary<string, Script> Scripts", registryText);
-        Assert.Contains("public Dictionary<string, Text> Texts", registryText);
+        Assert.Contains("public ScriptBlock Block { get; set; }", textText);
     }
 }

@@ -77,37 +77,33 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 spc.CancellationToken.ThrowIfCancellationRequested();
                 foreach (var kvp in result.Result.Scripts)
                 {
-                    if (!merged.Scripts.TryGetValue(kvp.Key, out var list))
-                    {
-                        list = [];
-                        merged.Scripts[kvp.Key] = list;
-                        merged.ScriptLocations[kvp.Key] = result.Result.ScriptLocations[kvp.Key];
-                    }
-                    else
+                    if (merged.Scripts.ContainsKey(kvp.Key))
                     {
                         var (dupLine, dupCol) = result.Result.ScriptLocations[kvp.Key];
                         var location = MakeLocation(result.filePath, dupLine, dupCol);
                         spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, "script", kvp.Key));
                         hasErrors = true;
                     }
-                    list.AddRange(kvp.Value);
+                    else
+                    {
+                        merged.ScriptLocations[kvp.Key] = result.Result.ScriptLocations[kvp.Key];
+                    }
+                    merged.Scripts[kvp.Key] = kvp.Value;
                 }
                 foreach (var kvp in result.Result.Texts)
                 {
-                    if (!merged.Texts.TryGetValue(kvp.Key, out var list))
-                    {
-                        list = [];
-                        merged.Texts[kvp.Key] = list;
-                        merged.TextLocations[kvp.Key] = result.Result.TextLocations[kvp.Key];
-                    }
-                    else
+                    if (merged.Texts.ContainsKey(kvp.Key))
                     {
                         var (dupLine, dupCol) = result.Result.TextLocations[kvp.Key];
                         var location = MakeLocation(result.filePath, dupLine, dupCol);
                         spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, "text", kvp.Key));
                         hasErrors = true;
                     }
-                    list.AddRange(kvp.Value);
+                    else
+                    {
+                        merged.TextLocations[kvp.Key] = result.Result.TextLocations[kvp.Key];
+                    }
+                    merged.Texts[kvp.Key] = kvp.Value;
                 }
             }
 
@@ -160,7 +156,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         {
             var propName = ToScreamingSnakeCase(kvp.Key);
             indented.Write($"public static Script {propName} {{ get; }} = ");
-            WriteBlocksInitializer(indented, "Script", kvp.Value);
+            WriteScriptInitializer(indented, "Script", kvp.Value);
             indented.WriteLine();
         }
 
@@ -169,7 +165,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         {
             var propName = ToScreamingSnakeCase(kvp.Key);
             indented.Write($"public static Text {propName} {{ get; }} = ");
-            WriteBlocksInitializer(indented, "Text", kvp.Value);
+            WriteScriptInitializer(indented, "Text", kvp.Value);
             indented.WriteLine();
         }
 
@@ -180,32 +176,19 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return writer.ToString();
     }
 
-    private static void WriteBlocksInitializer(IndentedTextWriter indented, string typeName, List<ScriptBlock> blocks)
+    private static void WriteScriptInitializer(IndentedTextWriter indented, string typeName, ScriptBlock block)
     {
         indented.WriteLine($"new {typeName}");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("Blocks =");
-        indented.WriteLine("{");
-        indented.Indent++;
-        foreach (var block in blocks)
-        {
-            WriteBlockInitializer(indented, block);
-        }
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.Indent--;
-        indented.WriteLine("}");
-    }
-
-    private static void WriteBlockInitializer(IndentedTextWriter indented, ScriptBlock block)
-    {
-        indented.Write("new ScriptBlock { Content = { ");
+        indented.Write("Block = new ScriptBlock { Content = { ");
         for (int i = 0; i < block.Content.Count; i++)
         {
             if (i > 0) indented.Write(", ");
             indented.Write($"\"{block.Content[i]}\"");
         }
-        indented.WriteLine(" } },");
+        indented.WriteLine(" } }");
+        indented.Indent--;
+        indented.WriteLine("}");
     }
 }

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from EasyPlayscript/EasyPlayscript/core/playscript/definition/PlayscriptParser.g4 by ANTLR 4.13.2
+// Generated from EasyPlayscript/EasyPlayscript/core/playscript/definition/PlayscriptContentParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -26,58 +26,46 @@ using IToken = Antlr4.Runtime.IToken;
 
 /// <summary>
 /// This interface defines a complete generic visitor for a parse tree produced
-/// by <see cref="PlayscriptParser"/>.
+/// by <see cref="PlayscriptContentParser"/>.
 /// </summary>
 /// <typeparam name="Result">The return type of the visit operation.</typeparam>
 [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.13.2")]
 [System.CLSCompliant(false)]
-public interface IPlayscriptParserVisitor<Result> : IParseTreeVisitor<Result> {
+public interface IPlayscriptContentParserVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.playscript"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.scriptContent"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitPlayscript([NotNull] PlayscriptParser.PlayscriptContext context);
+	Result VisitScriptContent([NotNull] PlayscriptContentParser.ScriptContentContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.statement"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.page"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitStatement([NotNull] PlayscriptParser.StatementContext context);
+	Result VisitPage([NotNull] PlayscriptContentParser.PageContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.compilerCall"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.paragraph"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitCompilerCall([NotNull] PlayscriptParser.CompilerCallContext context);
+	Result VisitParagraph([NotNull] PlayscriptContentParser.ParagraphContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.scriptBlock"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.line"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitScriptBlock([NotNull] PlayscriptParser.ScriptBlockContext context);
+	Result VisitLine([NotNull] PlayscriptContentParser.LineContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.scriptContent"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.pageBreak"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitScriptContent([NotNull] PlayscriptParser.ScriptContentContext context);
+	Result VisitPageBreak([NotNull] PlayscriptContentParser.PageBreakContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.sentence"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.consumerCall"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitSentence([NotNull] PlayscriptParser.SentenceContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.sentencePart"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitSentencePart([NotNull] PlayscriptParser.SentencePartContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptParser.consumerCall"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitConsumerCall([NotNull] PlayscriptParser.ConsumerCallContext context);
+	Result VisitConsumerCall([NotNull] PlayscriptContentParser.ConsumerCallContext context);
 }

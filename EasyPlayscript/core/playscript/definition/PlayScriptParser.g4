@@ -13,10 +13,10 @@ playscript
 // ─── Top-Level Statements ───────────────────────────────────────────────────
 
 statement
-    : externalCall scriptBlock?
+    : compilerCall scriptBlock?
     ;
 
-externalCall
+compilerCall
     : DOT IDENTIFIER LPAREN STRING_LITERAL RPAREN
     ;
 
@@ -28,7 +28,7 @@ scriptBlock
 
 scriptContent
     : sentence
-    | internalCall
+    | consumerCall
     | BLANK_LINE
     | SINGLE_NEWLINE
     ;
@@ -41,6 +41,6 @@ sentencePart
     : TEXT+
     ;
 
-internalCall
+consumerCall
     : AT IDENTIFIER LPAREN STRING_LITERAL RPAREN
     ;

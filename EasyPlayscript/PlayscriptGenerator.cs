@@ -52,7 +52,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 {
                     ct.ThrowIfCancellationRequested();
                     var location = MakeLocation(filePath, dupLine, dupCol);
-                    diagnostics.Add(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, identifier, name));
+                    diagnostics.Add(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, identifier,
+                        name));
                 }
 
                 return (builder.Result, filePath, diagnostics);
@@ -67,8 +68,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             {
                 spc.CancellationToken.ThrowIfCancellationRequested();
                 spc.ReportDiagnostic(diag);
-                if (diag.Severity == DiagnosticSeverity.Error)
-                    hasErrors = true;
+                hasErrors = diag.Severity == DiagnosticSeverity.Error;
             }
 
             var merged = new PlayscriptResult();
@@ -79,30 +79,34 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 {
                     if (merged.Scripts.ContainsKey(kvp.Key))
                     {
+                        // Report cross-file duplicate: point to this file's declaration of the name
                         var (dupLine, dupCol) = result.Result.ScriptLocations[kvp.Key];
                         var location = MakeLocation(result.filePath, dupLine, dupCol);
-                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, "script", kvp.Key));
+                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                            "script", kvp.Key));
                         hasErrors = true;
                     }
                     else
-                    {
+                        // First occurrence — store its location for future duplicate reporting
                         merged.ScriptLocations[kvp.Key] = result.Result.ScriptLocations[kvp.Key];
-                    }
+
+                    // Always assign so the loop can continue processing all entries
                     merged.Scripts[kvp.Key] = kvp.Value;
                 }
+
                 foreach (var kvp in result.Result.Texts)
                 {
                     if (merged.Texts.ContainsKey(kvp.Key))
                     {
                         var (dupLine, dupCol) = result.Result.TextLocations[kvp.Key];
                         var location = MakeLocation(result.filePath, dupLine, dupCol);
-                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, "text", kvp.Key));
+                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                            "text", kvp.Key));
                         hasErrors = true;
                     }
                     else
-                    {
                         merged.TextLocations[kvp.Key] = result.Result.TextLocations[kvp.Key];
-                    }
+
                     merged.Texts[kvp.Key] = kvp.Value;
                 }
             }
@@ -112,7 +116,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
             spc.CancellationToken.ThrowIfCancellationRequested();
             var code = GenerateRegistryClass(merged);
-            
+
             spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
         });
@@ -134,6 +138,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             else
                 sb.Append(char.ToUpperInvariant(c));
         }
+
         return sb.ToString();
     }
 
@@ -181,11 +186,37 @@ public class PlayscriptGenerator : IIncrementalGenerator
         indented.WriteLine($"new {typeName}");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.Write("Block = new ScriptBlock { Content = { ");
-        for (int i = 0; i < block.Content.Count; i++)
+        indented.Write("Block = new ScriptBlock { Pages = { ");
+        for (int i = 0; i < block.Pages.Count; i++)
         {
             if (i > 0) indented.Write(", ");
-            indented.Write($"\"{block.Content[i]}\"");
+            indented.Write($"new Page {{ Paragraphs = {{ ");
+            for (int j = 0; j < block.Pages[i].Paragraphs.Count; j++)
+            {
+                if (j > 0) indented.Write(", ");
+                indented.Write($"new Paragraph {{ Lines = {{ ");
+                for (int k = 0; k < block.Pages[i].Paragraphs[j].Lines.Count; k++)
+                {
+                    if (k > 0) indented.Write(", ");
+                    indented.Write($"new Line {{ Items = {{ ");
+                    for (int l = 0; l < block.Pages[i].Paragraphs[j].Lines[k].Items.Count; l++)
+                    {
+                        if (l > 0) indented.Write(", ");
+                        var item = block.Pages[i].Paragraphs[j].Lines[k].Items[l];
+                        if (item is TextItem textItem)
+                        {
+                            indented.Write($"new TextItem {{ Text = \"{textItem.Text}\" }}");
+                        }
+                        else if (item is ConsumerCallItem callItem)
+                        {
+                            indented.Write($"new ConsumerCallItem {{ Identifier = \"{callItem.Identifier}\", Argument = \"{callItem.Argument}\" }}");
+                        }
+                    }
+                    indented.Write(" } }");
+                }
+                indented.Write(" } }");
+            }
+            indented.Write(" } }");
         }
         indented.WriteLine(" } }");
         indented.Indent--;

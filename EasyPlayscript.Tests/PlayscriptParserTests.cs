@@ -9,7 +9,7 @@ public class PlayscriptParserTests
     private const string Example = """
         # This is a comment.
 
-        # This is a compiler external call. All statements starting with . is a compiler directive
+        # This is a compiler call. All statements starting with . is a compiler directive
         # which generates C# code. The string inside its parenthesis is the parameter. The content
         # inside the square bracket is a "script block".
         .script("load tooltip")[
@@ -22,7 +22,7 @@ public class PlayscriptParserTests
 
         请问你是？
 
-        # External function calls can also be made from inside the script block. For example:
+        # Consumer calls can also be made from inside the script block. For example:
         @transition("fade_out")
 
         # But script blocks cannot be nested in another script block. For example, the following is illegal:
@@ -51,15 +51,15 @@ public class PlayscriptParserTests
     }
 
     [Fact]
-    public void ExampleFile_Statement_HasExternalCallAndScriptBlock()
+    public void ExampleFile_Statement_HasCompilerCallAndScriptBlock()
     {
         var (parser, _) = PlayscriptParserHelper.Parse(Example);
         var tree = parser.playscript();
 
         var statement = tree.statement(0);
-        var externalCall = statement.externalCall();
-        Assert.NotNull(externalCall);
-        Assert.Equal("\"load tooltip\"", externalCall.STRING_LITERAL().GetText());
+        var compilerCall = statement.compilerCall();
+        Assert.NotNull(compilerCall);
+        Assert.Equal("\"load tooltip\"", compilerCall.STRING_LITERAL().GetText());
 
         var scriptBlock = statement.scriptBlock();
         Assert.NotNull(scriptBlock);
@@ -123,7 +123,7 @@ public class PlayscriptParserTests
     }
 
     [Fact]
-    public void ExampleFile_ScriptBlock_HasInternalCall()
+    public void ExampleFile_ScriptBlock_HasConsumerCall()
     {
         var input = Example;
         var (parser, _) = PlayscriptParserHelper.Parse(input);
@@ -132,11 +132,11 @@ public class PlayscriptParserTests
         var scriptBlock = tree.statement(0).scriptBlock();
         var contents = scriptBlock.scriptContent();
 
-        var internalCall = contents
-            .Select(c => c.internalCall())
+        var consumerCall = contents
+            .Select(c => c.consumerCall())
             .FirstOrDefault(ic => ic != null);
-        Assert.NotNull(internalCall);
-        Assert.Equal("\"fade_out\"", internalCall.STRING_LITERAL().GetText());
+        Assert.NotNull(consumerCall);
+        Assert.Equal("\"fade_out\"", consumerCall.STRING_LITERAL().GetText());
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class PlayscriptParserTests
     }
 
     [Fact]
-    public void StandaloneExternalCall_ParsesSuccessfully()
+    public void StandaloneCompilerCall_ParsesSuccessfully()
     {
         var input = """
             .script("test")
@@ -183,12 +183,12 @@ public class PlayscriptParserTests
 
         Assert.Empty(errors);
         Assert.Single(tree.statement());
-        Assert.NotNull(tree.statement(0).externalCall());
+        Assert.NotNull(tree.statement(0).compilerCall());
         Assert.Null(tree.statement(0).scriptBlock());
     }
 
     [Fact]
-    public void DotPrefixedExternalCall_ParsesSuccessfully()
+    public void DotPrefixedCompilerCall_ParsesSuccessfully()
     {
         var input = """
             .script("my script")[
@@ -200,7 +200,7 @@ public class PlayscriptParserTests
 
         Assert.Empty(errors);
         Assert.Single(tree.statement());
-        Assert.Equal("\"my script\"", tree.statement(0).externalCall().STRING_LITERAL().GetText());
+        Assert.Equal("\"my script\"", tree.statement(0).compilerCall().STRING_LITERAL().GetText());
     }
 
     [Fact]

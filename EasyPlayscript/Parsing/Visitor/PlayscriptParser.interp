@@ -37,12 +37,12 @@ C_WS
 rule names:
 playscript
 statement
-externalCall
+compilerCall
 scriptBlock
 scriptContent
 sentence
 sentencePart
-internalCall
+consumerCall
 
 
 atn:

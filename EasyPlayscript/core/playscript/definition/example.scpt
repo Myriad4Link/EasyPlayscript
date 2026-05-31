@@ -1,6 +1,6 @@
 # This is a comment.
 
-# This is a compiler external call. All statements starting with . is a compiler directive
+# This is a compiler call. All statements starting with . is a compiler directive
 # which generates C# code. The string inside its parenthesis is the parameter. The content
 # inside the square bracket is a "script block".
 .script("load tooltip")[
@@ -13,7 +13,7 @@
 
 请问你是？
 
-# External function calls can also be made from inside the script block. For example:
+# Consumer calls can also be made from inside the script block. For example:
 @transition("fade_out")
 
 # But script blocks cannot be nested in another script block. For example, the following is illegal:

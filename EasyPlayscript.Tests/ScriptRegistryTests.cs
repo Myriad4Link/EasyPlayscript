@@ -42,4 +42,51 @@ public class ScriptRegistryTests
         Assert.Contains("public class Text", textText);
         Assert.Contains("public ScriptBlock Block { get; set; }", textText);
     }
+
+    [Fact]
+    public void ScriptBlock_HasPages()
+    {
+        var block = new ScriptBlock();
+        Assert.NotNull(block.Pages);
+        Assert.Empty(block.Pages);
+    }
+
+    [Fact]
+    public void Page_HasParagraphs()
+    {
+        var page = new Page();
+        Assert.NotNull(page.Paragraphs);
+        Assert.Empty(page.Paragraphs);
+    }
+
+    [Fact]
+    public void Paragraph_HasLines()
+    {
+        var paragraph = new Paragraph();
+        Assert.NotNull(paragraph.Lines);
+        Assert.Empty(paragraph.Lines);
+    }
+
+    [Fact]
+    public void Line_HasItems()
+    {
+        var line = new Line();
+        Assert.NotNull(line.Items);
+        Assert.Empty(line.Items);
+    }
+
+    [Fact]
+    public void TextItem_StoresText()
+    {
+        var item = new TextItem("Hello world");
+        Assert.Equal("Hello world", item.Text);
+    }
+
+    [Fact]
+    public void ConsumerCallItem_StoresIdentifierAndArgument()
+    {
+        var item = new ConsumerCallItem("transition", "fade_out");
+        Assert.Equal("transition", item.Identifier);
+        Assert.Equal("fade_out", item.Argument);
+    }
 }

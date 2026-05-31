@@ -4,8 +4,8 @@ using MessagePack;
 namespace EasyPlayscript;
 
 [MessagePackObject]
-public class ScriptBlock
+public class Paragraph
 {
     [Key(0)]
-    public List<Page> Pages { get; set; } = new();
+    public List<Line> Lines { get; set; } = new();
 }

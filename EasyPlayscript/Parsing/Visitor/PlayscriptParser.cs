@@ -41,11 +41,11 @@ public partial class PlayscriptParser : Parser {
 		STRING_LITERAL=9, WS=10, NEWLINE=11, BLANK_LINE=12, SINGLE_NEWLINE=13, 
 		TEXT=14, C_WS=15;
 	public const int
-		RULE_playscript = 0, RULE_statement = 1, RULE_externalCall = 2, RULE_scriptBlock = 3, 
-		RULE_scriptContent = 4, RULE_sentence = 5, RULE_sentencePart = 6, RULE_internalCall = 7;
+		RULE_playscript = 0, RULE_statement = 1, RULE_compilerCall = 2, RULE_scriptBlock = 3, 
+		RULE_scriptContent = 4, RULE_sentence = 5, RULE_sentencePart = 6, RULE_consumerCall = 7;
 	public static readonly string[] ruleNames = {
-		"playscript", "statement", "externalCall", "scriptBlock", "scriptContent", 
-		"sentence", "sentencePart", "internalCall"
+		"playscript", "statement", "compilerCall", "scriptBlock", "scriptContent", 
+		"sentence", "sentencePart", "consumerCall"
 	};
 
 	private static readonly string[] _LiteralNames = {
@@ -147,8 +147,8 @@ public partial class PlayscriptParser : Parser {
 	}
 
 	public partial class StatementContext : ParserRuleContext {
-		[System.Diagnostics.DebuggerNonUserCode] public ExternalCallContext externalCall() {
-			return GetRuleContext<ExternalCallContext>(0);
+		[System.Diagnostics.DebuggerNonUserCode] public CompilerCallContext compilerCall() {
+			return GetRuleContext<CompilerCallContext>(0);
 		}
 		[System.Diagnostics.DebuggerNonUserCode] public ScriptBlockContext scriptBlock() {
 			return GetRuleContext<ScriptBlockContext>(0);
@@ -175,7 +175,7 @@ public partial class PlayscriptParser : Parser {
 			EnterOuterAlt(_localctx, 1);
 			{
 			State = 24;
-			externalCall();
+			compilerCall();
 			State = 26;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
@@ -199,29 +199,29 @@ public partial class PlayscriptParser : Parser {
 		return _localctx;
 	}
 
-	public partial class ExternalCallContext : ParserRuleContext {
+	public partial class CompilerCallContext : ParserRuleContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode DOT() { return GetToken(PlayscriptParser.DOT, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayscriptParser.IDENTIFIER, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayscriptParser.LPAREN, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayscriptParser.STRING_LITERAL, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RPAREN() { return GetToken(PlayscriptParser.RPAREN, 0); }
-		public ExternalCallContext(ParserRuleContext parent, int invokingState)
+		public CompilerCallContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
 		}
-		public override int RuleIndex { get { return RULE_externalCall; } }
+		public override int RuleIndex { get { return RULE_compilerCall; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExternalCall(this);
+			if (typedVisitor != null) return typedVisitor.VisitCompilerCall(this);
 			else return visitor.VisitChildren(this);
 		}
 	}
 
 	[RuleVersion(0)]
-	public ExternalCallContext externalCall() {
-		ExternalCallContext _localctx = new ExternalCallContext(Context, State);
-		EnterRule(_localctx, 4, RULE_externalCall);
+	public CompilerCallContext compilerCall() {
+		CompilerCallContext _localctx = new CompilerCallContext(Context, State);
+		EnterRule(_localctx, 4, RULE_compilerCall);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -313,8 +313,8 @@ public partial class PlayscriptParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public SentenceContext sentence() {
 			return GetRuleContext<SentenceContext>(0);
 		}
-		[System.Diagnostics.DebuggerNonUserCode] public InternalCallContext internalCall() {
-			return GetRuleContext<InternalCallContext>(0);
+		[System.Diagnostics.DebuggerNonUserCode] public ConsumerCallContext consumerCall() {
+			return GetRuleContext<ConsumerCallContext>(0);
 		}
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode BLANK_LINE() { return GetToken(PlayscriptParser.BLANK_LINE, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode SINGLE_NEWLINE() { return GetToken(PlayscriptParser.SINGLE_NEWLINE, 0); }
@@ -350,7 +350,7 @@ public partial class PlayscriptParser : Parser {
 				EnterOuterAlt(_localctx, 2);
 				{
 				State = 44;
-				internalCall();
+				consumerCall();
 				}
 				break;
 			case BLANK_LINE:
@@ -506,29 +506,29 @@ public partial class PlayscriptParser : Parser {
 		return _localctx;
 	}
 
-	public partial class InternalCallContext : ParserRuleContext {
+	public partial class ConsumerCallContext : ParserRuleContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode AT() { return GetToken(PlayscriptParser.AT, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayscriptParser.IDENTIFIER, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayscriptParser.LPAREN, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayscriptParser.STRING_LITERAL, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RPAREN() { return GetToken(PlayscriptParser.RPAREN, 0); }
-		public InternalCallContext(ParserRuleContext parent, int invokingState)
+		public ConsumerCallContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
 		}
-		public override int RuleIndex { get { return RULE_internalCall; } }
+		public override int RuleIndex { get { return RULE_consumerCall; } }
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptParserVisitor<TResult> typedVisitor = visitor as IPlayscriptParserVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitInternalCall(this);
+			if (typedVisitor != null) return typedVisitor.VisitConsumerCall(this);
 			else return visitor.VisitChildren(this);
 		}
 	}
 
 	[RuleVersion(0)]
-	public InternalCallContext internalCall() {
-		InternalCallContext _localctx = new InternalCallContext(Context, State);
-		EnterRule(_localctx, 14, RULE_internalCall);
+	public ConsumerCallContext consumerCall() {
+		ConsumerCallContext _localctx = new ConsumerCallContext(Context, State);
+		EnterRule(_localctx, 14, RULE_consumerCall);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{

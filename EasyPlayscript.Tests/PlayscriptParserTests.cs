@@ -167,9 +167,19 @@ public class PlayscriptParserTests
         Assert.Empty(errors);
         Assert.Single(tree.statement());
 
+        var structureResults = PlayscriptStructureHelper.ParseStructureWithErrors(input);
+        Assert.Single(structureResults.results);
+        Assert.Equal("test", structureResults.results[0].name);
+
+        var rawContent = structureResults.results[0].rawContent;
+        Assert.NotNull(rawContent);
+
+        var (contentParser, contentErrors) = PlayscriptContentHelper.Parse(rawContent);
+        Assert.Empty(contentErrors);
+
         var builder = new PlayscriptCodeBuilder();
-        builder.Visit(tree);
-        Assert.NotNull(builder.Result.Scripts["test"]);
+        builder.BuildFromContent(contentParser.scriptContent());
+        Assert.NotNull(builder.ContentResult);
     }
 
     [Fact]

@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace EasyPlayscript;
 
 /// <summary>
-/// Incremental source generator that reads all <c>.scpt</c> files, parses them via ANTLR,
+/// Incremental source generator that reads all <c>.scpt</c> files, parses them via two-pass ANTLR,
 /// and emits a single <c>Registry</c> class with static properties for each script/text.
 /// </summary>
 [Generator]
@@ -27,18 +27,12 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 var filePath = file.Path;
 
                 ct.ThrowIfCancellationRequested();
-                var (parser, parseErrors) = PlayscriptParserHelper.Parse(content);
-
-                ct.ThrowIfCancellationRequested();
-                var tree = parser.playscript();
-
-                ct.ThrowIfCancellationRequested();
-                var builder = new PlayscriptCodeBuilder(ct);
-                builder.Visit(tree);
+                var structureResults = PlayscriptStructureHelper.ParseStructureWithErrors(content);
 
                 var diagnostics = new List<Diagnostic>();
+                var blocks = new List<(string identifier, string name, ScriptBlock block, int line, int col)>();
 
-                foreach (var (line, col, msg, isLexer) in parseErrors)
+                foreach (var (line, col, msg, isLexer) in structureResults.errors)
                 {
                     ct.ThrowIfCancellationRequested();
                     var descriptor = isLexer
@@ -48,15 +42,34 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     diagnostics.Add(Diagnostic.Create(descriptor, location, msg));
                 }
 
-                foreach (var (identifier, name, dupLine, dupCol) in builder.DuplicateErrors)
+                foreach (var (identifier, name, rawContent, line, col) in structureResults.results)
                 {
                     ct.ThrowIfCancellationRequested();
-                    var location = MakeLocation(filePath, dupLine, dupCol);
-                    diagnostics.Add(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location, identifier,
-                        name));
+
+                    if (rawContent == null) continue;
+
+                    var (parser, contentErrors) = PlayscriptContentHelper.Parse(rawContent);
+
+                    foreach (var error in contentErrors)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var descriptor = error.IsLexer
+                            ? PlayscriptDiagnostics.UnexpectedToken
+                            : PlayscriptDiagnostics.MismatchedInput;
+                        var location = MakeLocation(filePath, error.Line, error.Col);
+                        diagnostics.Add(Diagnostic.Create(descriptor, location, error.Msg));
+                    }
+
+                    if (contentErrors.Count > 0) continue;
+
+                    ct.ThrowIfCancellationRequested();
+                    var builder = new PlayscriptCodeBuilder(ct);
+                    builder.BuildFromContent(parser.scriptContent());
+
+                    blocks.Add((identifier, name, builder.ContentResult, line, col));
                 }
 
-                return (builder.Result, filePath, diagnostics);
+                return (blocks, filePath, diagnostics);
             });
 
         var allFilesProvider = scptProvider.Collect();
@@ -71,43 +84,49 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 hasErrors = diag.Severity == DiagnosticSeverity.Error;
             }
 
-            var merged = new PlayscriptResult();
+            var mergedScripts = new Dictionary<string, ScriptBlock>();
+            var mergedTexts = new Dictionary<string, ScriptBlock>();
+            var scriptLocations = new Dictionary<string, (string filePath, int line, int col)>();
+            var textLocations = new Dictionary<string, (string filePath, int line, int col)>();
+
             foreach (var result in allResults)
             {
                 spc.CancellationToken.ThrowIfCancellationRequested();
-                foreach (var kvp in result.Result.Scripts)
+
+                foreach (var (identifier, name, block, line, col) in result.blocks)
                 {
-                    if (merged.Scripts.ContainsKey(kvp.Key))
+                    if (identifier == "script")
                     {
-                        // Report cross-file duplicate: point to this file's declaration of the name
-                        var (dupLine, dupCol) = result.Result.ScriptLocations[kvp.Key];
-                        var location = MakeLocation(result.filePath, dupLine, dupCol);
-                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
-                            "script", kvp.Key));
-                        hasErrors = true;
+                        if (mergedScripts.ContainsKey(name))
+                        {
+                            var loc = scriptLocations[name];
+                            var location = MakeLocation(loc.filePath, loc.line, loc.col);
+                            spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                                "script", name));
+                            hasErrors = true;
+                        }
+                        else
+                        {
+                            scriptLocations[name] = (result.filePath, line, col);
+                        }
+                        mergedScripts[name] = block;
                     }
-                    else
-                        // First occurrence — store its location for future duplicate reporting
-                        merged.ScriptLocations[kvp.Key] = result.Result.ScriptLocations[kvp.Key];
-
-                    // Always assign so the loop can continue processing all entries
-                    merged.Scripts[kvp.Key] = kvp.Value;
-                }
-
-                foreach (var kvp in result.Result.Texts)
-                {
-                    if (merged.Texts.ContainsKey(kvp.Key))
+                    else if (identifier == "text")
                     {
-                        var (dupLine, dupCol) = result.Result.TextLocations[kvp.Key];
-                        var location = MakeLocation(result.filePath, dupLine, dupCol);
-                        spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
-                            "text", kvp.Key));
-                        hasErrors = true;
+                        if (mergedTexts.ContainsKey(name))
+                        {
+                            var loc = textLocations[name];
+                            var location = MakeLocation(loc.filePath, loc.line, loc.col);
+                            spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                                "text", name));
+                            hasErrors = true;
+                        }
+                        else
+                        {
+                            textLocations[name] = (result.filePath, line, col);
+                        }
+                        mergedTexts[name] = block;
                     }
-                    else
-                        merged.TextLocations[kvp.Key] = result.Result.TextLocations[kvp.Key];
-
-                    merged.Texts[kvp.Key] = kvp.Value;
                 }
             }
 
@@ -115,7 +134,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 return;
 
             spc.CancellationToken.ThrowIfCancellationRequested();
-            var code = GenerateRegistryClass(merged);
+            var code = GenerateRegistryClass(mergedScripts, mergedTexts);
 
             spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
@@ -142,7 +161,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static string GenerateRegistryClass(PlayscriptResult result)
+    private static string GenerateRegistryClass(Dictionary<string, ScriptBlock> scripts, Dictionary<string, ScriptBlock> texts)
     {
         using var writer = new StringWriter();
         var indented = new IndentedTextWriter(writer);
@@ -156,7 +175,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         indented.WriteLine("{");
         indented.Indent++;
 
-        var sortedScripts = result.Scripts.OrderBy(kvp => kvp.Key, System.StringComparer.Ordinal);
+        var sortedScripts = scripts.OrderBy(kvp => kvp.Key, System.StringComparer.Ordinal);
         foreach (var kvp in sortedScripts)
         {
             var propName = ToScreamingSnakeCase(kvp.Key);
@@ -165,7 +184,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             indented.WriteLine();
         }
 
-        var sortedTexts = result.Texts.OrderBy(kvp => kvp.Key, System.StringComparer.Ordinal);
+        var sortedTexts = texts.OrderBy(kvp => kvp.Key, System.StringComparer.Ordinal);
         foreach (var kvp in sortedTexts)
         {
             var propName = ToScreamingSnakeCase(kvp.Key);

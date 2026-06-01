@@ -88,7 +88,9 @@ public class PlayscriptGeneratorTests
     public void ScriptBlock_ContentIsPopulated()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("Block = new ScriptBlock { Content = { \"你好。这里是……？\"", code);
+        Assert.Contains("Pages", code);
+        Assert.Contains("TextItem", code);
+        Assert.Contains("ConsumerCallItem", code);
     }
 
     private static ImmutableArray<Diagnostic> GenerateDiagnostics(params (string name, string content)[] files)

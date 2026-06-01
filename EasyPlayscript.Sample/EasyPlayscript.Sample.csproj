@@ -1,18 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <RootNamespace>EasyPlayscript.Sample</RootNamespace>
     </PropertyGroup>
-
     <ItemGroup>
+        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj"/>
         <ProjectReference Include="..\EasyPlayscript\EasyPlayscript.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
         <ProjectReference Include="..\EasyPlayscript\EasyPlayscript.csproj"/>
     </ItemGroup>
-
     <ItemGroup>
         <None Remove="DDD.UbiquitousLanguageRegistry.txt"/>
     </ItemGroup>
-
 </Project>

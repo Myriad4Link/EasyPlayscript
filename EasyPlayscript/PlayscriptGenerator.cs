@@ -73,9 +73,12 @@ public class PlayscriptGenerator : IIncrementalGenerator
             });
 
         var allFilesProvider = scptProvider.Collect();
+        var combinedProvider = context.AnalyzerConfigOptionsProvider.Combine(allFilesProvider);
 
-        context.RegisterSourceOutput(allFilesProvider, static (spc, allResults) =>
+        context.RegisterSourceOutput(combinedProvider, static (spc, combined) =>
         {
+            var (configOptions, allResults) = combined;
+
             var hasErrors = false;
             foreach (var diag in allResults.SelectMany(result => result.diagnostics))
             {
@@ -134,7 +137,14 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 return;
 
             spc.CancellationToken.ThrowIfCancellationRequested();
-            var code = GenerateRegistryClass(mergedScripts, mergedTexts);
+
+            configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptOutputPath", out var outputPath);
+            configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptAesKey", out var aesKey);
+
+            outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
+            aesKey = string.IsNullOrEmpty(aesKey) ? "dev-key-change-me" : aesKey;
+
+            var code = GenerateRegistryClass(mergedScripts, mergedTexts, outputPath!, aesKey!);
 
             spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
@@ -161,7 +171,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static string GenerateRegistryClass(Dictionary<string, ScriptBlock> scripts, Dictionary<string, ScriptBlock> texts)
+    private static string GenerateRegistryClass(Dictionary<string, ScriptBlock> scripts, Dictionary<string, ScriptBlock> texts, string outputPath, string aesKey)
     {
         using var writer = new StringWriter();
         var indented = new IndentedTextWriter(writer);
@@ -175,22 +185,29 @@ public class PlayscriptGenerator : IIncrementalGenerator
         indented.WriteLine("{");
         indented.Indent++;
 
+        indented.WriteLine($"private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts =");
+        indented.Indent++;
+        indented.WriteLine($"new(() => PlayscriptLoader.LoadScripts(\"{outputPath}\", \"{aesKey}\"));");
+        indented.Indent--;
+        indented.WriteLine();
+        indented.WriteLine($"private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _texts =");
+        indented.Indent++;
+        indented.WriteLine($"new(() => PlayscriptLoader.LoadTexts(\"{outputPath}\", \"{aesKey}\"));");
+        indented.Indent--;
+        indented.WriteLine();
+
         var sortedScripts = scripts.OrderBy(kvp => kvp.Key, System.StringComparer.Ordinal);
         foreach (var kvp in sortedScripts)
         {
             var propName = ToScreamingSnakeCase(kvp.Key);
-            indented.Write($"public static Script {propName} {{ get; }} = ");
-            WriteScriptInitializer(indented, "Script", kvp.Value);
-            indented.WriteLine();
+            indented.WriteLine($"public static Script {propName} => new Script {{ Block = _scripts.Value[\"{kvp.Key}\"] }};");
         }
 
         var sortedTexts = texts.OrderBy(kvp => kvp.Key, System.StringComparer.Ordinal);
         foreach (var kvp in sortedTexts)
         {
             var propName = ToScreamingSnakeCase(kvp.Key);
-            indented.Write($"public static Text {propName} {{ get; }} = ");
-            WriteScriptInitializer(indented, "Text", kvp.Value);
-            indented.WriteLine();
+            indented.WriteLine($"public static Text {propName} => new Text {{ Block = _texts.Value[\"{kvp.Key}\"] }};");
         }
 
         indented.Indent--;
@@ -198,47 +215,5 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
         indented.Flush();
         return writer.ToString();
-    }
-
-    private static void WriteScriptInitializer(IndentedTextWriter indented, string typeName, ScriptBlock block)
-    {
-        indented.WriteLine($"new {typeName}");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.Write("Block = new ScriptBlock { Pages = { ");
-        for (int i = 0; i < block.Pages.Count; i++)
-        {
-            if (i > 0) indented.Write(", ");
-            indented.Write($"new Page {{ Paragraphs = {{ ");
-            for (int j = 0; j < block.Pages[i].Paragraphs.Count; j++)
-            {
-                if (j > 0) indented.Write(", ");
-                indented.Write($"new Paragraph {{ Lines = {{ ");
-                for (int k = 0; k < block.Pages[i].Paragraphs[j].Lines.Count; k++)
-                {
-                    if (k > 0) indented.Write(", ");
-                    indented.Write($"new Line {{ Items = {{ ");
-                    for (int l = 0; l < block.Pages[i].Paragraphs[j].Lines[k].Items.Count; l++)
-                    {
-                        if (l > 0) indented.Write(", ");
-                        var item = block.Pages[i].Paragraphs[j].Lines[k].Items[l];
-                        if (item is TextItem textItem)
-                        {
-                            indented.Write($"new TextItem {{ Text = \"{textItem.Text}\" }}");
-                        }
-                        else if (item is ConsumerCallItem callItem)
-                        {
-                            indented.Write($"new ConsumerCallItem {{ Identifier = \"{callItem.Identifier}\", Argument = \"{callItem.Argument}\" }}");
-                        }
-                    }
-                    indented.Write(" } }");
-                }
-                indented.Write(" } }");
-            }
-            indented.Write(" } }");
-        }
-        indented.WriteLine(" } }");
-        indented.Indent--;
-        indented.WriteLine("}");
     }
 }

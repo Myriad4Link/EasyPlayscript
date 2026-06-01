@@ -4,6 +4,7 @@ using System.Linq;
 using EasyPlayscript.Tests.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
 namespace EasyPlayscript.Tests;
@@ -29,10 +30,19 @@ public class PlayscriptGeneratorTests
         ]
         """;
 
+    private const string TestOutputPath = "test-scripts.bin";
+    private const string TestAesKey = "test-key-1234567";
+
     private static string GenerateCode(params (string name, string content)[] files)
     {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ("build_property.PlayscriptOutputPath", TestOutputPath),
+            ("build_property.PlayscriptAesKey", TestAesKey));
+
         var generator = new PlayscriptGenerator();
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            new[] { generator.AsSourceGenerator() },
+            optionsProvider: optionsProvider);
 
         var additionalFiles = files
             .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
@@ -88,15 +98,57 @@ public class PlayscriptGeneratorTests
     public void ScriptBlock_ContentIsPopulated()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("Pages", code);
-        Assert.Contains("TextItem", code);
-        Assert.Contains("ConsumerCallItem", code);
+        Assert.Contains("PlayscriptLoader", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_ReferencesPlayscriptLoader()
+    {
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains("PlayscriptLoader", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_HasLazyLoaders()
+    {
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains("Lazy<", code);
+        Assert.Contains("LoadScripts", code);
+        Assert.Contains("LoadTexts", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_HasLazyDeclarations()
+    {
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains("_scripts", code);
+        Assert.Contains("_texts", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_EmbedsOutputPath()
+    {
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains(TestOutputPath, code);
+    }
+
+    [Fact]
+    public void GeneratedCode_EmbedsAesKey()
+    {
+        var code = GenerateCode(("Example", ScriptBlockExample));
+        Assert.Contains(TestAesKey, code);
     }
 
     private static ImmutableArray<Diagnostic> GenerateDiagnostics(params (string name, string content)[] files)
     {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ("build_property.PlayscriptOutputPath", TestOutputPath),
+            ("build_property.PlayscriptAesKey", TestAesKey));
+
         var generator = new PlayscriptGenerator();
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            new[] { generator.AsSourceGenerator() },
+            optionsProvider: optionsProvider);
 
         var additionalFiles = files
             .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))

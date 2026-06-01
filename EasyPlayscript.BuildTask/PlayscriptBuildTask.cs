@@ -33,7 +33,10 @@ public class PlayscriptBuildTask : Task
             {
                 if (rawContent == null) continue;
 
-                var (parser, contentErrors) = PlayscriptContentHelper.Parse(rawContent);
+                var trimmedContent = rawContent.Trim('\r', '\n');
+                var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
+                var tree = parser.scriptContent();
+
                 if (contentErrors.Count > 0)
                 {
                     foreach (var error in contentErrors)
@@ -42,7 +45,6 @@ public class PlayscriptBuildTask : Task
                     continue;
                 }
 
-                var tree = parser.scriptContent();
                 if (tree == null) continue;
 
                 var builder = new PlayscriptCodeBuilder();

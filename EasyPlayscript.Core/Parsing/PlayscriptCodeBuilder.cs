@@ -8,7 +8,8 @@ namespace EasyPlayscript.Parsing;
 /// ANTLR visitor that walks the Pass 2 content AST and builds a <see cref="ScriptBlock"/>
 /// with proper page/paragraph/line structure.
 /// </summary>
-public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default) : PlayscriptContentParserBaseVisitor<string>
+public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default)
+    : PlayscriptContentParserBaseVisitor<string>
 {
     public ScriptBlock ContentResult { get; private set; }
 
@@ -51,21 +52,23 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     {
                         foreach (var child in children)
                         {
-                            if (child is PlayscriptContentParser.ConsumerCallContext callCtx)
+                            switch (child)
                             {
-                                var identifier = callCtx.IDENTIFIER();
-                                var stringLit = callCtx.STRING_LITERAL();
-                                if (identifier != null && stringLit != null)
+                                case PlayscriptContentParser.ConsumerCallContext callCtx:
                                 {
-                                    var callIdentifier = identifier.GetText();
-                                    var callArg = stringLit.GetText().Trim('"');
-                                    line.Items.Add(new ConsumerCallItem(callIdentifier, callArg));
+                                    var identifier = callCtx.IDENTIFIER();
+                                    var stringLit = callCtx.STRING_LITERAL();
+                                    if (identifier != null && stringLit != null)
+                                    {
+                                        var callIdentifier = identifier.GetText();
+                                        var callArg = stringLit.GetText().Trim('"');
+                                        line.Items.Add(new ConsumerCallItem(callIdentifier, callArg));
+                                    }
+                                    break;
                                 }
-                            }
-                            else if (child is ITerminalNode terminal
-                                     && terminal.Symbol?.Type == PlayscriptContentLexer.TEXT)
-                            {
-                                line.Items.Add(new TextItem(terminal.GetText()));
+                                case ITerminalNode { Symbol.Type: PlayscriptContentLexer.TEXT } terminal:
+                                    line.Items.Add(new TextItem(terminal.GetText()));
+                                    break;
                             }
                         }
                     }
@@ -78,7 +81,6 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
 
             block.Pages.Add(page);
         }
-
         ContentResult = block;
     }
 }

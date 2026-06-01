@@ -10,15 +10,13 @@ namespace EasyPlayscript.Parsing;
 /// </summary>
 public static class PlayscriptStructureHelper
 {
-    public static List<(string identifier, string name, string rawContent, int line, int col)>
-        ParseStructure(string content)
+    public static List<StructureResult> ParseStructure(string content)
     {
         var (results, _) = ParseStructureWithErrors(content);
         return results;
     }
 
-    public static (List<(string identifier, string name, string rawContent, int line, int col)> results,
-                    List<PlayscriptError> errors)
+    public static (List<StructureResult> results, List<PlayscriptError> errors)
         ParseStructureWithErrors(string content)
     {
         var inputStream = new AntlrInputStream(content);
@@ -41,7 +39,7 @@ public static class PlayscriptStructureHelper
 
     private class StructureVisitor : PlayscriptStructureParserBaseVisitor<string>
     {
-        public List<(string identifier, string name, string rawContent, int line, int col)> Results { get; } = new();
+        public List<StructureResult> Results { get; } = [];
 
         public override string VisitStatement(PlayscriptStructureParser.StatementContext context)
         {
@@ -53,37 +51,22 @@ public static class PlayscriptStructureHelper
             var col = stringLiteral.Column;
 
             string rawContent = null;
-            if (context.scriptBlock() != null)
-            {
-                rawContent = context.scriptBlock().RAW_CONTENT().GetText();
-            }
+            if (context.scriptBlock() != null) rawContent = context.scriptBlock().RAW_CONTENT().GetText();
 
-            Results.Add((identifier, cleanArg, rawContent, line, col));
+            Results.Add(new StructureResult(identifier, cleanArg, rawContent, line, col));
             return string.Empty;
         }
     }
 
-    private class CollectingErrorListener : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
+    private class CollectingErrorListener(List<PlayscriptError> errors, bool isLexer)
+        : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
-        private readonly List<PlayscriptError> _errors;
-        private readonly bool _isLexer;
-
-        public CollectingErrorListener(List<PlayscriptError> errors, bool isLexer)
-        {
-            _errors = errors;
-            _isLexer = isLexer;
-        }
-
         public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e)
-        {
-            _errors.Add(new PlayscriptError(line, charPositionInLine, msg, _isLexer));
-        }
+            int line, int charPositionInLine, string msg, RecognitionException e) =>
+            errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
 
         public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e)
-        {
-            _errors.Add(new PlayscriptError(line, charPositionInLine, msg, _isLexer));
-        }
+            int line, int charPositionInLine, string msg, RecognitionException e) =>
+            errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
     }
 }

@@ -45,10 +45,11 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 foreach (var (identifier, name, rawContent, line, col) in structureResults.results)
                 {
                     ct.ThrowIfCancellationRequested();
-
                     if (rawContent == null) continue;
 
-                    var (parser, contentErrors) = PlayscriptContentHelper.Parse(rawContent);
+                    var trimmedContent = rawContent.Trim('\r', '\n');
+                    var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
+                    var tree = parser.scriptContent();
 
                     foreach (var error in contentErrors)
                     {
@@ -64,7 +65,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
                     ct.ThrowIfCancellationRequested();
                     var builder = new PlayscriptCodeBuilder(ct);
-                    builder.BuildFromContent(parser.scriptContent());
+                    builder.BuildFromContent(tree);
 
                     blocks.Add((identifier, name, builder.ContentResult, line, col));
                 }
@@ -98,37 +99,40 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
                 foreach (var (identifier, name, block, line, col) in result.blocks)
                 {
-                    if (identifier == "script")
+                    switch (identifier)
                     {
-                        if (mergedScripts.ContainsKey(name))
+                        case "script":
                         {
-                            var loc = scriptLocations[name];
-                            var location = MakeLocation(loc.filePath, loc.line, loc.col);
-                            spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
-                                "script", name));
-                            hasErrors = true;
+                            if (mergedScripts.ContainsKey(name))
+                            {
+                                var loc = scriptLocations[name];
+                                var location = MakeLocation(loc.filePath, loc.line, loc.col);
+                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                                    "script", name));
+                                hasErrors = true;
+                            }
+                            else
+                                scriptLocations[name] = (result.filePath, line, col);
+
+                            mergedScripts[name] = block;
+                            break;
                         }
-                        else
+                        case "text":
                         {
-                            scriptLocations[name] = (result.filePath, line, col);
+                            if (mergedTexts.ContainsKey(name))
+                            {
+                                var loc = textLocations[name];
+                                var location = MakeLocation(loc.filePath, loc.line, loc.col);
+                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                                    "text", name));
+                                hasErrors = true;
+                            }
+                            else
+                                textLocations[name] = (result.filePath, line, col);
+
+                            mergedTexts[name] = block;
+                            break;
                         }
-                        mergedScripts[name] = block;
-                    }
-                    else if (identifier == "text")
-                    {
-                        if (mergedTexts.ContainsKey(name))
-                        {
-                            var loc = textLocations[name];
-                            var location = MakeLocation(loc.filePath, loc.line, loc.col);
-                            spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
-                                "text", name));
-                            hasErrors = true;
-                        }
-                        else
-                        {
-                            textLocations[name] = (result.filePath, line, col);
-                        }
-                        mergedTexts[name] = block;
                     }
                 }
             }

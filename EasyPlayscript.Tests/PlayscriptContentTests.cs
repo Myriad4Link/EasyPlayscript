@@ -127,7 +127,7 @@ public class PlayscriptContentTests
     [Fact]
     public void MultiplePages_WithParagraphs()
     {
-        var input = "p1l1\np1l2\n\np2l1\n/\np3l1";
+        const string input = "p1l1\np1l2\n\np2l1\n/\np3l1";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -199,6 +199,15 @@ public class PlayscriptContentTests
         Assert.IsType<ConsumerCallItem>(items[0]);
         Assert.Equal("transition", ((ConsumerCallItem)items[0]).Identifier);
         Assert.Equal("fade_out", ((ConsumerCallItem)items[0]).Argument);
+    }
+
+    [Fact]
+    public void Builder_NullContext_ProducesEmptyScriptBlock()
+    {
+        var builder = new PlayscriptCodeBuilder();
+        builder.BuildFromContent(null);
+        Assert.NotNull(builder.ContentResult);
+        Assert.Empty(builder.ContentResult.Pages);
     }
 
     [Fact]

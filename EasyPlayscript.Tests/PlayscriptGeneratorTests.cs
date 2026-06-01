@@ -4,7 +4,6 @@ using System.Linq;
 using EasyPlayscript.Tests.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
 namespace EasyPlayscript.Tests;
@@ -41,7 +40,7 @@ public class PlayscriptGeneratorTests
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            new[] { generator.AsSourceGenerator() },
+            [generator.AsSourceGenerator()],
             optionsProvider: optionsProvider);
 
         var additionalFiles = files
@@ -147,7 +146,7 @@ public class PlayscriptGeneratorTests
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            new[] { generator.AsSourceGenerator() },
+            [generator.AsSourceGenerator()],
             optionsProvider: optionsProvider);
 
         var additionalFiles = files
@@ -212,16 +211,16 @@ public class PlayscriptGeneratorTests
     [Fact]
     public void DuplicateTextName_CrossFile_ReportsSCPT004()
     {
-        var fileA = """
-            .text("shared")[
-            From file A
-            ]
-            """;
-        var fileB = """
-            .text("shared")[
-            From file B
-            ]
-            """;
+        const string fileA = """
+                             .text("shared")[
+                             From file A
+                             ]
+                             """;
+        const string fileB = """
+                             .text("shared")[
+                             From file B
+                             ]
+                             """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
         Assert.Contains(diagnostics, d => d.Id == "SCPT004");
     }
@@ -241,5 +240,17 @@ public class PlayscriptGeneratorTests
             """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT004");
+    }
+
+    [Fact]
+    public void InvalidContent_ReportsDiagnostic()
+    {
+        const string content = """
+                               .script("test")[
+                               @invalid(unclosed
+                               ]
+                               """;
+        var diagnostics = GenerateDiagnostics(("bad", content));
+        Assert.Contains(diagnostics, d => d.Id is "SCPT002" or "SCPT003");
     }
 }

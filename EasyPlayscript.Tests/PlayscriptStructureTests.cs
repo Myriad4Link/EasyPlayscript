@@ -9,7 +9,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void ScriptWithBlock_ExtractsRawContent()
     {
-        const string input = ".script(\"test\")[Hello world]";
+        const string input = "script test[Hello world]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
         Assert.Single(result);
         Assert.Equal("test", result[0].Name);
@@ -20,7 +20,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void TextWithBlock_ExtractsRawContent()
     {
-        var input = ".text(\"intro\")[Welcome]";
+        var input = "text intro[Welcome]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
         Assert.Single(result);
         Assert.Equal("text", result[0].Identifier);
@@ -28,18 +28,9 @@ public class PlayscriptStructureTests
     }
 
     [Fact]
-    public void StandaloneCompilerCall_NoBlock()
-    {
-        var input = ".script(\"empty\")";
-        var result = PlayscriptStructureHelper.ParseStructure(input);
-        Assert.Single(result);
-        Assert.Null(result[0].RawContent);
-    }
-
-    [Fact]
     public void MultipleStatements_ExtractsAll()
     {
-        var input = ".script(\"a\")[Hello] .text(\"b\")[World]";
+        var input = "script a[Hello] text b[World]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
         Assert.Equal(2, result.Count);
     }
@@ -47,7 +38,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void BlockContentPreservesNewlines()
     {
-        const string input = ".script(\"test\")[\nline 1\nline 2\n]";
+        const string input = "script test[\nline 1\nline 2\n]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
         Assert.Contains("line 1", result[0].RawContent);
         Assert.Contains("line 2", result[0].RawContent);
@@ -56,7 +47,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void MalformedInput_ReportsErrors()
     {
-        const string input = ".script(\"test\"][Hello]";
+        const string input = "script test]Hello]";
         var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(input);
         Assert.NotEmpty(errors);
     }
@@ -81,7 +72,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_NoNewlines()
     {
-        var block = ParseEndToEnd(".script(\"t\")[Hello]");
+        var block = ParseEndToEnd("script t[Hello]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
@@ -92,7 +83,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_LeadingNewline()
     {
-        var block = ParseEndToEnd(".script(\"t\")[\nHello]");
+        var block = ParseEndToEnd("script t[\nHello]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
@@ -102,7 +93,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_LeadingTwoNewlines()
     {
-        var block = ParseEndToEnd(".script(\"t\")[\n\nHello]");
+        var block = ParseEndToEnd("script t[\n\nHello]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
@@ -112,7 +103,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_TrailingNewline()
     {
-        var block = ParseEndToEnd(".script(\"t\")[Hello\n]");
+        var block = ParseEndToEnd("script t[Hello\n]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
@@ -122,7 +113,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_TrailingTwoNewlines()
     {
-        var block = ParseEndToEnd(".script(\"t\")[Hello\n\n]");
+        var block = ParseEndToEnd("script t[Hello\n\n]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
@@ -132,7 +123,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_BothSidesNewlines()
     {
-        var block = ParseEndToEnd(".script(\"t\")[\nHello\n]");
+        var block = ParseEndToEnd("script t[\nHello\n]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
@@ -142,7 +133,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_OnlyNewlines()
     {
-        var block = ParseEndToEnd(".script(\"t\")[\n\n\n]");
+        var block = ParseEndToEnd("script t[\n\n\n]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
@@ -152,7 +143,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_TwoLines()
     {
-        var block = ParseEndToEnd(".script(\"t\")[line 1\nline 2]");
+        var block = ParseEndToEnd("script t[line 1\nline 2]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Equal(2, block.Pages[0].Paragraphs[0].Lines.Count);
@@ -163,7 +154,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_TwoParagraphs()
     {
-        var block = ParseEndToEnd(".script(\"t\")[para 1\n\npara 2]");
+        var block = ParseEndToEnd("script t[para 1\n\npara 2]");
         Assert.Single(block.Pages);
         Assert.Equal(2, block.Pages[0].Paragraphs.Count);
         Assert.Equal("para 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
@@ -173,7 +164,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_PageBreak()
     {
-        var block = ParseEndToEnd(".script(\"t\")[p1\n/\np2]");
+        var block = ParseEndToEnd("script t[p1\n/\np2]");
         Assert.Equal(2, block.Pages.Count);
         Assert.Equal("p1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
         Assert.Equal("p2", ((TextItem)block.Pages[1].Paragraphs[0].Lines[0].Items[0]).Text);
@@ -182,7 +173,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_LeadingNewlineThenStructure()
     {
-        var block = ParseEndToEnd(".script(\"t\")[\nline 1\nline 2]");
+        var block = ParseEndToEnd("script t[\nline 1\nline 2]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Equal(2, block.Pages[0].Paragraphs[0].Lines.Count);
@@ -193,7 +184,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_TrailingNewlineAfterStructure()
     {
-        var block = ParseEndToEnd(".script(\"t\")[line 1\nline 2\n]");
+        var block = ParseEndToEnd("script t[line 1\nline 2\n]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Equal(2, block.Pages[0].Paragraphs[0].Lines.Count);
@@ -204,7 +195,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_LeadingTrailingWithPageBreak()
     {
-        var block = ParseEndToEnd(".script(\"t\")[\np1\n/\np2\n]");
+        var block = ParseEndToEnd("script t[\np1\n/\np2\n]");
         Assert.Equal(2, block.Pages.Count);
         Assert.Equal("p1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
         Assert.Equal("p2", ((TextItem)block.Pages[1].Paragraphs[0].Lines[0].Items[0]).Text);
@@ -213,7 +204,7 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_TextBlock()
     {
-        var block = ParseEndToEnd(".text(\"intro\")[Welcome]");
+        var block = ParseEndToEnd("text intro[Welcome]");
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);

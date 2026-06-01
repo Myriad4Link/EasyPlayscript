@@ -29,5 +29,12 @@ pageBreak
     ;
 
 consumerCall
-    : AT IDENTIFIER LPAREN STRING_LITERAL RPAREN
+    : AT IDENTIFIER LPAREN (argument (COMMA argument)*)? RPAREN
+    ;
+
+argument
+    : STRING_LITERAL
+    | INTEGER_LITERAL
+    | FLOAT_LITERAL
+    | BOOLEAN_LITERAL
     ;

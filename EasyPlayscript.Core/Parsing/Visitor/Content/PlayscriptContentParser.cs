@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from EasyPlayscript/EasyPlayscript/core/playscript/definition/PlayscriptContentParser.g4 by ANTLR 4.13.2
+// Generated from EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptContentParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -37,22 +37,26 @@ public partial class PlayscriptContentParser : Parser {
 	protected static DFA[] decisionToDFA;
 	protected static PredictionContextCache sharedContextCache = new PredictionContextCache();
 	public const int
-		AT=1, COMMENT=2, LPAREN=3, RPAREN=4, STRING_LITERAL=5, IDENTIFIER=6, BLANK_LINE=7, 
-		SINGLE_NEWLINE=8, SLASH=9, TEXT=10, C_WS=11, C_LPAREN=12, C_RPAREN=13;
+		AT=1, COMMENT=2, LPAREN=3, RPAREN=4, STRING_LITERAL=5, IDENTIFIER=6, COMMA=7, 
+		INTEGER_LITERAL=8, FLOAT_LITERAL=9, BOOLEAN_LITERAL=10, BLANK_LINE=11, 
+		SINGLE_NEWLINE=12, SLASH=13, TEXT=14, C_WS=15, C_LPAREN=16, C_RPAREN=17, 
+		C_COMMA=18;
 	public const int
 		RULE_scriptContent = 0, RULE_page = 1, RULE_paragraph = 2, RULE_line = 3, 
-		RULE_pageBreak = 4, RULE_consumerCall = 5;
+		RULE_pageBreak = 4, RULE_consumerCall = 5, RULE_argument = 6;
 	public static readonly string[] ruleNames = {
-		"scriptContent", "page", "paragraph", "line", "pageBreak", "consumerCall"
+		"scriptContent", "page", "paragraph", "line", "pageBreak", "consumerCall", 
+		"argument"
 	};
 
 	private static readonly string[] _LiteralNames = {
-		null, null, null, null, null, null, null, null, null, "'/'", null, null, 
-		"'('", "')'"
+		null, null, null, null, null, null, null, null, null, null, null, null, 
+		null, "'/'", null, null, "'('", "')'", "','"
 	};
 	private static readonly string[] _SymbolicNames = {
 		null, "AT", "COMMENT", "LPAREN", "RPAREN", "STRING_LITERAL", "IDENTIFIER", 
-		"BLANK_LINE", "SINGLE_NEWLINE", "SLASH", "TEXT", "C_WS", "C_LPAREN", "C_RPAREN"
+		"COMMA", "INTEGER_LITERAL", "FLOAT_LITERAL", "BOOLEAN_LITERAL", "BLANK_LINE", 
+		"SINGLE_NEWLINE", "SLASH", "TEXT", "C_WS", "C_LPAREN", "C_RPAREN", "C_COMMA"
 	};
 	public static readonly IVocabulary DefaultVocabulary = new Vocabulary(_LiteralNames, _SymbolicNames);
 
@@ -121,25 +125,25 @@ public partial class PlayscriptContentParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 12;
+			State = 14;
 			page();
-			State = 18;
+			State = 20;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 896L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 14336L) != 0)) {
 				{
 				{
-				State = 13;
+				State = 15;
 				pageBreak();
-				State = 14;
+				State = 16;
 				page();
 				}
 				}
-				State = 20;
+				State = 22;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			}
-			State = 21;
+			State = 23;
 			Match(Eof);
 			}
 		}
@@ -186,23 +190,23 @@ public partial class PlayscriptContentParser : Parser {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 23;
+			State = 25;
 			paragraph();
-			State = 28;
+			State = 30;
 			ErrorHandler.Sync(this);
 			_alt = Interpreter.AdaptivePredict(TokenStream,1,Context);
 			while ( _alt!=2 && _alt!=global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER ) {
 				if ( _alt==1 ) {
 					{
 					{
-					State = 24;
+					State = 26;
 					Match(BLANK_LINE);
-					State = 25;
+					State = 27;
 					paragraph();
 					}
 					} 
 				}
-				State = 30;
+				State = 32;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,1,Context);
 			}
@@ -251,23 +255,23 @@ public partial class PlayscriptContentParser : Parser {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 31;
+			State = 33;
 			line();
-			State = 36;
+			State = 38;
 			ErrorHandler.Sync(this);
 			_alt = Interpreter.AdaptivePredict(TokenStream,2,Context);
 			while ( _alt!=2 && _alt!=global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER ) {
 				if ( _alt==1 ) {
 					{
 					{
-					State = 32;
+					State = 34;
 					Match(SINGLE_NEWLINE);
-					State = 33;
+					State = 35;
 					line();
 					}
 					} 
 				}
-				State = 38;
+				State = 40;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,2,Context);
 			}
@@ -316,23 +320,23 @@ public partial class PlayscriptContentParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 41;
+			State = 43;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
 			do {
 				{
-				State = 41;
+				State = 43;
 				ErrorHandler.Sync(this);
 				switch (TokenStream.LA(1)) {
 				case TEXT:
 					{
-					State = 39;
+					State = 41;
 					Match(TEXT);
 					}
 					break;
 				case AT:
 					{
-					State = 40;
+					State = 42;
 					consumerCall();
 					}
 					break;
@@ -340,7 +344,7 @@ public partial class PlayscriptContentParser : Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				State = 43;
+				State = 45;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			} while ( _la==AT || _la==TEXT );
@@ -388,13 +392,13 @@ public partial class PlayscriptContentParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 48;
+			State = 50;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
 			while (_la==BLANK_LINE || _la==SINGLE_NEWLINE) {
 				{
 				{
-				State = 45;
+				State = 47;
 				_la = TokenStream.LA(1);
 				if ( !(_la==BLANK_LINE || _la==SINGLE_NEWLINE) ) {
 				ErrorHandler.RecoverInline(this);
@@ -405,19 +409,19 @@ public partial class PlayscriptContentParser : Parser {
 				}
 				}
 				}
-				State = 50;
+				State = 52;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			}
-			State = 51;
+			State = 53;
 			Match(SLASH);
-			State = 55;
+			State = 57;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
 			while (_la==BLANK_LINE || _la==SINGLE_NEWLINE) {
 				{
 				{
-				State = 52;
+				State = 54;
 				_la = TokenStream.LA(1);
 				if ( !(_la==BLANK_LINE || _la==SINGLE_NEWLINE) ) {
 				ErrorHandler.RecoverInline(this);
@@ -428,7 +432,7 @@ public partial class PlayscriptContentParser : Parser {
 				}
 				}
 				}
-				State = 57;
+				State = 59;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			}
@@ -449,8 +453,17 @@ public partial class PlayscriptContentParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode AT() { return GetToken(PlayscriptContentParser.AT, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(PlayscriptContentParser.IDENTIFIER, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LPAREN() { return GetToken(PlayscriptContentParser.LPAREN, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayscriptContentParser.STRING_LITERAL, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode RPAREN() { return GetToken(PlayscriptContentParser.RPAREN, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ArgumentContext[] argument() {
+			return GetRuleContexts<ArgumentContext>();
+		}
+		[System.Diagnostics.DebuggerNonUserCode] public ArgumentContext argument(int i) {
+			return GetRuleContext<ArgumentContext>(i);
+		}
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] COMMA() { return GetTokens(PlayscriptContentParser.COMMA); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode COMMA(int i) {
+			return GetToken(PlayscriptContentParser.COMMA, i);
+		}
 		public ConsumerCallContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
@@ -468,18 +481,43 @@ public partial class PlayscriptContentParser : Parser {
 	public ConsumerCallContext consumerCall() {
 		ConsumerCallContext _localctx = new ConsumerCallContext(Context, State);
 		EnterRule(_localctx, 10, RULE_consumerCall);
+		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 58;
-			Match(AT);
-			State = 59;
-			Match(IDENTIFIER);
 			State = 60;
-			Match(LPAREN);
+			Match(AT);
 			State = 61;
-			Match(STRING_LITERAL);
+			Match(IDENTIFIER);
 			State = 62;
+			Match(LPAREN);
+			State = 71;
+			ErrorHandler.Sync(this);
+			_la = TokenStream.LA(1);
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1824L) != 0)) {
+				{
+				State = 63;
+				argument();
+				State = 68;
+				ErrorHandler.Sync(this);
+				_la = TokenStream.LA(1);
+				while (_la==COMMA) {
+					{
+					{
+					State = 64;
+					Match(COMMA);
+					State = 65;
+					argument();
+					}
+					}
+					State = 70;
+					ErrorHandler.Sync(this);
+					_la = TokenStream.LA(1);
+				}
+				}
+			}
+
+			State = 73;
 			Match(RPAREN);
 			}
 		}
@@ -494,26 +532,78 @@ public partial class PlayscriptContentParser : Parser {
 		return _localctx;
 	}
 
+	public partial class ArgumentContext : ParserRuleContext {
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode STRING_LITERAL() { return GetToken(PlayscriptContentParser.STRING_LITERAL, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode INTEGER_LITERAL() { return GetToken(PlayscriptContentParser.INTEGER_LITERAL, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode FLOAT_LITERAL() { return GetToken(PlayscriptContentParser.FLOAT_LITERAL, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode BOOLEAN_LITERAL() { return GetToken(PlayscriptContentParser.BOOLEAN_LITERAL, 0); }
+		public ArgumentContext(ParserRuleContext parent, int invokingState)
+			: base(parent, invokingState)
+		{
+		}
+		public override int RuleIndex { get { return RULE_argument; } }
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
+			IPlayscriptContentParserVisitor<TResult> typedVisitor = visitor as IPlayscriptContentParserVisitor<TResult>;
+			if (typedVisitor != null) return typedVisitor.VisitArgument(this);
+			else return visitor.VisitChildren(this);
+		}
+	}
+
+	[RuleVersion(0)]
+	public ArgumentContext argument() {
+		ArgumentContext _localctx = new ArgumentContext(Context, State);
+		EnterRule(_localctx, 12, RULE_argument);
+		int _la;
+		try {
+			EnterOuterAlt(_localctx, 1);
+			{
+			State = 75;
+			_la = TokenStream.LA(1);
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 1824L) != 0)) ) {
+			ErrorHandler.RecoverInline(this);
+			}
+			else {
+				ErrorHandler.ReportMatch(this);
+			    Consume();
+			}
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			ErrorHandler.ReportError(this, re);
+			ErrorHandler.Recover(this, re);
+		}
+		finally {
+			ExitRule();
+		}
+		return _localctx;
+	}
+
 	private static int[] _serializedATN = {
-		4,1,13,65,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,1,0,1,0,
-		1,0,5,0,17,8,0,10,0,12,0,20,9,0,1,0,1,0,1,1,1,1,1,1,5,1,27,8,1,10,1,12,
-		1,30,9,1,1,2,1,2,1,2,5,2,35,8,2,10,2,12,2,38,9,2,1,3,1,3,4,3,42,8,3,11,
-		3,12,3,43,1,4,5,4,47,8,4,10,4,12,4,50,9,4,1,4,1,4,5,4,54,8,4,10,4,12,4,
-		57,9,4,1,5,1,5,1,5,1,5,1,5,1,5,1,5,0,0,6,0,2,4,6,8,10,0,1,1,0,7,8,65,0,
-		12,1,0,0,0,2,23,1,0,0,0,4,31,1,0,0,0,6,41,1,0,0,0,8,48,1,0,0,0,10,58,1,
-		0,0,0,12,18,3,2,1,0,13,14,3,8,4,0,14,15,3,2,1,0,15,17,1,0,0,0,16,13,1,
-		0,0,0,17,20,1,0,0,0,18,16,1,0,0,0,18,19,1,0,0,0,19,21,1,0,0,0,20,18,1,
-		0,0,0,21,22,5,0,0,1,22,1,1,0,0,0,23,28,3,4,2,0,24,25,5,7,0,0,25,27,3,4,
-		2,0,26,24,1,0,0,0,27,30,1,0,0,0,28,26,1,0,0,0,28,29,1,0,0,0,29,3,1,0,0,
-		0,30,28,1,0,0,0,31,36,3,6,3,0,32,33,5,8,0,0,33,35,3,6,3,0,34,32,1,0,0,
-		0,35,38,1,0,0,0,36,34,1,0,0,0,36,37,1,0,0,0,37,5,1,0,0,0,38,36,1,0,0,0,
-		39,42,5,10,0,0,40,42,3,10,5,0,41,39,1,0,0,0,41,40,1,0,0,0,42,43,1,0,0,
-		0,43,41,1,0,0,0,43,44,1,0,0,0,44,7,1,0,0,0,45,47,7,0,0,0,46,45,1,0,0,0,
-		47,50,1,0,0,0,48,46,1,0,0,0,48,49,1,0,0,0,49,51,1,0,0,0,50,48,1,0,0,0,
-		51,55,5,9,0,0,52,54,7,0,0,0,53,52,1,0,0,0,54,57,1,0,0,0,55,53,1,0,0,0,
-		55,56,1,0,0,0,56,9,1,0,0,0,57,55,1,0,0,0,58,59,5,1,0,0,59,60,5,6,0,0,60,
-		61,5,3,0,0,61,62,5,5,0,0,62,63,5,4,0,0,63,11,1,0,0,0,7,18,28,36,41,43,
-		48,55
+		4,1,18,78,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,1,0,
+		1,0,1,0,1,0,5,0,19,8,0,10,0,12,0,22,9,0,1,0,1,0,1,1,1,1,1,1,5,1,29,8,1,
+		10,1,12,1,32,9,1,1,2,1,2,1,2,5,2,37,8,2,10,2,12,2,40,9,2,1,3,1,3,4,3,44,
+		8,3,11,3,12,3,45,1,4,5,4,49,8,4,10,4,12,4,52,9,4,1,4,1,4,5,4,56,8,4,10,
+		4,12,4,59,9,4,1,5,1,5,1,5,1,5,1,5,1,5,5,5,67,8,5,10,5,12,5,70,9,5,3,5,
+		72,8,5,1,5,1,5,1,6,1,6,1,6,0,0,7,0,2,4,6,8,10,12,0,2,1,0,11,12,2,0,5,5,
+		8,10,79,0,14,1,0,0,0,2,25,1,0,0,0,4,33,1,0,0,0,6,43,1,0,0,0,8,50,1,0,0,
+		0,10,60,1,0,0,0,12,75,1,0,0,0,14,20,3,2,1,0,15,16,3,8,4,0,16,17,3,2,1,
+		0,17,19,1,0,0,0,18,15,1,0,0,0,19,22,1,0,0,0,20,18,1,0,0,0,20,21,1,0,0,
+		0,21,23,1,0,0,0,22,20,1,0,0,0,23,24,5,0,0,1,24,1,1,0,0,0,25,30,3,4,2,0,
+		26,27,5,11,0,0,27,29,3,4,2,0,28,26,1,0,0,0,29,32,1,0,0,0,30,28,1,0,0,0,
+		30,31,1,0,0,0,31,3,1,0,0,0,32,30,1,0,0,0,33,38,3,6,3,0,34,35,5,12,0,0,
+		35,37,3,6,3,0,36,34,1,0,0,0,37,40,1,0,0,0,38,36,1,0,0,0,38,39,1,0,0,0,
+		39,5,1,0,0,0,40,38,1,0,0,0,41,44,5,14,0,0,42,44,3,10,5,0,43,41,1,0,0,0,
+		43,42,1,0,0,0,44,45,1,0,0,0,45,43,1,0,0,0,45,46,1,0,0,0,46,7,1,0,0,0,47,
+		49,7,0,0,0,48,47,1,0,0,0,49,52,1,0,0,0,50,48,1,0,0,0,50,51,1,0,0,0,51,
+		53,1,0,0,0,52,50,1,0,0,0,53,57,5,13,0,0,54,56,7,0,0,0,55,54,1,0,0,0,56,
+		59,1,0,0,0,57,55,1,0,0,0,57,58,1,0,0,0,58,9,1,0,0,0,59,57,1,0,0,0,60,61,
+		5,1,0,0,61,62,5,6,0,0,62,71,5,3,0,0,63,68,3,12,6,0,64,65,5,7,0,0,65,67,
+		3,12,6,0,66,64,1,0,0,0,67,70,1,0,0,0,68,66,1,0,0,0,68,69,1,0,0,0,69,72,
+		1,0,0,0,70,68,1,0,0,0,71,63,1,0,0,0,71,72,1,0,0,0,72,73,1,0,0,0,73,74,
+		5,4,0,0,74,11,1,0,0,0,75,76,7,1,0,0,76,13,1,0,0,0,9,20,30,38,43,45,50,
+		57,68,71
 	};
 
 	public static readonly ATN _ATN =

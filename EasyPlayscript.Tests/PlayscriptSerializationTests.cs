@@ -36,7 +36,7 @@ public class PlayscriptSerializationTests
                                     Items = new List<LineItem>
                                     {
                                         new TextItem("Hello"),
-                                        new ConsumerCallItem("transition", "fade")
+                                        new ConsumerCallItem("transition", new List<ArgumentValue> { new StringArgument("fade") })
                                     }
                                 }
                             }
@@ -50,7 +50,9 @@ public class PlayscriptSerializationTests
         Assert.Single(deserialized.Pages);
         Assert.Equal("Hello", ((TextItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
         Assert.Equal("transition", ((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Identifier);
-        Assert.Equal("fade", ((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Argument);
+        Assert.Single(((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Arguments[0]);
+        Assert.Equal("fade", ((StringArgument)((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Arguments[0]).Value);
     }
 
     [Fact]
@@ -207,7 +209,7 @@ public class PlayscriptSerializationTests
                                             Items = new List<LineItem>
                                             {
                                                 new TextItem("Hello "),
-                                                new ConsumerCallItem("transition", "fade_out"),
+                                                new ConsumerCallItem("transition", new List<ArgumentValue> { new StringArgument("fade_out") }),
                                                 new TextItem(" world")
                                             }
                                         }
@@ -234,7 +236,9 @@ public class PlayscriptSerializationTests
         Assert.Equal(3, items.Count);
         Assert.Equal("Hello ", ((TextItem)items[0]).Text);
         Assert.Equal("transition", ((ConsumerCallItem)items[1]).Identifier);
-        Assert.Equal("fade_out", ((ConsumerCallItem)items[1]).Argument);
+        Assert.Single(((ConsumerCallItem)items[1]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)items[1]).Arguments[0]);
+        Assert.Equal("fade_out", ((StringArgument)((ConsumerCallItem)items[1]).Arguments[0]).Value);
         Assert.Equal(" world", ((TextItem)items[2]).Text);
     }
 }

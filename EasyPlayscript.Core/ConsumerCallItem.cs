@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using MessagePack;
 
 namespace EasyPlayscript;
@@ -9,13 +10,13 @@ public class ConsumerCallItem : LineItem
     public string Identifier { get; set; }
 
     [Key(1)]
-    public string Argument { get; set; }
+    public List<ArgumentValue> Arguments { get; set; } = new List<ArgumentValue>();
 
     public ConsumerCallItem() { }
 
-    public ConsumerCallItem(string identifier, string argument)
+    public ConsumerCallItem(string identifier, List<ArgumentValue> arguments)
     {
         Identifier = identifier;
-        Argument = argument;
+        Arguments = arguments ?? new List<ArgumentValue>();
     }
 }

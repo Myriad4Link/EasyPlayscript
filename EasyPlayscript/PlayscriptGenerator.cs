@@ -67,6 +67,18 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     var builder = new PlayscriptCodeBuilder(ct);
                     builder.BuildFromContent(tree);
 
+                    foreach (var error in builder.Errors)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var descriptor = error.IsLexer
+                            ? PlayscriptDiagnostics.UnexpectedToken
+                            : PlayscriptDiagnostics.MismatchedInput;
+                        var location = MakeLocation(filePath, error.Line, error.Col);
+                        diagnostics.Add(Diagnostic.Create(descriptor, location, error.Msg));
+                    }
+
+                    if (builder.Errors.Count > 0) continue;
+
                     blocks.Add((identifier, name, builder.ContentResult, line, col));
                 }
 
@@ -107,7 +119,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
                             {
                                 var loc = scriptLocations[name];
                                 var location = MakeLocation(loc.filePath, loc.line, loc.col);
-                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                                    location,
                                     "script", name));
                                 hasErrors = true;
                             }
@@ -123,7 +136,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
                             {
                                 var loc = textLocations[name];
                                 var location = MakeLocation(loc.filePath, loc.line, loc.col);
-                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName, location,
+                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                                    location,
                                     "text", name));
                                 hasErrors = true;
                             }
@@ -175,7 +189,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static string GenerateRegistryClass(Dictionary<string, ScriptBlock> scripts, Dictionary<string, ScriptBlock> texts, string outputPath, string aesKey)
+    private static string GenerateRegistryClass(Dictionary<string, ScriptBlock> scripts,
+        Dictionary<string, ScriptBlock> texts, string outputPath, string aesKey)
     {
         using var writer = new StringWriter();
         var indented = new IndentedTextWriter(writer);
@@ -189,12 +204,14 @@ public class PlayscriptGenerator : IIncrementalGenerator
         indented.WriteLine("{");
         indented.Indent++;
 
-        indented.WriteLine($"private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts =");
+        indented.WriteLine(
+            $"private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts =");
         indented.Indent++;
         indented.WriteLine($"new(() => PlayscriptLoader.LoadScripts(\"{outputPath}\", \"{aesKey}\"));");
         indented.Indent--;
         indented.WriteLine();
-        indented.WriteLine($"private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _texts =");
+        indented.WriteLine(
+            $"private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _texts =");
         indented.Indent++;
         indented.WriteLine($"new(() => PlayscriptLoader.LoadTexts(\"{outputPath}\", \"{aesKey}\"));");
         indented.Indent--;
@@ -204,7 +221,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
         foreach (var kvp in sortedScripts)
         {
             var propName = ToScreamingSnakeCase(kvp.Key);
-            indented.WriteLine($"public static Script {propName} => new Script {{ Block = _scripts.Value[\"{kvp.Key}\"] }};");
+            indented.WriteLine(
+                $"public static Script {propName} => new Script {{ Block = _scripts.Value[\"{kvp.Key}\"] }};");
         }
 
         var sortedTexts = texts.OrderBy(kvp => kvp.Key, System.StringComparer.Ordinal);

@@ -83,10 +83,12 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void ConsumerCallItem_StoresIdentifierAndArgument()
+    public void ConsumerCallItem_StoresIdentifierAndArguments()
     {
-        var item = new ConsumerCallItem("transition", "fade_out");
+        var item = new ConsumerCallItem("transition", new System.Collections.Generic.List<ArgumentValue> { new StringArgument("fade_out") });
         Assert.Equal("transition", item.Identifier);
-        Assert.Equal("fade_out", item.Argument);
+        Assert.Single(item.Arguments);
+        Assert.IsType<StringArgument>(item.Arguments[0]);
+        Assert.Equal("fade_out", ((StringArgument)item.Arguments[0]).Value);
     }
 }

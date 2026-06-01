@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from EasyPlayscript/EasyPlayscript/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
+// Generated from EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -44,16 +44,4 @@ public interface IPlayscriptStructureParserVisitor<Result> : IParseTreeVisitor<R
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitStatement([NotNull] PlayscriptStructureParser.StatementContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.compilerCall"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitCompilerCall([NotNull] PlayscriptStructureParser.CompilerCallContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.scriptBlock"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitScriptBlock([NotNull] PlayscriptStructureParser.ScriptBlockContext context);
 }

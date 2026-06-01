@@ -11,7 +11,7 @@ namespace EasyPlayscript.Tests;
 public class PlayscriptGeneratorTests
 {
     private const string ScriptBlockExample = """
-        .script("load tooltip")[
+        script load_tooltip[
         你好。
         这里是……？
 
@@ -24,7 +24,7 @@ public class PlayscriptGeneratorTests
         """;
 
     private const string TextBlockExample = """
-        .text("intro text")[
+        text intro_text[
         你好，欢迎来到这个世界。
         ]
         """;
@@ -165,10 +165,10 @@ public class PlayscriptGeneratorTests
     public void DuplicateScriptName_SameFile_ReportsSCPT004()
     {
         const string content = """
-                               .script("foo")[
+                               script foo[
                                Hello
                                ]
-                               .script("foo")[
+                               script foo[
                                World
                                ]
                                """;
@@ -180,10 +180,10 @@ public class PlayscriptGeneratorTests
     public void DuplicateTextName_SameFile_ReportsSCPT004()
     {
         const string content = """
-                               .text("intro")[
+                               text intro[
                                Hello
                                ]
-                               .text("intro")[
+                               text intro[
                                World
                                ]
                                """;
@@ -195,12 +195,12 @@ public class PlayscriptGeneratorTests
     public void DuplicateScriptName_CrossFile_ReportsSCPT004()
     {
         var fileA = """
-            .script("shared")[
+            script shared[
             From file A
             ]
             """;
         var fileB = """
-            .script("shared")[
+            script shared[
             From file B
             ]
             """;
@@ -212,12 +212,12 @@ public class PlayscriptGeneratorTests
     public void DuplicateTextName_CrossFile_ReportsSCPT004()
     {
         const string fileA = """
-                             .text("shared")[
+                             text shared[
                              From file A
                              ]
                              """;
         const string fileB = """
-                             .text("shared")[
+                             text shared[
                              From file B
                              ]
                              """;
@@ -229,12 +229,12 @@ public class PlayscriptGeneratorTests
     public void NoDuplicate_NoSCPT004()
     {
         var fileA = """
-            .script("alpha")[
+            script alpha[
             Alpha
             ]
             """;
         var fileB = """
-            .script("beta")[
+            script beta[
             Beta
             ]
             """;
@@ -246,7 +246,7 @@ public class PlayscriptGeneratorTests
     public void InvalidContent_ReportsDiagnostic()
     {
         const string content = """
-                               .script("test")[
+                               script test[
                                @invalid(unclosed
                                ]
                                """;

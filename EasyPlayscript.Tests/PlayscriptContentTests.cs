@@ -11,7 +11,7 @@ public class PlayscriptContentTests
     [Fact]
     public void SingleLine_OneParagraph()
     {
-        var input = "Hello world";
+        const string input = "Hello world";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -27,7 +27,7 @@ public class PlayscriptContentTests
     [Fact]
     public void TwoLines_SameParagraph()
     {
-        var input = "line 1\nline 2";
+        const string input = "line 1\nline 2";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -42,7 +42,7 @@ public class PlayscriptContentTests
     [Fact]
     public void BlankLine_SeparatesParagraphs()
     {
-        var input = "para 1\n\npara 2";
+        const string input = "para 1\n\npara 2";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -56,7 +56,7 @@ public class PlayscriptContentTests
     [Fact]
     public void SlashOnOwnLine_SeparatesPages()
     {
-        var input = "page 1\n/\npage 2";
+        const string input = "page 1\n/\npage 2";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -69,7 +69,7 @@ public class PlayscriptContentTests
     [Fact]
     public void SlashAtEndOfLine_SeparatesPages()
     {
-        var input = "page 1 /\npage 2";
+        const string input = "page 1 /\npage 2";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -83,7 +83,7 @@ public class PlayscriptContentTests
     [Fact]
     public void SlashWithBlankLines_SeparatesPages()
     {
-        var input = "page 1\n\n/\n\npage 2";
+        const string input = "page 1\n\n/\n\npage 2";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -94,7 +94,7 @@ public class PlayscriptContentTests
     [Fact]
     public void ConsumerCall_MixedWithText()
     {
-        var input = "Hello @transition(\"fade_out\") world";
+        const string input = "Hello @transition(\"fade_out\") world";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -106,13 +106,15 @@ public class PlayscriptContentTests
         Assert.Equal("Hello ", line.TEXT()[0].GetText());
         Assert.Equal(" world", line.TEXT()[1].GetText());
         Assert.Equal("transition", line.consumerCall(0).IDENTIFIER().GetText());
-        Assert.Equal("\"fade_out\"", line.consumerCall(0).STRING_LITERAL().GetText());
+        Assert.Single(line.consumerCall(0).argument());
+        Assert.NotNull(line.consumerCall(0).argument(0).STRING_LITERAL());
+        Assert.Equal("\"fade_out\"", line.consumerCall(0).argument(0).STRING_LITERAL().GetText());
     }
 
     [Fact]
     public void ConsumerCall_Standalone()
     {
-        var input = "@transition(\"fade_out\")";
+        const string input = "@transition(\"fade_out\")";
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         var tree = parser.scriptContent();
 
@@ -121,7 +123,238 @@ public class PlayscriptContentTests
         Assert.Empty(line.TEXT());
         Assert.Single(line.consumerCall());
         Assert.Equal("transition", line.consumerCall(0).IDENTIFIER().GetText());
-        Assert.Equal("\"fade_out\"", line.consumerCall(0).STRING_LITERAL().GetText());
+        Assert.Single(line.consumerCall(0).argument());
+        Assert.NotNull(line.consumerCall(0).argument(0).STRING_LITERAL());
+        Assert.Equal("\"fade_out\"", line.consumerCall(0).argument(0).STRING_LITERAL().GetText());
+    }
+
+    // ─── Multi-param Consumer Call Tests ─────────────────────────────────────
+
+    [Fact]
+    public void ConsumerCall_NoParams_Parses()
+    {
+        const string input = "@func()";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var line = tree.page(0).paragraph(0).line(0);
+        Assert.Empty(line.TEXT());
+        Assert.Single(line.consumerCall());
+        Assert.Equal("func", line.consumerCall(0).IDENTIFIER().GetText());
+        Assert.Empty(line.consumerCall(0).argument());
+    }
+
+    [Fact]
+    public void ConsumerCall_MultipleParams_Parses()
+    {
+        const string input = "@func(\"a\", \"b\", \"c\")";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var line = tree.page(0).paragraph(0).line(0);
+        Assert.Single(line.consumerCall());
+        Assert.Equal("func", line.consumerCall(0).IDENTIFIER().GetText());
+        Assert.Equal(3, line.consumerCall(0).argument().Length);
+        Assert.NotNull(line.consumerCall(0).argument(0).STRING_LITERAL());
+        Assert.Equal("\"a\"", line.consumerCall(0).argument(0).STRING_LITERAL().GetText());
+        Assert.NotNull(line.consumerCall(0).argument(1).STRING_LITERAL());
+        Assert.Equal("\"b\"", line.consumerCall(0).argument(1).STRING_LITERAL().GetText());
+        Assert.NotNull(line.consumerCall(0).argument(2).STRING_LITERAL());
+        Assert.Equal("\"c\"", line.consumerCall(0).argument(2).STRING_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void Builder_ConsumerCall_NoParams_ProducesConsumerCallItem()
+    {
+        var block = BuildScriptBlock("@func()");
+        var items = block.Pages[0].Paragraphs[0].Lines[0].Items;
+        Assert.Single(items);
+        Assert.IsType<ConsumerCallItem>(items[0]);
+        Assert.Equal("func", ((ConsumerCallItem)items[0]).Identifier);
+        Assert.Empty(((ConsumerCallItem)items[0]).Arguments);
+    }
+
+    [Fact]
+    public void Builder_ConsumerCall_MultipleParams()
+    {
+        var block = BuildScriptBlock("@func(\"a\", \"b\")");
+        var items = block.Pages[0].Paragraphs[0].Lines[0].Items;
+        Assert.Single(items);
+        Assert.IsType<ConsumerCallItem>(items[0]);
+        Assert.Equal("func", ((ConsumerCallItem)items[0]).Identifier);
+        Assert.Equal(2, ((ConsumerCallItem)items[0]).Arguments.Count);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)items[0]).Arguments[0]);
+        Assert.Equal("a", ((StringArgument)((ConsumerCallItem)items[0]).Arguments[0]).Value);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)items[0]).Arguments[1]);
+        Assert.Equal("b", ((StringArgument)((ConsumerCallItem)items[0]).Arguments[1]).Value);
+    }
+
+    // ─── Typed Parameter Tests ────────────────────────────────────────────────
+
+    [Fact]
+    public void ConsumerCall_IntegerParam_Parses()
+    {
+        const string input = "@func(42)";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).consumerCall(0);
+        Assert.Equal("func", call.IDENTIFIER().GetText());
+        Assert.Single(call.argument());
+        Assert.NotNull(call.argument(0).INTEGER_LITERAL());
+        Assert.Equal("42", call.argument(0).INTEGER_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void ConsumerCall_NegativeInteger_Parses()
+    {
+        const string input = "@func(-3)";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).consumerCall(0);
+        Assert.Single(call.argument());
+        Assert.NotNull(call.argument(0).INTEGER_LITERAL());
+        Assert.Equal("-3", call.argument(0).INTEGER_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void ConsumerCall_FloatParam_Parses()
+    {
+        const string input = "@func(3.14)";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).consumerCall(0);
+        Assert.Single(call.argument());
+        Assert.NotNull(call.argument(0).FLOAT_LITERAL());
+        Assert.Equal("3.14", call.argument(0).FLOAT_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void ConsumerCall_NegativeFloat_Parses()
+    {
+        const string input = "@func(-0.5)";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).consumerCall(0);
+        Assert.Single(call.argument());
+        Assert.NotNull(call.argument(0).FLOAT_LITERAL());
+        Assert.Equal("-0.5", call.argument(0).FLOAT_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void ConsumerCall_BoolParam_Parses()
+    {
+        const string input = "@func(true)";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).consumerCall(0);
+        Assert.Single(call.argument());
+        Assert.NotNull(call.argument(0).BOOLEAN_LITERAL());
+        Assert.Equal("true", call.argument(0).BOOLEAN_LITERAL().GetText());
+    }
+
+    [Fact]
+    public void ConsumerCall_MixedTypes_Parses()
+    {
+        const string input = "@func(\"str\", 42, 3.14, true)";
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).consumerCall(0);
+        Assert.Equal(4, call.argument().Length);
+        Assert.NotNull(call.argument(0).STRING_LITERAL());
+        Assert.NotNull(call.argument(1).INTEGER_LITERAL());
+        Assert.NotNull(call.argument(2).FLOAT_LITERAL());
+        Assert.NotNull(call.argument(3).BOOLEAN_LITERAL());
+    }
+
+    [Fact]
+    public void Builder_IntegerParam()
+    {
+        var block = BuildScriptBlock("@func(42)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.Single(item.Arguments);
+        Assert.IsType<IntArgument>(item.Arguments[0]);
+        Assert.Equal(42, ((IntArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_NegativeInteger()
+    {
+        var block = BuildScriptBlock("@func(-3)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.Single(item.Arguments);
+        Assert.IsType<IntArgument>(item.Arguments[0]);
+        Assert.Equal(-3, ((IntArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_FloatParam()
+    {
+        var block = BuildScriptBlock("@func(3.14)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.Single(item.Arguments);
+        Assert.IsType<DoubleArgument>(item.Arguments[0]);
+        Assert.Equal(3.14, ((DoubleArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_NegativeFloat()
+    {
+        var block = BuildScriptBlock("@func(-0.5)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.Single(item.Arguments);
+        Assert.IsType<DoubleArgument>(item.Arguments[0]);
+        Assert.Equal(-0.5, ((DoubleArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_BoolParam()
+    {
+        var block = BuildScriptBlock("@func(true)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.Single(item.Arguments);
+        Assert.IsType<BoolArgument>(item.Arguments[0]);
+        Assert.True(((BoolArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_MixedTypes()
+    {
+        var block = BuildScriptBlock("@func(\"str\", 42, 3.14, true)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.Equal(4, item.Arguments.Count);
+        Assert.IsType<StringArgument>(item.Arguments[0]);
+        Assert.Equal("str", ((StringArgument)item.Arguments[0]).Value);
+        Assert.IsType<IntArgument>(item.Arguments[1]);
+        Assert.Equal(42, ((IntArgument)item.Arguments[1]).Value);
+        Assert.IsType<DoubleArgument>(item.Arguments[2]);
+        Assert.Equal(3.14, ((DoubleArgument)item.Arguments[2]).Value);
+        Assert.IsType<BoolArgument>(item.Arguments[3]);
+        Assert.True(((BoolArgument)item.Arguments[3]).Value);
+    }
+
+    [Fact]
+    public void Builder_IntegerOverflow_ReportsError()
+    {
+        var (parser, errors) = PlayscriptContentHelper.Parse("@func(9999999999)");
+        Assert.Empty(errors);
+        var builder = new PlayscriptCodeBuilder();
+        builder.BuildFromContent(parser.scriptContent());
+        Assert.NotEmpty(builder.Errors);
+        Assert.Contains("out of range", builder.Errors[0].Msg, System.StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -198,7 +431,9 @@ public class PlayscriptContentTests
         Assert.Single(items);
         Assert.IsType<ConsumerCallItem>(items[0]);
         Assert.Equal("transition", ((ConsumerCallItem)items[0]).Identifier);
-        Assert.Equal("fade_out", ((ConsumerCallItem)items[0]).Argument);
+        Assert.Single(((ConsumerCallItem)items[0]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)items[0]).Arguments[0]);
+        Assert.Equal("fade_out", ((StringArgument)((ConsumerCallItem)items[0]).Arguments[0]).Value);
     }
 
     [Fact]
@@ -221,7 +456,9 @@ public class PlayscriptContentTests
         Assert.IsType<TextItem>(items[2]);
         Assert.Equal("Hello ", ((TextItem)items[0]).Text);
         Assert.Equal("transition", ((ConsumerCallItem)items[1]).Identifier);
-        Assert.Equal("fade_out", ((ConsumerCallItem)items[1]).Argument);
+        Assert.Single(((ConsumerCallItem)items[1]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)items[1]).Arguments[0]);
+        Assert.Equal("fade_out", ((StringArgument)((ConsumerCallItem)items[1]).Arguments[0]).Value);
         Assert.Equal(" world", ((TextItem)items[2]).Text);
     }
 }

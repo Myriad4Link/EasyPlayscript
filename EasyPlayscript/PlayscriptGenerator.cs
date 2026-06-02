@@ -1,8 +1,11 @@
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using EasyPlayscript.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -20,70 +23,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
     {
         var scptProvider = context.AdditionalTextsProvider
             .Where(static f => f.Path.EndsWith(".scpt"))
-            .Select(static (file, ct) =>
-            {
-                var text = file.GetText(ct);
-                var content = text?.ToString() ?? string.Empty;
-                var filePath = file.Path;
-
-                ct.ThrowIfCancellationRequested();
-                var structureResults = PlayscriptStructureHelper.ParseStructureWithErrors(content);
-
-                var diagnostics = new List<Diagnostic>();
-                var blocks = new List<(BlockType identifier, string name, ScriptBlock block, int line, int col)>();
-
-                foreach (var (line, col, msg, isLexer) in structureResults.errors)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var descriptor = isLexer
-                        ? PlayscriptDiagnostics.UnexpectedToken
-                        : PlayscriptDiagnostics.MismatchedInput;
-                    var location = MakeLocation(filePath, line, col);
-                    diagnostics.Add(Diagnostic.Create(descriptor, location, msg));
-                }
-
-                foreach (var (identifier, name, rawContent, line, col) in structureResults.results)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    if (rawContent == null) continue;
-
-                    var trimmedContent = rawContent.Trim('\r', '\n');
-                    var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
-                    var tree = parser.scriptContent();
-
-                    foreach (var error in contentErrors)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        var descriptor = error.IsLexer
-                            ? PlayscriptDiagnostics.UnexpectedToken
-                            : PlayscriptDiagnostics.MismatchedInput;
-                        var location = MakeLocation(filePath, error.Line, error.Col);
-                        diagnostics.Add(Diagnostic.Create(descriptor, location, error.Msg));
-                    }
-
-                    if (contentErrors.Count > 0) continue;
-
-                    ct.ThrowIfCancellationRequested();
-                    var builder = new PlayscriptCodeBuilder(ct);
-                    builder.BuildFromContent(tree);
-
-                    foreach (var error in builder.Errors)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        var descriptor = error.IsLexer
-                            ? PlayscriptDiagnostics.UnexpectedToken
-                            : PlayscriptDiagnostics.MismatchedInput;
-                        var location = MakeLocation(filePath, error.Line, error.Col);
-                        diagnostics.Add(Diagnostic.Create(descriptor, location, error.Msg));
-                    }
-
-                    if (builder.Errors.Count > 0) continue;
-
-                    blocks.Add((identifier, name, builder.ContentResult, line, col));
-                }
-
-                return (blocks, filePath, diagnostics);
-            });
+            .Select(static (file, ct) => ParseSingleFile(file.Path, file.GetText(ct)?.ToString() ?? string.Empty, ct));
 
         var allFilesProvider = scptProvider.Collect();
         var combinedProvider = context.AnalyzerConfigOptionsProvider.Combine(allFilesProvider);
@@ -92,66 +32,20 @@ public class PlayscriptGenerator : IIncrementalGenerator
         {
             var (configOptions, allResults) = combined;
 
-            var hasErrors = false;
+            var ctx = new MergeContext(spc);
+
             foreach (var diag in allResults.SelectMany(result => result.diagnostics))
             {
                 spc.CancellationToken.ThrowIfCancellationRequested();
                 spc.ReportDiagnostic(diag);
-                hasErrors = diag.Severity == DiagnosticSeverity.Error;
+                if (diag.Severity == DiagnosticSeverity.Error)
+                    ctx.HasErrors = true;
             }
 
-            var mergedScripts = new Dictionary<string, ScriptBlock>();
-            var mergedTexts = new Dictionary<string, ScriptBlock>();
-            var scriptLocations = new Dictionary<string, (string filePath, int line, int col)>();
-            var textLocations = new Dictionary<string, (string filePath, int line, int col)>();
+            MergeBlocks(allResults, ctx);
+            ReportValidationDiagnostics(ctx);
 
-            foreach (var result in allResults)
-            {
-                spc.CancellationToken.ThrowIfCancellationRequested();
-
-                foreach (var (identifier, name, block, line, col) in result.blocks)
-                {
-                    switch (identifier)
-                    {
-                        case BlockType.Script:
-                        {
-                            if (mergedScripts.ContainsKey(name))
-                            {
-                                var loc = scriptLocations[name];
-                                var location = MakeLocation(loc.filePath, loc.line, loc.col);
-                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
-                                    location,
-                                    "script", name));
-                                hasErrors = true;
-                            }
-                            else
-                                scriptLocations[name] = (result.filePath, line, col);
-
-                            mergedScripts[name] = block;
-                            break;
-                        }
-                        case BlockType.Text:
-                        {
-                            if (mergedTexts.ContainsKey(name))
-                            {
-                                var loc = textLocations[name];
-                                var location = MakeLocation(loc.filePath, loc.line, loc.col);
-                                spc.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
-                                    location,
-                                    "text", name));
-                                hasErrors = true;
-                            }
-                            else
-                                textLocations[name] = (result.filePath, line, col);
-
-                            mergedTexts[name] = block;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (hasErrors)
+            if (ctx.HasErrors)
                 return;
 
             spc.CancellationToken.ThrowIfCancellationRequested();
@@ -162,11 +56,173 @@ public class PlayscriptGenerator : IIncrementalGenerator
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
             aesKey = string.IsNullOrEmpty(aesKey) ? "dev-key-change-me" : aesKey;
 
-            var code = GenerateRegistryClass(mergedScripts, mergedTexts, outputPath!, aesKey!);
+            var code = GenerateRegistryClass(ctx.Scripts, ctx.Texts, outputPath!, aesKey!);
 
             spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
         });
+    }
+
+    private sealed class MergeContext
+    {
+        public Dictionary<string, ScriptBlock> Scripts { get; } = new();
+        public Dictionary<string, ScriptBlock> Texts { get; } = new();
+        public Dictionary<string, (string filePath, int line, int col)> ScriptLocations { get; } = new();
+        public Dictionary<string, (string filePath, int line, int col)> TextLocations { get; } = new();
+        public List<InterfaceDeclaration> Interfaces { get; } = new();
+        public bool HasErrors { get; set; }
+
+        private readonly SourceProductionContext _spc;
+
+        public MergeContext(SourceProductionContext spc) => _spc = spc;
+
+        public void ReportDiagnostic(Diagnostic diag)
+        {
+            _spc.ReportDiagnostic(diag);
+            HasErrors = true;
+        }
+    }
+
+    private static (
+        List<(BlockType identifier, string name, ScriptBlock block, int line, int col)> blocks,
+        List<InterfaceDeclaration> interfaces,
+        string filePath,
+        List<Diagnostic> diagnostics)
+        ParseSingleFile(string filePath, string content, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        var structureResults = PlayscriptStructureHelper.ParseStructureWithErrors(content);
+
+        var diagnostics = new List<Diagnostic>();
+        var blocks = new List<(BlockType identifier, string name, ScriptBlock block, int line, int col)>();
+
+        foreach (var (line, col, msg, isLexer) in structureResults.errors)
+        {
+            ct.ThrowIfCancellationRequested();
+            var descriptor = isLexer
+                ? PlayscriptDiagnostics.UnexpectedToken
+                : PlayscriptDiagnostics.MismatchedInput;
+            diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, line, col), msg));
+        }
+
+        foreach (var (identifier, name, rawContent, line, col) in structureResults.result.Results)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (rawContent == null) continue;
+
+            var trimmedContent = rawContent.Trim('\r', '\n');
+            var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
+            var tree = parser.scriptContent();
+
+            foreach (var error in contentErrors)
+            {
+                ct.ThrowIfCancellationRequested();
+                var descriptor = error.IsLexer
+                    ? PlayscriptDiagnostics.UnexpectedToken
+                    : PlayscriptDiagnostics.MismatchedInput;
+                diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
+            }
+
+            if (contentErrors.Count > 0) continue;
+
+            ct.ThrowIfCancellationRequested();
+            var builder = new PlayscriptCodeBuilder(ct);
+            builder.BuildFromContent(tree);
+
+            foreach (var error in builder.Errors)
+            {
+                ct.ThrowIfCancellationRequested();
+                var descriptor = error.IsLexer
+                    ? PlayscriptDiagnostics.UnexpectedToken
+                    : PlayscriptDiagnostics.MismatchedInput;
+                diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
+            }
+
+            if (builder.Errors.Count > 0) continue;
+
+            blocks.Add((identifier, name, builder.ContentResult, line, col));
+        }
+
+        var interfaces = structureResults.result.Interfaces;
+        foreach (var i in interfaces)
+            i.FilePath = filePath;
+
+        return (blocks, interfaces, filePath, diagnostics);
+    }
+
+    private static void MergeBlocks(
+        ImmutableArray<(List<(BlockType identifier, string name, ScriptBlock block, int line, int col)> blocks,
+            List<InterfaceDeclaration> interfaces, string filePath, List<Diagnostic> diagnostics)> allResults,
+        MergeContext ctx)
+    {
+        foreach (var result in allResults)
+        {
+            ctx.Interfaces.AddRange(result.interfaces);
+
+            foreach (var (identifier, name, block, line, col) in result.blocks)
+            {
+                switch (identifier)
+                {
+                    case BlockType.Script:
+                    {
+                        if (ctx.Scripts.ContainsKey(name))
+                        {
+                            var loc = ctx.ScriptLocations[name];
+                            ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                                MakeLocation(loc.filePath, loc.line, loc.col),
+                                "script", name));
+                        }
+                        else
+                            ctx.ScriptLocations[name] = (result.filePath, line, col);
+
+                        ctx.Scripts[name] = block;
+                        break;
+                    }
+                    case BlockType.Text:
+                    {
+                        if (ctx.Texts.ContainsKey(name))
+                        {
+                            var loc = ctx.TextLocations[name];
+                            ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                                MakeLocation(loc.filePath, loc.line, loc.col),
+                                "text", name));
+                        }
+                        else
+                            ctx.TextLocations[name] = (result.filePath, line, col);
+
+                        ctx.Texts[name] = block;
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+    }
+
+    private static void ReportValidationDiagnostics(MergeContext ctx)
+    {
+        var allDiagnostics = new List<ValidationDiagnostic>();
+        allDiagnostics.AddRange(InterfaceValidator.ValidateUndeclaredCalls(
+            ctx.Interfaces, ctx.Scripts, ctx.ScriptLocations, ctx.Texts, ctx.TextLocations));
+        allDiagnostics.AddRange(InterfaceValidator.ValidateDuplicateSignatures(ctx.Interfaces));
+        allDiagnostics.AddRange(InterfaceValidator.ValidateArgumentTypes(
+            ctx.Interfaces, ctx.Scripts, ctx.ScriptLocations, ctx.Texts, ctx.TextLocations));
+
+        foreach (var diag in allDiagnostics)
+        {
+            var descriptor = diag.Code switch
+            {
+                "SCPT005" => PlayscriptDiagnostics.UndeclaredConsumerCall,
+                "SCPT006" => PlayscriptDiagnostics.DuplicateInterfaceSignature,
+                "SCPT007" => PlayscriptDiagnostics.ArgumentTypeMismatch,
+                "SCPT008" => PlayscriptDiagnostics.ArgumentCountMismatch,
+                _ => null
+            };
+            if (descriptor != null)
+                ctx.ReportDiagnostic(Diagnostic.Create(descriptor,
+                    MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
+        }
     }
 
     private static Location MakeLocation(string filePath, int line, int col)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using EasyPlayscript;
 using EasyPlayscript.Parsing;
 using MessagePack;
@@ -21,15 +22,26 @@ public class PlayscriptBuildTask : Task
 
     public override bool Execute()
     {
+        var hasErrors = false;
         var scripts = new Dictionary<string, ScriptBlock>();
         var texts = new Dictionary<string, ScriptBlock>();
+        var scriptLocations = new Dictionary<string, (string filePath, int line, int col)>();
+        var textLocations = new Dictionary<string, (string filePath, int line, int col)>();
+        var allInterfaces = new List<InterfaceDeclaration>();
 
         foreach (var file in SourceFiles)
         {
-            var content = File.ReadAllText(file.ItemSpec);
-            var blocks = PlayscriptStructureHelper.ParseStructure(content);
+            var filePath = file.ItemSpec;
+            var content = File.ReadAllText(filePath);
+            var parseResult = PlayscriptStructureHelper.ParseStructure(content);
 
-            foreach (var (identifier, name, rawContent, line, col) in blocks)
+            foreach (var iface in parseResult.Interfaces)
+            {
+                iface.FilePath = filePath;
+                allInterfaces.Add(iface);
+            }
+
+            foreach (var (identifier, name, rawContent, line, col) in parseResult.Results)
             {
                 if (rawContent == null) continue;
 
@@ -40,8 +52,9 @@ public class PlayscriptBuildTask : Task
                 if (contentErrors.Count > 0)
                 {
                     foreach (var error in contentErrors)
-                        Log.LogWarning("Playscript", "SCPT002", null,
-                            file.ItemSpec, error.Line, error.Col, 0, 0, error.Msg);
+                        Log.LogError("Playscript", "SCPT002", null,
+                            filePath, error.Line, error.Col, 0, 0, error.Msg);
+                    hasErrors = true;
                     continue;
                 }
 
@@ -53,10 +66,55 @@ public class PlayscriptBuildTask : Task
 
                 if (block == null) continue;
 
-                if (identifier == BlockType.Script) scripts[name] = block;
-                else if (identifier == BlockType.Text) texts[name] = block;
+                if (identifier == BlockType.Script)
+                {
+                    if (scripts.ContainsKey(name))
+                    {
+                        var loc = scriptLocations[name];
+                        Log.LogError("Playscript", "SCPT004", null,
+                            loc.filePath, loc.line, loc.col, 0, 0,
+                            $"Duplicate script name \"{name}\"");
+                        hasErrors = true;
+                    }
+                    else
+                        scriptLocations[name] = (filePath, line, col);
+
+                    scripts[name] = block;
+                }
+                else if (identifier == BlockType.Text)
+                {
+                    if (texts.ContainsKey(name))
+                    {
+                        var loc = textLocations[name];
+                        Log.LogError("Playscript", "SCPT004", null,
+                            loc.filePath, loc.line, loc.col, 0, 0,
+                            $"Duplicate text name \"{name}\"");
+                        hasErrors = true;
+                    }
+                    else
+                        textLocations[name] = (filePath, line, col);
+
+                    texts[name] = block;
+                }
             }
         }
+
+        var validationErrors = new List<ValidationDiagnostic>();
+        validationErrors.AddRange(InterfaceValidator.ValidateUndeclaredCalls(
+            allInterfaces, scripts, scriptLocations, texts, textLocations));
+        validationErrors.AddRange(InterfaceValidator.ValidateDuplicateSignatures(allInterfaces));
+        validationErrors.AddRange(InterfaceValidator.ValidateArgumentTypes(
+            allInterfaces, scripts, scriptLocations, texts, textLocations));
+
+        foreach (var diag in validationErrors)
+        {
+            Log.LogError("Playscript", diag.Code, null,
+                diag.FilePath, diag.Line, diag.Col, 0, 0, diag.Message);
+            hasErrors = true;
+        }
+
+        if (hasErrors)
+            return false;
 
         var data = new PlayscriptData { Scripts = scripts, Texts = texts };
         var bytes = MessagePackSerializer.Serialize(data);

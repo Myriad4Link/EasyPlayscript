@@ -59,7 +59,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("public class Text");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("public ScriptBlock Block { get; set; }");
+        indented.WriteLine("public TextBlock Block { get; set; }");
         indented.Indent--;
         indented.WriteLine("}");
 

@@ -24,7 +24,7 @@ public class PlayscriptBuildTask : Task
     {
         var hasErrors = false;
         var scripts = new Dictionary<string, ScriptBlock>();
-        var texts = new Dictionary<string, ScriptBlock>();
+        var texts = new Dictionary<string, TextBlock>();
         var scriptLocations = new Dictionary<string, (string filePath, int line, int col)>();
         var textLocations = new Dictionary<string, (string filePath, int line, int col)>();
         var allInterfaces = new List<InterfaceDeclaration>();
@@ -60,14 +60,14 @@ public class PlayscriptBuildTask : Task
 
                 if (tree == null) continue;
 
-                var builder = new PlayscriptCodeBuilder();
-                builder.BuildFromContent(tree);
-                var block = builder.ContentResult;
-
-                if (block == null) continue;
-
                 if (identifier == BlockType.Script)
                 {
+                    var builder = new PlayscriptCodeBuilder();
+                    builder.BuildFromContent(tree);
+                    var block = builder.ContentResult;
+
+                    if (block == null) continue;
+
                     if (scripts.ContainsKey(name))
                     {
                         var loc = scriptLocations[name];
@@ -83,6 +83,12 @@ public class PlayscriptBuildTask : Task
                 }
                 else if (identifier == BlockType.Text)
                 {
+                    var builder = new PlayscriptCodeBuilder();
+                    builder.BuildTextFromContent(tree);
+                    var block = builder.TextResult;
+
+                    if (block == null) continue;
+
                     if (texts.ContainsKey(name))
                     {
                         var loc = textLocations[name];

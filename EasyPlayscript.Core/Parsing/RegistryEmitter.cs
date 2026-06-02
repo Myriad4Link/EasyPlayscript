@@ -10,7 +10,7 @@ namespace EasyPlayscript.Parsing;
 public static class RegistryEmitter
 {
     public static string Generate(Dictionary<string, ScriptBlock> scripts,
-        Dictionary<string, ScriptBlock> texts, string outputPath, string aesKey)
+        Dictionary<string, TextBlock> texts, string outputPath, string aesKey)
     {
         using var writer = new StringWriter();
         var indented = new IndentedTextWriter(writer);
@@ -31,7 +31,7 @@ public static class RegistryEmitter
         indented.Indent--;
         indented.WriteLine();
         indented.WriteLine(
-            "private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _texts =");
+            "private static readonly System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>> _texts =");
         indented.Indent++;
         indented.WriteLine($"new(() => PlayscriptLoader.LoadTexts(\"{outputPath}\", \"{aesKey}\"));");
         indented.Indent--;

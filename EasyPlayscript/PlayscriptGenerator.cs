@@ -64,10 +64,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
     private sealed class MergeContext(SourceProductionContext spc)
     {
         public Dictionary<string, ScriptBlock> Scripts { get; } = new();
-        public Dictionary<string, ScriptBlock> Texts { get; } = new();
+        public Dictionary<string, TextBlock> Texts { get; } = new();
         public Dictionary<string, (string filePath, int line, int col)> ScriptLocations { get; } = new();
         public Dictionary<string, (string filePath, int line, int col)> TextLocations { get; } = new();
-        public List<InterfaceDeclaration> Interfaces { get; } = new();
+        public List<InterfaceDeclaration> Interfaces { get; } = [];
         public bool HasErrors { get; set; }
 
         public void ReportDiagnostic(Diagnostic diag)
@@ -78,7 +78,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
     }
 
     private static (
-        List<(BlockType identifier, string name, ScriptBlock block, int line, int col)> blocks,
+        List<(string name, ScriptBlock block, int line, int col)> scriptBlocks,
+        List<(string name, TextBlock block, int line, int col)> textBlocks,
         List<InterfaceDeclaration> interfaces,
         string filePath,
         List<Diagnostic> diagnostics)
@@ -88,7 +89,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
         var structureResults = PlayscriptStructureHelper.ParseStructureWithErrors(content);
 
         var diagnostics = new List<Diagnostic>();
-        var blocks = new List<(BlockType identifier, string name, ScriptBlock block, int line, int col)>();
+        var scriptBlocks = new List<(string name, ScriptBlock block, int line, int col)>();
+        var textBlocks = new List<(string name, TextBlock block, int line, int col)>();
 
         foreach (var (line, col, msg, isLexer) in structureResults.errors)
         {
@@ -121,31 +123,47 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
             ct.ThrowIfCancellationRequested();
             var builder = new PlayscriptCodeBuilder(ct);
-            builder.BuildFromContent(tree);
 
-            foreach (var error in builder.Errors)
+            if (identifier == BlockType.Script)
             {
-                ct.ThrowIfCancellationRequested();
-                var descriptor = error.IsLexer
-                    ? PlayscriptDiagnostics.UnexpectedToken
-                    : PlayscriptDiagnostics.MismatchedInput;
-                diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
+                builder.BuildFromContent(tree);
+                foreach (var error in builder.Errors)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var descriptor = error.IsLexer
+                        ? PlayscriptDiagnostics.UnexpectedToken
+                        : PlayscriptDiagnostics.MismatchedInput;
+                    diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
+                }
+                if (builder.Errors.Count > 0) continue;
+                scriptBlocks.Add((name, builder.ContentResult, line, col));
             }
-
-            if (builder.Errors.Count > 0) continue;
-
-            blocks.Add((identifier, name, builder.ContentResult, line, col));
+            else
+            {
+                builder.BuildTextFromContent(tree);
+                foreach (var error in builder.Errors)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var descriptor = error.IsLexer
+                        ? PlayscriptDiagnostics.UnexpectedToken
+                        : PlayscriptDiagnostics.MismatchedInput;
+                    diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
+                }
+                if (builder.Errors.Count > 0) continue;
+                textBlocks.Add((name, builder.TextResult, line, col));
+            }
         }
 
         var interfaces = structureResults.result.Interfaces;
         foreach (var i in interfaces)
             i.FilePath = filePath;
 
-        return (blocks, interfaces, filePath, diagnostics);
+        return (scriptBlocks, textBlocks, interfaces, filePath, diagnostics);
     }
 
     private static void MergeBlocks(
-        ImmutableArray<(List<(BlockType identifier, string name, ScriptBlock block, int line, int col)> blocks,
+        ImmutableArray<(List<(string name, ScriptBlock block, int line, int col)> scriptBlocks,
+            List<(string name, TextBlock block, int line, int col)> textBlocks,
             List<InterfaceDeclaration> interfaces, string filePath, List<Diagnostic> diagnostics)> allResults,
         MergeContext ctx)
     {
@@ -153,43 +171,34 @@ public class PlayscriptGenerator : IIncrementalGenerator
         {
             ctx.Interfaces.AddRange(result.interfaces);
 
-            foreach (var (identifier, name, block, line, col) in result.blocks)
+            foreach (var (name, block, line, col) in result.scriptBlocks)
             {
-                switch (identifier)
+                if (ctx.Scripts.ContainsKey(name))
                 {
-                    case BlockType.Script:
-                    {
-                        if (ctx.Scripts.ContainsKey(name))
-                        {
-                            var loc = ctx.ScriptLocations[name];
-                            ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
-                                MakeLocation(loc.filePath, loc.line, loc.col),
-                                "script", name));
-                        }
-                        else
-                            ctx.ScriptLocations[name] = (result.filePath, line, col);
-
-                        ctx.Scripts[name] = block;
-                        break;
-                    }
-                    case BlockType.Text:
-                    {
-                        if (ctx.Texts.ContainsKey(name))
-                        {
-                            var loc = ctx.TextLocations[name];
-                            ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
-                                MakeLocation(loc.filePath, loc.line, loc.col),
-                                "text", name));
-                        }
-                        else
-                            ctx.TextLocations[name] = (result.filePath, line, col);
-
-                        ctx.Texts[name] = block;
-                        break;
-                    }
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                    var loc = ctx.ScriptLocations[name];
+                    ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                        MakeLocation(loc.filePath, loc.line, loc.col),
+                        "script", name));
                 }
+                else
+                    ctx.ScriptLocations[name] = (result.filePath, line, col);
+
+                ctx.Scripts[name] = block;
+            }
+
+            foreach (var (name, block, line, col) in result.textBlocks)
+            {
+                if (ctx.Texts.ContainsKey(name))
+                {
+                    var loc = ctx.TextLocations[name];
+                    ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                        MakeLocation(loc.filePath, loc.line, loc.col),
+                        "text", name));
+                }
+                else
+                    ctx.TextLocations[name] = (result.filePath, line, col);
+
+                ctx.Texts[name] = block;
             }
         }
     }

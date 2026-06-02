@@ -7,14 +7,20 @@ public static class InterfaceValidator
 {
     public static IEnumerable<ConsumerCallItem> GetConsumerCalls(ScriptBlock block)
     {
-        foreach (var page in block.Pages)
-        foreach (var paragraph in page.Paragraphs)
-        foreach (var line in paragraph.Lines)
-        foreach (var item in line.Items)
-        {
+        foreach (var item in from page in block.Pages
+                 from paragraph in page.Paragraphs
+                 from line in paragraph.Lines
+                 from item in line.Items
+                 select item)
             if (item is ConsumerCallItem call)
                 yield return call;
-        }
+    }
+
+    public static IEnumerable<ConsumerCallItem> GetConsumerCalls(TextBlock block)
+    {
+        foreach (var item in block.Items)
+            if (item is ConsumerCallItem call)
+                yield return call;
     }
 
     public static InterfaceType? GetArgumentType(ArgumentValue arg)
@@ -43,7 +49,7 @@ public static class InterfaceValidator
         IList<InterfaceDeclaration> interfaces,
         IDictionary<string, ScriptBlock> scripts,
         IDictionary<string, (string filePath, int line, int col)> scriptLocations,
-        IDictionary<string, ScriptBlock> texts,
+        IDictionary<string, TextBlock> texts,
         IDictionary<string, (string filePath, int line, int col)> textLocations)
     {
         var errors = new List<ValidationDiagnostic>();
@@ -87,7 +93,8 @@ public static class InterfaceValidator
             var key = MakeSignatureKey(decl);
             if (signatureMap.ContainsKey(key))
             {
-                var sig = $"{decl.Name}({string.Join(", ", decl.Parameters.Select(p => p.Type.ToString().ToLowerInvariant()))}):{decl.ReturnType.ToString().ToLowerInvariant()}";
+                var sig =
+                    $"{decl.Name}({string.Join(", ", decl.Parameters.Select(p => p.Type.ToString().ToLowerInvariant()))}):{decl.ReturnType.ToString().ToLowerInvariant()}";
                 errors.Add(new ValidationDiagnostic("SCPT006",
                     $"Duplicate interface signature \"{sig}\"",
                     decl.FilePath, decl.Line, decl.Col, sig));
@@ -103,7 +110,7 @@ public static class InterfaceValidator
         IList<InterfaceDeclaration> interfaces,
         IDictionary<string, ScriptBlock> scripts,
         IDictionary<string, (string filePath, int line, int col)> scriptLocations,
-        IDictionary<string, ScriptBlock> texts,
+        IDictionary<string, TextBlock> texts,
         IDictionary<string, (string filePath, int line, int col)> textLocations)
     {
         var errors = new List<ValidationDiagnostic>();
@@ -116,6 +123,7 @@ public static class InterfaceValidator
                 list = new List<InterfaceDeclaration>();
                 interfacesByName[decl.Name] = list;
             }
+
             list.Add(decl);
         }
 
@@ -183,6 +191,7 @@ public static class InterfaceValidator
             if (actualType == null || !IsAssignableTo(actualType.Value, expectedType))
                 return false;
         }
+
         return true;
     }
 
@@ -195,6 +204,7 @@ public static class InterfaceValidator
             if (actualType == null || !IsAssignableTo(actualType.Value, expectedType))
                 return i;
         }
+
         return -1;
     }
 }

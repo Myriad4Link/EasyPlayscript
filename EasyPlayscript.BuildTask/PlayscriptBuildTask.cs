@@ -53,8 +53,8 @@ public class PlayscriptBuildTask : Task
 
                 if (block == null) continue;
 
-                if (identifier == "script") scripts[name] = block;
-                else if (identifier == "text") texts[name] = block;
+                if (identifier == BlockType.Script) scripts[name] = block;
+                else if (identifier == BlockType.Text) texts[name] = block;
             }
         }
 

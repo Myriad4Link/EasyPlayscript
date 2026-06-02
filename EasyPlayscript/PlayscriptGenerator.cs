@@ -30,7 +30,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 var structureResults = PlayscriptStructureHelper.ParseStructureWithErrors(content);
 
                 var diagnostics = new List<Diagnostic>();
-                var blocks = new List<(string identifier, string name, ScriptBlock block, int line, int col)>();
+                var blocks = new List<(BlockType identifier, string name, ScriptBlock block, int line, int col)>();
 
                 foreach (var (line, col, msg, isLexer) in structureResults.errors)
                 {
@@ -113,7 +113,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 {
                     switch (identifier)
                     {
-                        case "script":
+                        case BlockType.Script:
                         {
                             if (mergedScripts.ContainsKey(name))
                             {
@@ -130,7 +130,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
                             mergedScripts[name] = block;
                             break;
                         }
-                        case "text":
+                        case BlockType.Text:
                         {
                             if (mergedTexts.ContainsKey(name))
                             {
@@ -180,10 +180,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         var sb = new StringBuilder();
         foreach (var c in name)
         {
-            if (c is ' ' or '-')
-                sb.Append('_');
-            else
-                sb.Append(char.ToUpperInvariant(c));
+            sb.Append(c is ' ' or '-' ? '_' : char.ToUpperInvariant(c));
         }
 
         return sb.ToString();

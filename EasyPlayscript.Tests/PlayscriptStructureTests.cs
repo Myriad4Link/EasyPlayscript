@@ -13,7 +13,7 @@ public class PlayscriptStructureTests
         var result = PlayscriptStructureHelper.ParseStructure(input);
         Assert.Single(result);
         Assert.Equal("test", result[0].Name);
-        Assert.Equal("script", result[0].Identifier);
+        Assert.Equal(BlockType.Script, result[0].Identifier);
         Assert.Contains("Hello world", result[0].RawContent);
     }
 
@@ -23,7 +23,7 @@ public class PlayscriptStructureTests
         var input = "text intro[Welcome]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
         Assert.Single(result);
-        Assert.Equal("text", result[0].Identifier);
+        Assert.Equal(BlockType.Text, result[0].Identifier);
         Assert.Equal("intro", result[0].Name);
     }
 
@@ -49,6 +49,36 @@ public class PlayscriptStructureTests
     {
         const string input = "script test]Hello]";
         var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(input);
+        Assert.NotEmpty(errors);
+    }
+
+    [Fact]
+    public void ScriptBlock_HasBlockTypeScript()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("script test[Hello]");
+        Assert.Single(result);
+        Assert.Equal(BlockType.Script, result[0].Identifier);
+    }
+
+    [Fact]
+    public void TextBlock_HasBlockTypeText()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("text intro[Welcome]");
+        Assert.Single(result);
+        Assert.Equal(BlockType.Text, result[0].Identifier);
+    }
+
+    [Fact]
+    public void InterfaceKeyword_ProducesParseError()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors("interface foo[Hello]");
+        Assert.NotEmpty(errors);
+    }
+
+    [Fact]
+    public void UnknownKeyword_ProducesParseError()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors("foo bar[Hello]");
         Assert.NotEmpty(errors);
     }
 

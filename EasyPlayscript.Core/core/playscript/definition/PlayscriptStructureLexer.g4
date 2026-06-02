@@ -2,6 +2,10 @@ lexer grammar PlayscriptStructureLexer;
 
 @header { namespace EasyPlayscript.Parsing; }
 
+SCRIPT      : 'script' ;
+TEXT        : 'text' ;
+INTERFACE   : 'interface' ;
+
 LBRACKET    : '[' -> pushMode(IN_RAW) ;
 IDENTIFIER  : [a-zA-Z_] [a-zA-Z0-9_]* ;
 

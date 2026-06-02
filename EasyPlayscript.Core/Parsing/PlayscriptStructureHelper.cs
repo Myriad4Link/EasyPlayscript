@@ -43,19 +43,28 @@ public static class PlayscriptStructureHelper
 
         public override string VisitStatement(PlayscriptStructureParser.StatementContext context)
         {
-            var identifiers = context.IDENTIFIER();
-            if (identifiers == null || identifiers.Length < 2) return string.Empty;
+            var blockTypeCtx = context.blockType();
+            if (blockTypeCtx == null) return string.Empty;
 
-            var identifier = identifiers[0].GetText();
-            var nameNode = identifiers[1].GetText();
-            var nameSymbol = identifiers[1].Symbol;
+            BlockType blockType;
+            if (blockTypeCtx.SCRIPT() != null)
+                blockType = BlockType.Script;
+            else if (blockTypeCtx.TEXT() != null)
+                blockType = BlockType.Text;
+            else
+                return string.Empty;
+
+            var nameNode = context.IDENTIFIER();
+            if (nameNode == null) return string.Empty;
+
+            var nameSymbol = nameNode.Symbol;
             var line = nameSymbol.Line;
             var col = nameSymbol.Column;
 
             string rawContent = null;
             if (context.RAW_CONTENT() != null) rawContent = context.RAW_CONTENT().GetText();
 
-            Results.Add(new StructureResult(identifier, nameNode, rawContent, line, col));
+            Results.Add(new StructureResult(blockType, nameNode.GetText(), rawContent, line, col));
             return string.Empty;
         }
     }

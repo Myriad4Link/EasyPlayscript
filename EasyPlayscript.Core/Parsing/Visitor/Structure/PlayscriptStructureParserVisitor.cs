@@ -44,4 +44,10 @@ public interface IPlayscriptStructureParserVisitor<Result> : IParseTreeVisitor<R
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitStatement([NotNull] PlayscriptStructureParser.StatementContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.blockType"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitBlockType([NotNull] PlayscriptStructureParser.BlockTypeContext context);
 }

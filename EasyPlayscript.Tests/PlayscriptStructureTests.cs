@@ -11,10 +11,10 @@ public class PlayscriptStructureTests
     {
         const string input = "script test[Hello world]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
-        Assert.Single(result);
-        Assert.Equal("test", result[0].Name);
-        Assert.Equal(BlockType.Script, result[0].Identifier);
-        Assert.Contains("Hello world", result[0].RawContent);
+        Assert.Single(result.Results);
+        Assert.Equal("test", result.Results[0].Name);
+        Assert.Equal(BlockType.Script, result.Results[0].Identifier);
+        Assert.Contains("Hello world", result.Results[0].RawContent);
     }
 
     [Fact]
@@ -22,9 +22,9 @@ public class PlayscriptStructureTests
     {
         var input = "text intro[Welcome]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
-        Assert.Single(result);
-        Assert.Equal(BlockType.Text, result[0].Identifier);
-        Assert.Equal("intro", result[0].Name);
+        Assert.Single(result.Results);
+        Assert.Equal(BlockType.Text, result.Results[0].Identifier);
+        Assert.Equal("intro", result.Results[0].Name);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class PlayscriptStructureTests
     {
         var input = "script a[Hello] text b[World]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
-        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Results.Count);
     }
 
     [Fact]
@@ -40,8 +40,8 @@ public class PlayscriptStructureTests
     {
         const string input = "script test[\nline 1\nline 2\n]";
         var result = PlayscriptStructureHelper.ParseStructure(input);
-        Assert.Contains("line 1", result[0].RawContent);
-        Assert.Contains("line 2", result[0].RawContent);
+        Assert.Contains("line 1", result.Results[0].RawContent);
+        Assert.Contains("line 2", result.Results[0].RawContent);
     }
 
     [Fact]
@@ -56,16 +56,16 @@ public class PlayscriptStructureTests
     public void ScriptBlock_HasBlockTypeScript()
     {
         var result = PlayscriptStructureHelper.ParseStructure("script test[Hello]");
-        Assert.Single(result);
-        Assert.Equal(BlockType.Script, result[0].Identifier);
+        Assert.Single(result.Results);
+        Assert.Equal(BlockType.Script, result.Results[0].Identifier);
     }
 
     [Fact]
     public void TextBlock_HasBlockTypeText()
     {
         var result = PlayscriptStructureHelper.ParseStructure("text intro[Welcome]");
-        Assert.Single(result);
-        Assert.Equal(BlockType.Text, result[0].Identifier);
+        Assert.Single(result.Results);
+        Assert.Equal(BlockType.Text, result.Results[0].Identifier);
     }
 
     [Fact]
@@ -76,10 +76,130 @@ public class PlayscriptStructureTests
     }
 
     [Fact]
+    public void InterfaceDeclaration_TokenizesCorrectly()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+            "interface transition(type: string, duration: decimal) : void");
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_NoParameters_ParsesWithoutErrors()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+            "interface on_complete() : void");
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_SingleParameter_Parses()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+            "interface transition(type: string) : void");
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_MultipleParameters_Parses()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+            "interface transition(type: string, duration: decimal) : void");
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_AllParamTypes_Parses()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+            "interface complex(a: string, b: int, c: decimal, d: bool) : void");
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_AllReturnTypes_Parses()
+    {
+        foreach (var ret in new[] { "void", "string", "int", "decimal", "bool" })
+        {
+            var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+                $"interface f() : {ret}");
+            Assert.Empty(errors);
+        }
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_MultiLine_Parses()
+    {
+        var input = "interface transition(\n  type: string,\n  duration: decimal\n) : void";
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(input);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
     public void UnknownKeyword_ProducesParseError()
     {
         var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors("foo bar[Hello]");
         Assert.NotEmpty(errors);
+    }
+
+    // ─── Step 3: Interface Declaration Extraction ─────────────────────────────
+
+    [Fact]
+    public void InterfaceDeclaration_ExtractsName()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "interface transition(type: string) : void");
+        Assert.Single(result.Interfaces);
+        Assert.Equal("transition", result.Interfaces[0].Name);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_ExtractsParameters()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "interface transition(type: string, duration: decimal) : void");
+        Assert.Equal(2, result.Interfaces[0].Parameters.Count);
+        Assert.Equal("type", result.Interfaces[0].Parameters[0].Name);
+        Assert.Equal(InterfaceType.String, result.Interfaces[0].Parameters[0].Type);
+        Assert.Equal("duration", result.Interfaces[0].Parameters[1].Name);
+        Assert.Equal(InterfaceType.Decimal, result.Interfaces[0].Parameters[1].Type);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_ExtractsReturnType()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "interface transition(type: string) : void");
+        Assert.Equal(InterfaceType.Void, result.Interfaces[0].ReturnType);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_NonVoidReturnType()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "interface get_name() : string");
+        Assert.Equal(InterfaceType.String, result.Interfaces[0].ReturnType);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_NoParameters_EmptyList()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "interface on_complete() : void");
+        Assert.Empty(result.Interfaces[0].Parameters);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_MixedWithScriptBlocks()
+    {
+        var input = """
+            interface transition(type: string) : void
+            script foo[
+            Hello @transition("fade_out")
+            ]
+            """;
+        var result = PlayscriptStructureHelper.ParseStructure(input);
+        Assert.Single(result.Interfaces);
+        Assert.Single(result.Results);
     }
 
     // ─── End-to-End Tests ─────────────────────────────────────────────────────
@@ -87,10 +207,10 @@ public class PlayscriptStructureTests
     private static ScriptBlock ParseEndToEnd(string input)
     {
         var result = PlayscriptStructureHelper.ParseStructure(input);
-        Assert.Single(result);
-        Assert.NotNull(result[0].RawContent);
+        Assert.Single(result.Results);
+        Assert.NotNull(result.Results[0].RawContent);
 
-        var trimmed = result[0].RawContent.Trim('\r', '\n');
+        var trimmed = result.Results[0].RawContent.Trim('\r', '\n');
         var (parser, errors) = PlayscriptContentHelper.Parse(trimmed);
         Assert.Empty(errors);
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace EasyPlayscript.Tests;
 public class PlayscriptGeneratorTests
 {
     private const string ScriptBlockExample = """
+        interface transition(type: string) : void
         script load_tooltip[
         你好。
         这里是……？
@@ -252,5 +254,224 @@ public class PlayscriptGeneratorTests
                                """;
         var diagnostics = GenerateDiagnostics(("bad", content));
         Assert.Contains(diagnostics, d => d.Id is "SCPT002" or "SCPT003");
+    }
+
+    // ─── Step 4: Interface Collection ─────────────────────────────────────────
+
+    [Fact]
+    public void InterfaceDeclaration_NoConsumerCalls_NoError()
+    {
+        var content = """
+            interface transition(type: string) : void
+            script foo[
+            Hello world
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void InterfaceDeclaration_CrossFile_CollectsAll()
+    {
+        var fileA = "interface transition(type: string) : void";
+        var fileB = """
+            script foo[
+            @transition("fade_out")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+    }
+
+    // ─── Step 6: SCPT005 Undeclared Consumer Call ─────────────────────────────
+
+    [Fact]
+    public void UndeclaredConsumerCall_ReportsSCPT005()
+    {
+        var content = """
+            script foo[
+            @transition("fade_out")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT005");
+    }
+
+    [Fact]
+    public void DeclaredConsumerCall_NoSCPT005()
+    {
+        var content = """
+            interface transition(type: string) : void
+            script foo[
+            @transition("fade_out")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+    }
+
+    [Fact]
+    public void DeclaredConsumerCall_CrossFile_NoSCPT005()
+    {
+        var fileA = "interface transition(type: string) : void";
+        var fileB = """
+            script foo[
+            @transition("fade_out")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+    }
+
+    [Fact]
+    public void UndeclaredConsumerCall_PreventsCodeEmission()
+    {
+        var content = """
+            script foo[
+            @undeclared("x")
+            ]
+            """;
+        Assert.Throws<InvalidOperationException>(() => GenerateCode(("file", content)));
+    }
+
+    // ─── Step 7: SCPT006 Duplicate Interface Signature ───────────────────────
+
+    [Fact]
+    public void DuplicateInterfaceSignature_SameFile_ReportsSCPT006()
+    {
+        var content = """
+            interface transition(type: string) : void
+            interface transition(type: string) : void
+            script foo[
+            @transition("x")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT006");
+    }
+
+    [Fact]
+    public void DuplicateInterfaceSignature_CrossFile_ReportsSCPT006()
+    {
+        var fileA = "interface transition(type: string) : void";
+        var fileB = """
+            interface transition(type: string) : void
+            script foo[
+            @transition("x")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT006");
+    }
+
+    [Fact]
+    public void SameNameDifferentSignature_NoSCPT006()
+    {
+        var content = """
+            interface transition(type: string) : void
+            interface transition(type: string, duration: decimal) : void
+            script foo[
+            @transition("x")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT006");
+    }
+
+    [Fact]
+    public void SameNameDifferentReturnType_IsDifferentSignature()
+    {
+        var content = """
+            interface f() : void
+            interface f() : string
+            script foo[
+            @f()
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT006");
+    }
+
+    // ─── Step 8: SCPT007/SCPT008 Argument Type & Count Checking ─────────────
+
+    [Fact]
+    public void ArgumentTypeMatch_NoError()
+    {
+        var content = """
+            interface transition(type: string, duration: decimal) : void
+            script foo[
+            @transition("fade_out", 1.0)
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+    }
+
+    [Fact]
+    public void ArgumentCountMismatch_ReportsSCPT008()
+    {
+        var content = """
+            interface transition(type: string, duration: decimal) : void
+            script foo[
+            @transition("fade_out")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT008");
+    }
+
+    [Fact]
+    public void ArgumentTypeMismatch_ReportsSCPT007()
+    {
+        var content = """
+            interface transition(type: string, duration: decimal) : void
+            script foo[
+            @transition("fade_out", "not_a_number")
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT007");
+    }
+
+    [Fact]
+    public void IntToDecimalCoercion_NoError()
+    {
+        var content = """
+            interface transition(type: string, duration: decimal) : void
+            script foo[
+            @transition("fade_out", 1)
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+    }
+
+    [Fact]
+    public void ZeroArgumentCall_MatchesZeroParamInterface()
+    {
+        var content = """
+            interface on_complete() : void
+            script foo[
+            @on_complete()
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+    }
+
+    [Fact]
+    public void OverloadedInterface_ResolvesCorrectly()
+    {
+        var content = """
+            interface play(sound: string) : void
+            interface play(sound: string, volume: decimal) : void
+            script foo[
+            @play("bgm")
+            @play("sfx", 0.5)
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
     }
 }

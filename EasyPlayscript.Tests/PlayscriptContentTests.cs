@@ -461,4 +461,15 @@ public class PlayscriptContentTests
         Assert.Equal("fade_out", ((StringArgument)((ConsumerCallItem)items[1]).Arguments[0]).Value);
         Assert.Equal(" world", ((TextItem)items[2]).Text);
     }
+
+    // ─── Step 5: Location Tracking ────────────────────────────────────────────
+
+    [Fact]
+    public void Builder_ConsumerCall_StoresLineAndColumn()
+    {
+        var block = BuildScriptBlock("@transition(\"fade_out\")");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.True(item.Line > 0);
+        Assert.True(item.Col >= 0);
+    }
 }

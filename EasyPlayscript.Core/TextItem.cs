@@ -3,15 +3,8 @@ using MessagePack;
 namespace EasyPlayscript;
 
 [MessagePackObject]
-public class TextItem : LineItem
+public class TextItem(string text) : LineItem
 {
     [Key(0)]
-    public string Text { get; set; }
-
-    public TextItem() { }
-
-    public TextItem(string text)
-    {
-        Text = text;
-    }
+    public string Text { get; set; } = text;
 }

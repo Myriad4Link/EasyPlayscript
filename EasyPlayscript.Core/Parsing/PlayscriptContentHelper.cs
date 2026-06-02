@@ -12,7 +12,7 @@ public static class PlayscriptContentHelper
 {
     public static (PlayscriptContentParser parser, List<PlayscriptError> errors) Parse(string input)
     {
-        var inputStream = new AntlrInputStream(input);
+        var inputStream = new AntlrInputStream(input.Trim());
         var lexer = new PlayscriptContentLexer(inputStream);
         var tokens = new CommonTokenStream(lexer);
         var parser = new PlayscriptContentParser(tokens);
@@ -30,15 +30,11 @@ public static class PlayscriptContentHelper
         : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
         public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e)
-        {
+            int line, int charPositionInLine, string msg, RecognitionException e) =>
             errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
-        }
 
         public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e)
-        {
+            int line, int charPositionInLine, string msg, RecognitionException e) =>
             errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
-        }
     }
 }

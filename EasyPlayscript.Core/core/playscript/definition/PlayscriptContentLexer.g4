@@ -47,7 +47,10 @@ C_STRING_LITERAL
     ;
 
 C_FLOAT_LITERAL
-    : '-'? [0-9]+ '.' [0-9]+ -> type(FLOAT_LITERAL)
+    : '-'? [0-9]+ (
+          '.' [0-9]+ ([eE] '-'? [0-9]+)?
+        | [eE] '-'? [0-9]+
+      ) -> type(FLOAT_LITERAL)
     ;
 
 C_INTEGER_LITERAL

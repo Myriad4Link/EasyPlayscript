@@ -15,7 +15,7 @@ public static class PlayscriptLoader
         return data.Scripts;
     }
 
-    public static Dictionary<string, ScriptBlock> LoadTexts(string path, string key)
+    public static Dictionary<string, TextBlock> LoadTexts(string path, string key)
     {
         var data = LoadData(path, key);
         return data.Texts;

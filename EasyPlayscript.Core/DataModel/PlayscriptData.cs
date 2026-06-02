@@ -10,5 +10,5 @@ public class PlayscriptData
     public Dictionary<string, ScriptBlock> Scripts { get; set; } = new();
 
     [Key(1)]
-    public Dictionary<string, ScriptBlock> Texts { get; set; } = new();
+    public Dictionary<string, TextBlock> Texts { get; set; } = new();
 }

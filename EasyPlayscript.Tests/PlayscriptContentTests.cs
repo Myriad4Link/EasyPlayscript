@@ -358,6 +358,17 @@ public class PlayscriptContentTests
     }
 
     [Fact]
+    public void Builder_FloatOverflow_ReportsError()
+    {
+        var (parser, errors) = PlayscriptContentHelper.Parse("@func(1e999)");
+        Assert.Empty(errors);
+        var builder = new PlayscriptCodeBuilder();
+        builder.BuildFromContent(parser.scriptContent());
+        Assert.NotEmpty(builder.Errors);
+        Assert.Contains("out of range", builder.Errors[0].Msg, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void MultiplePages_WithParagraphs()
     {
         const string input = "p1l1\np1l2\n\np2l1\n/\np3l1";
@@ -471,5 +482,108 @@ public class PlayscriptContentTests
         var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
         Assert.True(item.Line > 0);
         Assert.True(item.Col >= 0);
+    }
+
+    // ─── Phase 3: TextBlock Builder Tests ─────────────────────────────────────
+
+    private static TextBlock BuildTextBlock(string input)
+    {
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        Assert.Empty(errors);
+        var builder = new PlayscriptCodeBuilder();
+        builder.BuildTextFromContent(parser.scriptContent());
+        return builder.TextResult;
+    }
+
+    [Fact]
+    public void Builder_TextBlock_SingleLine()
+    {
+        var block = BuildTextBlock("Hello world");
+        Assert.Single(block.Items);
+        Assert.IsType<TextItem>(block.Items[0]);
+        Assert.Equal("Hello world", ((TextItem)block.Items[0]).Text);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_TwoLines_SameParagraph()
+    {
+        var block = BuildTextBlock("line 1\nline 2");
+        Assert.Equal(3, block.Items.Count);
+        Assert.Equal("line 1", ((TextItem)block.Items[0]).Text);
+        Assert.Equal("\n", ((TextItem)block.Items[1]).Text);
+        Assert.Equal("line 2", ((TextItem)block.Items[2]).Text);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_BlankLine_SeparatesContent()
+    {
+        var block = BuildTextBlock("para 1\n\npara 2");
+        Assert.Equal(3, block.Items.Count);
+        Assert.Equal("para 1", ((TextItem)block.Items[0]).Text);
+        Assert.Equal("\n", ((TextItem)block.Items[1]).Text);
+        Assert.Equal("para 2", ((TextItem)block.Items[2]).Text);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_PageBreak_SeparatesContent()
+    {
+        var block = BuildTextBlock("page 1\n/\npage 2");
+        Assert.Equal(3, block.Items.Count);
+        Assert.Equal("page 1", ((TextItem)block.Items[0]).Text);
+        Assert.Equal("\n", ((TextItem)block.Items[1]).Text);
+        Assert.Equal("page 2", ((TextItem)block.Items[2]).Text);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_InlineConsumerCall()
+    {
+        var block = BuildTextBlock("Hi, @get_name().");
+        Assert.Equal(3, block.Items.Count);
+        Assert.IsType<TextItem>(block.Items[0]);
+        Assert.Equal("Hi, ", ((TextItem)block.Items[0]).Text);
+        Assert.IsType<ConsumerCallItem>(block.Items[1]);
+        Assert.Equal("get_name", ((ConsumerCallItem)block.Items[1]).Identifier);
+        Assert.IsType<TextItem>(block.Items[2]);
+        Assert.Equal(".", ((TextItem)block.Items[2]).Text);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_EmptyInput()
+    {
+        var block = BuildTextBlock("");
+        Assert.Empty(block.Items);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_MultiplePagesWithCalls()
+    {
+        var block = BuildTextBlock("Hello @a()\n/\nWorld @b(\"x\")");
+        Assert.Equal(5, block.Items.Count);
+        Assert.Equal("Hello ", ((TextItem)block.Items[0]).Text);
+        Assert.IsType<ConsumerCallItem>(block.Items[1]);
+        Assert.Equal("a", ((ConsumerCallItem)block.Items[1]).Identifier);
+        Assert.Empty(((ConsumerCallItem)block.Items[1]).Arguments);
+        Assert.Equal("\n", ((TextItem)block.Items[2]).Text);
+        Assert.Equal("World ", ((TextItem)block.Items[3]).Text);
+        Assert.IsType<ConsumerCallItem>(block.Items[4]);
+        Assert.Equal("b", ((ConsumerCallItem)block.Items[4]).Identifier);
+        Assert.Single(((ConsumerCallItem)block.Items[4]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)block.Items[4]).Arguments[0]);
+        Assert.Equal("x", ((StringArgument)((ConsumerCallItem)block.Items[4]).Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_OnlyNewlines()
+    {
+        var block = BuildTextBlock("\n\n\n");
+        Assert.Empty(block.Items);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_LeadingTrailingNewlines()
+    {
+        var block = BuildTextBlock("\nHello\n");
+        Assert.Single(block.Items);
+        Assert.Equal("Hello", ((TextItem)block.Items[0]).Text);
     }
 }

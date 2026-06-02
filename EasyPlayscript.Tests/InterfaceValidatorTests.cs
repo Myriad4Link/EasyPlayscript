@@ -16,6 +16,15 @@ public class InterfaceValidatorTests
         return builder.ContentResult;
     }
 
+    private static TextBlock BuildTextBlock(string input)
+    {
+        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        Assert.Empty(errors);
+        var builder = new PlayscriptCodeBuilder();
+        builder.BuildTextFromContent(parser.scriptContent());
+        return builder.TextResult;
+    }
+
     private static InterfaceDeclaration MakeInterface(string name, InterfaceType returnType, params (string n, InterfaceType t)[] parameters)
     {
         var parms = parameters.Select(p => new InterfaceParameter(p.n, p.t)).ToList();
@@ -119,7 +128,7 @@ public class InterfaceValidatorTests
         var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
         var errors = InterfaceValidator.ValidateUndeclaredCalls(
             new List<InterfaceDeclaration>(), scripts, scriptLocs,
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>());
+            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
         Assert.Single(errors);
         Assert.Equal("SCPT005", errors[0].Code);
     }
@@ -133,7 +142,7 @@ public class InterfaceValidatorTests
         var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
         var errors = InterfaceValidator.ValidateUndeclaredCalls(
             new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>());
+            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
         Assert.Empty(errors);
     }
 
@@ -169,7 +178,7 @@ public class InterfaceValidatorTests
         var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
         var errors = InterfaceValidator.ValidateArgumentTypes(
             new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>());
+            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
         Assert.Single(errors);
         Assert.Equal("SCPT008", errors[0].Code);
     }
@@ -183,7 +192,7 @@ public class InterfaceValidatorTests
         var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
         var errors = InterfaceValidator.ValidateArgumentTypes(
             new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>());
+            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
         Assert.Single(errors);
         Assert.Equal("SCPT007", errors[0].Code);
     }
@@ -197,7 +206,7 @@ public class InterfaceValidatorTests
         var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
         var errors = InterfaceValidator.ValidateArgumentTypes(
             new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>());
+            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
         Assert.Empty(errors);
     }
 
@@ -210,7 +219,128 @@ public class InterfaceValidatorTests
         var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
         var errors = InterfaceValidator.ValidateArgumentTypes(
             new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>());
+            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
         Assert.Empty(errors);
+    }
+
+    // ─── Phase 9: GetConsumerCalls (TextBlock) ──────────────────────────────
+
+    [Fact]
+    public void GetConsumerCalls_TextBlock_YieldsAllCalls()
+    {
+        var block = BuildTextBlock("@a() @b(\"x\")");
+        var calls = InterfaceValidator.GetConsumerCalls(block).ToList();
+        Assert.Equal(2, calls.Count);
+        Assert.Equal("a", calls[0].Identifier);
+        Assert.Equal("b", calls[1].Identifier);
+    }
+
+    [Fact]
+    public void GetConsumerCalls_TextBlock_Empty_ReturnsEmpty()
+    {
+        var block = BuildTextBlock("Hello world");
+        var calls = InterfaceValidator.GetConsumerCalls(block).ToList();
+        Assert.Empty(calls);
+    }
+
+    // ─── Phase 9: ValidateUndeclaredCalls (TextBlock) ───────────────────────
+
+    [Fact]
+    public void ValidateUndeclaredCalls_TextBlock_ReturnsError()
+    {
+        var block = BuildTextBlock("@transition(\"fade_out\")");
+        var texts = new Dictionary<string, TextBlock> { ["intro"] = block };
+        var textLocs = new Dictionary<string, (string, int, int)> { ["intro"] = ("file", 1, 0) };
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(
+            new List<InterfaceDeclaration>(),
+            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>(),
+            texts, textLocs);
+        Assert.Single(errors);
+        Assert.Equal("SCPT005", errors[0].Code);
+    }
+
+    [Fact]
+    public void ValidateUndeclaredCalls_TextBlock_Declared_ReturnsEmpty()
+    {
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
+        var block = BuildTextBlock("@transition(\"fade_out\")");
+        var texts = new Dictionary<string, TextBlock> { ["intro"] = block };
+        var textLocs = new Dictionary<string, (string, int, int)> { ["intro"] = ("file", 1, 0) };
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(
+            new List<InterfaceDeclaration> { iface },
+            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>(),
+            texts, textLocs);
+        Assert.Empty(errors);
+    }
+
+    // ─── Phase 9: ValidateArgumentTypes (TextBlock) ─────────────────────────
+
+    [Fact]
+    public void ValidateArgumentTypes_TextBlock_TypeMismatch_ReturnsError()
+    {
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var block = BuildTextBlock("@transition(\"fade_out\", \"not_a_number\")");
+        var texts = new Dictionary<string, TextBlock> { ["intro"] = block };
+        var textLocs = new Dictionary<string, (string, int, int)> { ["intro"] = ("file", 1, 0) };
+        var errors = InterfaceValidator.ValidateArgumentTypes(
+            new List<InterfaceDeclaration> { iface },
+            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>(),
+            texts, textLocs);
+        Assert.Single(errors);
+        Assert.Equal("SCPT007", errors[0].Code);
+    }
+
+    // ─── Phase 10: GetConsumerCalls (ScriptBlock verification) ──────────────
+
+    [Fact]
+    public void GetConsumerCalls_ScriptBlock_StillYieldsAllCalls()
+    {
+        var block = BuildScriptBlock("@a() @b(\"x\")");
+        var calls = InterfaceValidator.GetConsumerCalls(block).ToList();
+        Assert.Equal(2, calls.Count);
+        Assert.Equal("a", calls[0].Identifier);
+        Assert.Equal("b", calls[1].Identifier);
+    }
+
+    [Fact]
+    public void GetConsumerCalls_ScriptBlock_NestedInMultipleLines()
+    {
+        var block = BuildScriptBlock("page1 @a()\n\npage2 @b()");
+        var calls = InterfaceValidator.GetConsumerCalls(block).ToList();
+        Assert.Equal(2, calls.Count);
+        Assert.Equal("a", calls[0].Identifier);
+        Assert.Equal("b", calls[1].Identifier);
+    }
+
+    // ─── Phase 10: Mixed Script+Text validation ─────────────────────────────
+
+    [Fact]
+    public void ValidateUndeclaredCalls_ScriptBlock_MixedWithTextBlock()
+    {
+        var scriptBlock = BuildScriptBlock("@undeclared_a()");
+        var textBlock = BuildTextBlock("@undeclared_b()");
+        var scripts = new Dictionary<string, ScriptBlock> { ["s"] = scriptBlock };
+        var scriptLocs = new Dictionary<string, (string, int, int)> { ["s"] = ("file", 1, 0) };
+        var texts = new Dictionary<string, TextBlock> { ["t"] = textBlock };
+        var textLocs = new Dictionary<string, (string, int, int)> { ["t"] = ("file", 2, 0) };
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(
+            new List<InterfaceDeclaration>(),
+            scripts, scriptLocs, texts, textLocs);
+        Assert.Equal(2, errors.Count);
+        Assert.All(errors, e => Assert.Equal("SCPT005", e.Code));
+    }
+
+    [Fact]
+    public void ValidateArgumentTypes_ScriptBlock_TypeMismatch()
+    {
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var block = BuildScriptBlock("@transition(\"fade_out\", \"not_a_number\")");
+        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
+        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
+        var errors = InterfaceValidator.ValidateArgumentTypes(
+            new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
+            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        Assert.Single(errors);
+        Assert.Equal("SCPT007", errors[0].Code);
     }
 }

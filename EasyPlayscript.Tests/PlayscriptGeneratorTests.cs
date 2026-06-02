@@ -75,6 +75,14 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
+    public void GeneratedCode_TextBlock_ReferencesTextBlockType()
+    {
+        var code = GenerateCode(("TextExample", TextBlockExample));
+        Assert.Contains("Dictionary<string, TextBlock>", code);
+        Assert.DoesNotContain("Dictionary<string, ScriptBlock> _texts", code);
+    }
+
+    [Fact]
     public void GeneratedCode_ContainsRegistryClass()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
@@ -473,5 +481,51 @@ public class PlayscriptGeneratorTests
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+    }
+
+    // ─── Phase 7: TextBlock Consumer Call ────────────────────────────────────
+
+    [Fact]
+    public void Generator_TextBlock_HasConsumerCall()
+    {
+        var content = """
+            interface get_name() : string
+            text intro[
+            @get_name()
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+    }
+
+    // ─── Phase 10: Script Block Verification ────────────────────────────────
+
+    [Fact]
+    public void Generator_ScriptBlock_PreservesConsumerCallStructure()
+    {
+        var content = """
+            interface get_name() : string
+            script load_tooltip[
+            Hello @get_name().
+            ]
+            """;
+        var code = GenerateCode(("file", content));
+        Assert.Contains("public static Script LOAD_TOOLTIP", code);
+        Assert.Contains("LoadScripts", code);
+    }
+
+    [Fact]
+    public void Generator_ScriptBlock_MixedTextAndCalls()
+    {
+        var content = """
+            interface transition(type: string) : void
+            script load_tooltip[
+            Hello @transition("fade_out") world
+            ]
+            """;
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+        var code = GenerateCode(("file", content));
+        Assert.Contains("public static Script LOAD_TOOLTIP", code);
     }
 }

@@ -40,7 +40,7 @@ public class ScriptRegistryTests
         var textText = textFile.GetText().ToString();
 
         Assert.Contains("public class Text", textText);
-        Assert.Contains("public ScriptBlock Block { get; set; }", textText);
+        Assert.Contains("public TextBlock Block { get; set; }", textText);
     }
 
     [Fact]

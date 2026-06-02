@@ -354,10 +354,19 @@ public class PlayscriptStructureTests
     [Fact]
     public void EndToEnd_TextBlock()
     {
-        var block = ParseEndToEnd("text intro[Welcome]");
-        Assert.Single(block.Pages);
-        Assert.Single(block.Pages[0].Paragraphs);
-        Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Equal("Welcome", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        var result = PlayscriptStructureHelper.ParseStructure("text intro[Welcome]");
+        Assert.Single(result.Results);
+        Assert.NotNull(result.Results[0].RawContent);
+
+        var trimmed = result.Results[0].RawContent.Trim('\r', '\n');
+        var (parser, errors) = PlayscriptContentHelper.Parse(trimmed);
+        Assert.Empty(errors);
+
+        var builder = new PlayscriptCodeBuilder();
+        builder.BuildTextFromContent(parser.scriptContent());
+        var block = builder.TextResult;
+
+        Assert.Single(block.Items);
+        Assert.Equal("Welcome", ((TextItem)block.Items[0]).Text);
     }
 }

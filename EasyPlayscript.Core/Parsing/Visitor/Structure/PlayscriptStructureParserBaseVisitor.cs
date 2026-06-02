@@ -46,7 +46,7 @@ public partial class PlayscriptStructureParserBaseVisitor<Result> : AbstractPars
 	/// <return>The visitor result.</return>
 	public virtual Result VisitPlayscript([NotNull] PlayscriptStructureParser.PlayscriptContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.statement"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.topLevelStatement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -54,7 +54,7 @@ public partial class PlayscriptStructureParserBaseVisitor<Result> : AbstractPars
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitStatement([NotNull] PlayscriptStructureParser.StatementContext context) { return VisitChildren(context); }
+	public virtual Result VisitTopLevelStatement([NotNull] PlayscriptStructureParser.TopLevelStatementContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.blockType"/>.
 	/// <para>
@@ -65,4 +65,34 @@ public partial class PlayscriptStructureParserBaseVisitor<Result> : AbstractPars
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitBlockType([NotNull] PlayscriptStructureParser.BlockTypeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.paramList"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitParamList([NotNull] PlayscriptStructureParser.ParamListContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.parameter"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitParameter([NotNull] PlayscriptStructureParser.ParameterContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.typeSpec"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitTypeSpec([NotNull] PlayscriptStructureParser.TypeSpecContext context) { return VisitChildren(context); }
 }

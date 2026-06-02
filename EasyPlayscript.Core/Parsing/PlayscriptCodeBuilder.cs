@@ -73,7 +73,12 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                                                 args.Add(arg);
                                         }
 
-                                        line.Items.Add(new ConsumerCallItem(callIdentifier, args));
+                                        var startToken = callCtx.Start;
+                                        line.Items.Add(new ConsumerCallItem(callIdentifier, args)
+                                        {
+                                            Line = startToken.Line,
+                                            Col = startToken.Column
+                                        });
                                     }
                                     break;
                                 }

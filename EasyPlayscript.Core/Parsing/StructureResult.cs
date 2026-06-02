@@ -1,4 +1,18 @@
+using System.Collections.Generic;
+
 namespace EasyPlayscript.Parsing;
+
+public class StructureParseResult
+{
+    public List<StructureResult> Results { get; }
+    public List<InterfaceDeclaration> Interfaces { get; }
+
+    public StructureParseResult(List<StructureResult> results, List<InterfaceDeclaration> interfaces)
+    {
+        Results = results;
+        Interfaces = interfaces;
+    }
+}
 
 /// <summary>
 /// Represents a parsed structure result from Pass 1, containing compiler call info and optional raw block content.

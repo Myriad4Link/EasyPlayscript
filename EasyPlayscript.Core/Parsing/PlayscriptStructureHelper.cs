@@ -10,13 +10,13 @@ namespace EasyPlayscript.Parsing;
 /// </summary>
 public static class PlayscriptStructureHelper
 {
-    public static List<StructureResult> ParseStructure(string content)
+    public static StructureParseResult ParseStructure(string content)
     {
-        var (results, _) = ParseStructureWithErrors(content);
-        return results;
+        var (result, _) = ParseStructureWithErrors(content);
+        return result;
     }
 
-    public static (List<StructureResult> results, List<PlayscriptError> errors)
+    public static (StructureParseResult result, List<PlayscriptError> errors)
         ParseStructureWithErrors(string content)
     {
         var inputStream = new AntlrInputStream(content);
@@ -34,38 +34,80 @@ public static class PlayscriptStructureHelper
         var visitor = new StructureVisitor();
         visitor.Visit(tree);
 
-        return (visitor.Results, errors);
+        return (new StructureParseResult(visitor.Results, visitor.Interfaces), errors);
     }
 
     private class StructureVisitor : PlayscriptStructureParserBaseVisitor<string>
     {
         public List<StructureResult> Results { get; } = [];
+        public List<InterfaceDeclaration> Interfaces { get; } = [];
 
-        public override string VisitStatement(PlayscriptStructureParser.StatementContext context)
+        public override string VisitTopLevelStatement(PlayscriptStructureParser.TopLevelStatementContext context)
         {
             var blockTypeCtx = context.blockType();
-            if (blockTypeCtx == null) return string.Empty;
+            if (blockTypeCtx != null)
+            {
+                BlockType blockType;
+                if (blockTypeCtx.SCRIPT() != null)
+                    blockType = BlockType.Script;
+                else if (blockTypeCtx.TEXT() != null)
+                    blockType = BlockType.Text;
+                else
+                    return string.Empty;
 
-            BlockType blockType;
-            if (blockTypeCtx.SCRIPT() != null)
-                blockType = BlockType.Script;
-            else if (blockTypeCtx.TEXT() != null)
-                blockType = BlockType.Text;
-            else
+                var nameNode = context.IDENTIFIER();
+                if (nameNode == null) return string.Empty;
+
+                var nameSymbol = nameNode.Symbol;
+                var line = nameSymbol.Line;
+                var col = nameSymbol.Column;
+
+                string rawContent = null;
+                if (context.RAW_CONTENT() != null) rawContent = context.RAW_CONTENT().GetText();
+
+                Results.Add(new StructureResult(blockType, nameNode.GetText(), rawContent, line, col));
                 return string.Empty;
+            }
 
-            var nameNode = context.IDENTIFIER();
-            if (nameNode == null) return string.Empty;
+            if (context.INTERFACE() != null)
+            {
+                var nameNode = context.IDENTIFIER();
+                if (nameNode == null) return string.Empty;
 
-            var nameSymbol = nameNode.Symbol;
-            var line = nameSymbol.Line;
-            var col = nameSymbol.Column;
+                var typeSpecCtx = context.typeSpec();
+                if (typeSpecCtx == null) return string.Empty;
 
-            string rawContent = null;
-            if (context.RAW_CONTENT() != null) rawContent = context.RAW_CONTENT().GetText();
+                var nameSymbol = nameNode.Symbol;
+                var line = nameSymbol.Line;
+                var col = nameSymbol.Column;
 
-            Results.Add(new StructureResult(blockType, nameNode.GetText(), rawContent, line, col));
+                var parameters = new List<InterfaceParameter>();
+                var paramListCtx = context.paramList();
+                if (paramListCtx != null)
+                {
+                    foreach (var paramCtx in paramListCtx.parameter())
+                    {
+                        var paramName = paramCtx.IDENTIFIER().GetText();
+                        var paramType = MapTypeSpec(paramCtx.typeSpec());
+                        parameters.Add(new InterfaceParameter(paramName, paramType));
+                    }
+                }
+
+                var returnType = MapTypeSpec(typeSpecCtx);
+
+                Interfaces.Add(new InterfaceDeclaration(nameNode.GetText(), parameters, returnType, line, col));
+            }
+
             return string.Empty;
+        }
+
+        private static InterfaceType MapTypeSpec(PlayscriptStructureParser.TypeSpecContext typeSpec)
+        {
+            if (typeSpec.STRING_TYPE() != null) return InterfaceType.String;
+            if (typeSpec.INT_TYPE() != null) return InterfaceType.Int;
+            if (typeSpec.DECIMAL_TYPE() != null) return InterfaceType.Decimal;
+            if (typeSpec.BOOL_TYPE() != null) return InterfaceType.Bool;
+            return InterfaceType.Void;
         }
     }
 

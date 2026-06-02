@@ -12,6 +12,12 @@ public class ConsumerCallItem : LineItem
     [Key(1)]
     public List<ArgumentValue> Arguments { get; set; } = new List<ArgumentValue>();
 
+    [IgnoreMember]
+    public int Line { get; set; }
+
+    [IgnoreMember]
+    public int Col { get; set; }
+
     public ConsumerCallItem() { }
 
     public ConsumerCallItem(string identifier, List<ArgumentValue> arguments)

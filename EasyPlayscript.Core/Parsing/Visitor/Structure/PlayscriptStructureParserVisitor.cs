@@ -39,15 +39,33 @@ public interface IPlayscriptStructureParserVisitor<Result> : IParseTreeVisitor<R
 	/// <return>The visitor result.</return>
 	Result VisitPlayscript([NotNull] PlayscriptStructureParser.PlayscriptContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.statement"/>.
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.topLevelStatement"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitStatement([NotNull] PlayscriptStructureParser.StatementContext context);
+	Result VisitTopLevelStatement([NotNull] PlayscriptStructureParser.TopLevelStatementContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.blockType"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitBlockType([NotNull] PlayscriptStructureParser.BlockTypeContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.paramList"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitParamList([NotNull] PlayscriptStructureParser.ParamListContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.parameter"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitParameter([NotNull] PlayscriptStructureParser.ParameterContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.typeSpec"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitTypeSpec([NotNull] PlayscriptStructureParser.TypeSpecContext context);
 }

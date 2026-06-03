@@ -30,20 +30,20 @@ public class PlayscriptGenerator : IIncrementalGenerator
         {
             var (configOptions, allResults) = combined;
 
-            var ctx = new MergeContext(spc);
+            var ctx = new GeneratorContext(spc);
 
             foreach (var diag in allResults.SelectMany(result => result.diagnostics))
             {
                 spc.CancellationToken.ThrowIfCancellationRequested();
                 spc.ReportDiagnostic(diag);
                 if (diag.Severity == DiagnosticSeverity.Error)
-                    ctx.HasErrors = true;
+                    ctx.Data.HasErrors = true;
             }
 
             MergeBlocks(allResults, ctx);
             ReportValidationDiagnostics(ctx);
 
-            if (ctx.HasErrors)
+            if (ctx.Data.HasErrors)
                 return;
 
             spc.CancellationToken.ThrowIfCancellationRequested();
@@ -54,26 +54,21 @@ public class PlayscriptGenerator : IIncrementalGenerator
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
             aesKey = string.IsNullOrEmpty(aesKey) ? "dev-key-change-me" : aesKey;
 
-            var code = RegistryEmitter.Generate(ctx.Scripts, ctx.Texts, outputPath!, aesKey!);
+            var code = RegistryEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey!);
 
             spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
         });
     }
 
-    private sealed class MergeContext(SourceProductionContext spc)
+    private sealed class GeneratorContext(SourceProductionContext spc)
     {
-        public Dictionary<string, ScriptBlock> Scripts { get; } = new();
-        public Dictionary<string, TextBlock> Texts { get; } = new();
-        public Dictionary<string, (string filePath, int line, int col)> ScriptLocations { get; } = new();
-        public Dictionary<string, (string filePath, int line, int col)> TextLocations { get; } = new();
-        public List<InterfaceDeclaration> Interfaces { get; } = [];
-        public bool HasErrors { get; set; }
+        public PlayscriptCompilationData Data { get; } = new();
 
         public void ReportDiagnostic(Diagnostic diag)
         {
             spc.ReportDiagnostic(diag);
-            HasErrors = true;
+            Data.HasErrors = true;
         }
     }
 
@@ -130,66 +125,56 @@ public class PlayscriptGenerator : IIncrementalGenerator
         ImmutableArray<(List<(string name, ScriptBlock block, int line, int col)> scriptBlocks,
             List<(string name, TextBlock block, int line, int col)> textBlocks,
             List<InterfaceDeclaration> interfaces, string filePath, List<Diagnostic> diagnostics)> allResults,
-        MergeContext ctx)
+        GeneratorContext ctx)
     {
         foreach (var result in allResults)
         {
-            ctx.Interfaces.AddRange(result.interfaces);
+            ctx.Data.Interfaces.AddRange(result.interfaces);
 
             foreach (var (name, block, line, col) in result.scriptBlocks)
             {
-                if (ctx.Scripts.ContainsKey(name))
+                if (ctx.Data.Scripts.ContainsKey(name))
                 {
-                    var loc = ctx.ScriptLocations[name];
+                    var loc = ctx.Data.ScriptLocations[name];
                     ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
                         MakeLocation(loc.filePath, loc.line, loc.col),
                         "script", name));
                 }
                 else
-                    ctx.ScriptLocations[name] = (result.filePath, line, col);
+                    ctx.Data.ScriptLocations[name] = (result.filePath, line, col);
 
-                ctx.Scripts[name] = block;
+                ctx.Data.Scripts[name] = block;
             }
 
             foreach (var (name, block, line, col) in result.textBlocks)
             {
-                if (ctx.Texts.ContainsKey(name))
+                if (ctx.Data.Texts.ContainsKey(name))
                 {
-                    var loc = ctx.TextLocations[name];
+                    var loc = ctx.Data.TextLocations[name];
                     ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
                         MakeLocation(loc.filePath, loc.line, loc.col),
                         "text", name));
                 }
                 else
-                    ctx.TextLocations[name] = (result.filePath, line, col);
+                    ctx.Data.TextLocations[name] = (result.filePath, line, col);
 
-                ctx.Texts[name] = block;
+                ctx.Data.Texts[name] = block;
             }
         }
     }
 
-    private static void ReportValidationDiagnostics(MergeContext ctx)
+    private static void ReportValidationDiagnostics(GeneratorContext ctx)
     {
         var allDiagnostics = new List<ValidationDiagnostic>();
-        allDiagnostics.AddRange(InterfaceValidator.ValidateUndeclaredCalls(
-            ctx.Interfaces, ctx.Scripts, ctx.ScriptLocations, ctx.Texts, ctx.TextLocations));
-        allDiagnostics.AddRange(InterfaceValidator.ValidateDuplicateSignatures(ctx.Interfaces));
-        allDiagnostics.AddRange(InterfaceValidator.ValidateArgumentTypes(
-            ctx.Interfaces, ctx.Scripts, ctx.ScriptLocations, ctx.Texts, ctx.TextLocations));
+        allDiagnostics.AddRange(InterfaceValidator.ValidateUndeclaredCalls(ctx.Data));
+        allDiagnostics.AddRange(InterfaceValidator.ValidateDuplicateSignatures(ctx.Data));
+        allDiagnostics.AddRange(InterfaceValidator.ValidateArgumentTypes(ctx.Data));
 
         foreach (var diag in allDiagnostics)
         {
-            var descriptor = diag.Code switch
-            {
-                "SCPT005" => PlayscriptDiagnostics.UndeclaredConsumerCall,
-                "SCPT006" => PlayscriptDiagnostics.DuplicateInterfaceSignature,
-                "SCPT007" => PlayscriptDiagnostics.ArgumentTypeMismatch,
-                "SCPT008" => PlayscriptDiagnostics.ArgumentCountMismatch,
-                _ => null
-            };
-            if (descriptor != null)
-                ctx.ReportDiagnostic(Diagnostic.Create(descriptor,
-                    MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
+            var descriptor = PlayscriptDiagnostics.GetDescriptor(diag.Code);
+            ctx.ReportDiagnostic(Diagnostic.Create(descriptor,
+                MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
         }
     }
 
@@ -227,7 +212,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
     {
         if (isScript)
         {
-            builder.BuildFromContent(tree);
+            builder.BuildScriptFromContent(tree);
             scriptBlock = builder.ContentResult;
             textBlock = null;
         }

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
 namespace EasyPlayscript;
@@ -64,4 +66,25 @@ internal static class PlayscriptDiagnostics
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static readonly Dictionary<string, DiagnosticDescriptor> ByCodeMap = new()
+    {
+        ["SCPT002"] = UnexpectedToken,
+        ["SCPT003"] = MismatchedInput,
+        ["SCPT004"] = DuplicateScriptName,
+        ["SCPT005"] = UndeclaredConsumerCall,
+        ["SCPT006"] = DuplicateInterfaceSignature,
+        ["SCPT007"] = ArgumentTypeMismatch,
+        ["SCPT008"] = ArgumentCountMismatch,
+    };
+
+    internal static DiagnosticDescriptor GetDescriptor(string code)
+    {
+        if (ByCodeMap.TryGetValue(code, out var descriptor))
+            return descriptor;
+
+        throw new InvalidOperationException(
+            $"Missing DiagnosticDescriptor for code \"{code}\". " +
+            $"Add it to {nameof(PlayscriptDiagnostics)}.{nameof(ByCodeMap)} to keep validation codes in sync.");
+    }
 }

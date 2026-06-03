@@ -12,7 +12,7 @@ public class InterfaceValidatorTests
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildFromContent(parser.scriptContent());
+        builder.BuildScriptFromContent(parser.scriptContent());
         return builder.ContentResult;
     }
 
@@ -124,11 +124,10 @@ public class InterfaceValidatorTests
     public void ValidateUndeclaredCalls_NoInterface_ReturnsError()
     {
         var block = BuildScriptBlock("@transition(\"fade_out\")");
-        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateUndeclaredCalls(
-            new List<InterfaceDeclaration>(), scripts, scriptLocs,
-            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        var data = new PlayscriptCompilationData();
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Single(errors);
         Assert.Equal("SCPT005", errors[0].Code);
     }
@@ -138,11 +137,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
         var block = BuildScriptBlock("@transition(\"fade_out\")");
-        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateUndeclaredCalls(
-            new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Empty(errors);
     }
 
@@ -153,7 +152,9 @@ public class InterfaceValidatorTests
     {
         var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
         var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
-        var errors = InterfaceValidator.ValidateDuplicateSignatures(new List<InterfaceDeclaration> { a, b });
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        var errors = InterfaceValidator.ValidateDuplicateSignatures(data);
         Assert.Single(errors);
         Assert.Equal("SCPT006", errors[0].Code);
     }
@@ -163,7 +164,9 @@ public class InterfaceValidatorTests
     {
         var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
         var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
-        var errors = InterfaceValidator.ValidateDuplicateSignatures(new List<InterfaceDeclaration> { a, b });
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        var errors = InterfaceValidator.ValidateDuplicateSignatures(data);
         Assert.Empty(errors);
     }
 
@@ -174,11 +177,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\")");
-        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateArgumentTypes(
-            new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal("SCPT008", errors[0].Code);
     }
@@ -188,11 +191,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", \"not_a_number\")");
-        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateArgumentTypes(
-            new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal("SCPT007", errors[0].Code);
     }
@@ -202,11 +205,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", 1)");
-        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateArgumentTypes(
-            new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Empty(errors);
     }
 
@@ -215,11 +218,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", 1.0)");
-        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateArgumentTypes(
-            new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Empty(errors);
     }
 
@@ -249,12 +252,10 @@ public class InterfaceValidatorTests
     public void ValidateUndeclaredCalls_TextBlock_ReturnsError()
     {
         var block = BuildTextBlock("@transition(\"fade_out\")");
-        var texts = new Dictionary<string, TextBlock> { ["intro"] = block };
-        var textLocs = new Dictionary<string, (string, int, int)> { ["intro"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateUndeclaredCalls(
-            new List<InterfaceDeclaration>(),
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>(),
-            texts, textLocs);
+        var data = new PlayscriptCompilationData();
+        data.Texts["intro"] = block;
+        data.TextLocations["intro"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Single(errors);
         Assert.Equal("SCPT005", errors[0].Code);
     }
@@ -264,12 +265,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
         var block = BuildTextBlock("@transition(\"fade_out\")");
-        var texts = new Dictionary<string, TextBlock> { ["intro"] = block };
-        var textLocs = new Dictionary<string, (string, int, int)> { ["intro"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateUndeclaredCalls(
-            new List<InterfaceDeclaration> { iface },
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>(),
-            texts, textLocs);
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Texts["intro"] = block;
+        data.TextLocations["intro"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Empty(errors);
     }
 
@@ -280,12 +280,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
         var block = BuildTextBlock("@transition(\"fade_out\", \"not_a_number\")");
-        var texts = new Dictionary<string, TextBlock> { ["intro"] = block };
-        var textLocs = new Dictionary<string, (string, int, int)> { ["intro"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateArgumentTypes(
-            new List<InterfaceDeclaration> { iface },
-            new Dictionary<string, ScriptBlock>(), new Dictionary<string, (string, int, int)>(),
-            texts, textLocs);
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Texts["intro"] = block;
+        data.TextLocations["intro"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal("SCPT007", errors[0].Code);
     }
@@ -319,13 +318,12 @@ public class InterfaceValidatorTests
     {
         var scriptBlock = BuildScriptBlock("@undeclared_a()");
         var textBlock = BuildTextBlock("@undeclared_b()");
-        var scripts = new Dictionary<string, ScriptBlock> { ["s"] = scriptBlock };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["s"] = ("file", 1, 0) };
-        var texts = new Dictionary<string, TextBlock> { ["t"] = textBlock };
-        var textLocs = new Dictionary<string, (string, int, int)> { ["t"] = ("file", 2, 0) };
-        var errors = InterfaceValidator.ValidateUndeclaredCalls(
-            new List<InterfaceDeclaration>(),
-            scripts, scriptLocs, texts, textLocs);
+        var data = new PlayscriptCompilationData();
+        data.Scripts["s"] = scriptBlock;
+        data.ScriptLocations["s"] = ("file", 1, 0);
+        data.Texts["t"] = textBlock;
+        data.TextLocations["t"] = ("file", 2, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Equal(2, errors.Count);
         Assert.All(errors, e => Assert.Equal("SCPT005", e.Code));
     }
@@ -335,11 +333,11 @@ public class InterfaceValidatorTests
     {
         var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", \"not_a_number\")");
-        var scripts = new Dictionary<string, ScriptBlock> { ["foo"] = block };
-        var scriptLocs = new Dictionary<string, (string, int, int)> { ["foo"] = ("file", 1, 0) };
-        var errors = InterfaceValidator.ValidateArgumentTypes(
-            new List<InterfaceDeclaration> { iface }, scripts, scriptLocs,
-            new Dictionary<string, TextBlock>(), new Dictionary<string, (string, int, int)>());
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal("SCPT007", errors[0].Code);
     }

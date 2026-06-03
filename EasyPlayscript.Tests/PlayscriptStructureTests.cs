@@ -215,7 +215,7 @@ public class PlayscriptStructureTests
         Assert.Empty(errors);
 
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildFromContent(parser.scriptContent());
+        builder.BuildScriptFromContent(parser.scriptContent());
         return builder.ContentResult;
     }
 

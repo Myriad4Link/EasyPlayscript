@@ -352,7 +352,7 @@ public class PlayscriptContentTests
         var (parser, errors) = PlayscriptContentHelper.Parse("@func(9999999999)");
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildFromContent(parser.scriptContent());
+        builder.BuildScriptFromContent(parser.scriptContent());
         Assert.NotEmpty(builder.Errors);
         Assert.Contains("out of range", builder.Errors[0].Msg, System.StringComparison.OrdinalIgnoreCase);
     }
@@ -363,7 +363,7 @@ public class PlayscriptContentTests
         var (parser, errors) = PlayscriptContentHelper.Parse("@func(1e999)");
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildFromContent(parser.scriptContent());
+        builder.BuildScriptFromContent(parser.scriptContent());
         Assert.NotEmpty(builder.Errors);
         Assert.Contains("out of range", builder.Errors[0].Msg, System.StringComparison.OrdinalIgnoreCase);
     }
@@ -390,7 +390,7 @@ public class PlayscriptContentTests
         var (parser, errors) = PlayscriptContentHelper.Parse(input);
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildFromContent(parser.scriptContent());
+        builder.BuildScriptFromContent(parser.scriptContent());
         return builder.ContentResult;
     }
 
@@ -451,7 +451,7 @@ public class PlayscriptContentTests
     public void Builder_NullContext_ProducesEmptyScriptBlock()
     {
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildFromContent(null);
+        builder.BuildScriptFromContent(null);
         Assert.NotNull(builder.ContentResult);
         Assert.Empty(builder.ContentResult.Pages);
     }

@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Antlr4.Runtime.Tree;
 
@@ -21,7 +19,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
     /// Builds a <see cref="ScriptBlock"/> from Pass 2 content AST.
     /// Used when processing raw content extracted by Pass 1.
     /// </summary>
-    public void BuildFromContent(PlayscriptContentParser.ScriptContentContext context)
+    public void BuildScriptFromContent(PlayscriptContentParser.ScriptContentContext context)
     {
         var block = new ScriptBlock();
 

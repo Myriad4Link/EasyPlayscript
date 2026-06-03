@@ -45,50 +45,34 @@ public static class InterfaceValidator
         return $"{decl.Name}({paramTypes}):{decl.ReturnType.ToString().ToLowerInvariant()}";
     }
 
-    public static List<ValidationDiagnostic> ValidateUndeclaredCalls(
-        IList<InterfaceDeclaration> interfaces,
-        IDictionary<string, ScriptBlock> scripts,
-        IDictionary<string, (string filePath, int line, int col)> scriptLocations,
-        IDictionary<string, TextBlock> texts,
-        IDictionary<string, (string filePath, int line, int col)> textLocations)
+    public static List<ValidationDiagnostic> ValidateUndeclaredCalls(PlayscriptCompilationData data)
     {
-        var errors = new List<ValidationDiagnostic>();
-        var declaredNames = new HashSet<string>(interfaces.Select(i => i.Name));
+        var declaredNames = new HashSet<string>(data.Interfaces.Select(i => i.Name));
 
-        foreach (var kvp in scripts)
-        {
-            var loc = scriptLocations[kvp.Key];
-            foreach (var call in GetConsumerCalls(kvp.Value))
-            {
-                if (!declaredNames.Contains(call.Identifier))
-                    errors.Add(new ValidationDiagnostic("SCPT005",
-                        $"Consumer call \"{call.Identifier}\" is not declared in any interface",
-                        loc.filePath, call.Line, call.Col, call.Identifier));
-            }
-        }
-
-        foreach (var kvp in texts)
-        {
-            var loc = textLocations[kvp.Key];
-            foreach (var call in GetConsumerCalls(kvp.Value))
-            {
-                if (!declaredNames.Contains(call.Identifier))
-                    errors.Add(new ValidationDiagnostic("SCPT005",
-                        $"Consumer call \"{call.Identifier}\" is not declared in any interface",
-                        loc.filePath, call.Line, call.Col, call.Identifier));
-            }
-        }
+        var errors = (from kvp in data.Scripts
+            let loc = data.ScriptLocations[kvp.Key]
+            from call in GetConsumerCalls(kvp.Value)
+            where !declaredNames.Contains(call.Identifier)
+            select new ValidationDiagnostic("SCPT005",
+                $"Consumer call \"{call.Identifier}\" is not declared in any interface", loc.filePath, call.Line,
+                call.Col, call.Identifier)).ToList();
+        errors.AddRange(from kvp in data.Texts
+            let loc = data.TextLocations[kvp.Key]
+            from call in GetConsumerCalls(kvp.Value)
+            where !declaredNames.Contains(call.Identifier)
+            select new ValidationDiagnostic("SCPT005",
+                $"Consumer call \"{call.Identifier}\" is not declared in any interface", loc.filePath, call.Line,
+                call.Col, call.Identifier));
 
         return errors;
     }
 
-    public static List<ValidationDiagnostic> ValidateDuplicateSignatures(
-        IList<InterfaceDeclaration> interfaces)
+    public static List<ValidationDiagnostic> ValidateDuplicateSignatures(PlayscriptCompilationData data)
     {
         var errors = new List<ValidationDiagnostic>();
         var signatureMap = new Dictionary<string, InterfaceDeclaration>();
 
-        foreach (var decl in interfaces)
+        foreach (var decl in data.Interfaces)
         {
             var key = MakeSignatureKey(decl);
             if (signatureMap.ContainsKey(key))
@@ -106,17 +90,12 @@ public static class InterfaceValidator
         return errors;
     }
 
-    public static List<ValidationDiagnostic> ValidateArgumentTypes(
-        IList<InterfaceDeclaration> interfaces,
-        IDictionary<string, ScriptBlock> scripts,
-        IDictionary<string, (string filePath, int line, int col)> scriptLocations,
-        IDictionary<string, TextBlock> texts,
-        IDictionary<string, (string filePath, int line, int col)> textLocations)
+    public static List<ValidationDiagnostic> ValidateArgumentTypes(PlayscriptCompilationData data)
     {
         var errors = new List<ValidationDiagnostic>();
 
         var interfacesByName = new Dictionary<string, List<InterfaceDeclaration>>();
-        foreach (var decl in interfaces)
+        foreach (var decl in data.Interfaces)
         {
             if (!interfacesByName.TryGetValue(decl.Name, out var list))
             {
@@ -127,16 +106,16 @@ public static class InterfaceValidator
             list.Add(decl);
         }
 
-        foreach (var kvp in scripts)
+        foreach (var kvp in data.Scripts)
         {
-            var loc = scriptLocations[kvp.Key];
+            var loc = data.ScriptLocations[kvp.Key];
             foreach (var call in GetConsumerCalls(kvp.Value))
                 ValidateConsumerCall(call, interfacesByName, loc.filePath, errors);
         }
 
-        foreach (var kvp in texts)
+        foreach (var kvp in data.Texts)
         {
-            var loc = textLocations[kvp.Key];
+            var loc = data.TextLocations[kvp.Key];
             foreach (var call in GetConsumerCalls(kvp.Value))
                 ValidateConsumerCall(call, interfacesByName, loc.filePath, errors);
         }

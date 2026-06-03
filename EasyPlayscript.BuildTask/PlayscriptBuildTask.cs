@@ -23,11 +23,7 @@ public class PlayscriptBuildTask : Task
     public override bool Execute()
     {
         var hasErrors = false;
-        var scripts = new Dictionary<string, ScriptBlock>();
-        var texts = new Dictionary<string, TextBlock>();
-        var scriptLocations = new Dictionary<string, (string filePath, int line, int col)>();
-        var textLocations = new Dictionary<string, (string filePath, int line, int col)>();
-        var allInterfaces = new List<InterfaceDeclaration>();
+        var data = new PlayscriptCompilationData();
 
         foreach (var file in SourceFiles)
         {
@@ -38,7 +34,7 @@ public class PlayscriptBuildTask : Task
             foreach (var iface in parseResult.Interfaces)
             {
                 iface.FilePath = filePath;
-                allInterfaces.Add(iface);
+                data.Interfaces.Add(iface);
             }
 
             foreach (var (identifier, name, rawContent, line, col) in parseResult.Results)
@@ -63,23 +59,23 @@ public class PlayscriptBuildTask : Task
                 if (identifier == BlockType.Script)
                 {
                     var builder = new PlayscriptCodeBuilder();
-                    builder.BuildFromContent(tree);
+                    builder.BuildScriptFromContent(tree);
                     var block = builder.ContentResult;
 
                     if (block == null) continue;
 
-                    if (scripts.ContainsKey(name))
+                    if (data.Scripts.ContainsKey(name))
                     {
-                        var loc = scriptLocations[name];
+                        var loc = data.ScriptLocations[name];
                         Log.LogError("Playscript", "SCPT004", null,
                             loc.filePath, loc.line, loc.col, 0, 0,
                             $"Duplicate script name \"{name}\"");
                         hasErrors = true;
                     }
                     else
-                        scriptLocations[name] = (filePath, line, col);
+                        data.ScriptLocations[name] = (filePath, line, col);
 
-                    scripts[name] = block;
+                    data.Scripts[name] = block;
                 }
                 else if (identifier == BlockType.Text)
                 {
@@ -89,28 +85,26 @@ public class PlayscriptBuildTask : Task
 
                     if (block == null) continue;
 
-                    if (texts.ContainsKey(name))
+                    if (data.Texts.ContainsKey(name))
                     {
-                        var loc = textLocations[name];
+                        var loc = data.TextLocations[name];
                         Log.LogError("Playscript", "SCPT004", null,
                             loc.filePath, loc.line, loc.col, 0, 0,
                             $"Duplicate text name \"{name}\"");
                         hasErrors = true;
                     }
                     else
-                        textLocations[name] = (filePath, line, col);
+                        data.TextLocations[name] = (filePath, line, col);
 
-                    texts[name] = block;
+                    data.Texts[name] = block;
                 }
             }
         }
 
         var validationErrors = new List<ValidationDiagnostic>();
-        validationErrors.AddRange(InterfaceValidator.ValidateUndeclaredCalls(
-            allInterfaces, scripts, scriptLocations, texts, textLocations));
-        validationErrors.AddRange(InterfaceValidator.ValidateDuplicateSignatures(allInterfaces));
-        validationErrors.AddRange(InterfaceValidator.ValidateArgumentTypes(
-            allInterfaces, scripts, scriptLocations, texts, textLocations));
+        validationErrors.AddRange(InterfaceValidator.ValidateUndeclaredCalls(data));
+        validationErrors.AddRange(InterfaceValidator.ValidateDuplicateSignatures(data));
+        validationErrors.AddRange(InterfaceValidator.ValidateArgumentTypes(data));
 
         foreach (var diag in validationErrors)
         {
@@ -122,8 +116,8 @@ public class PlayscriptBuildTask : Task
         if (hasErrors)
             return false;
 
-        var data = new PlayscriptData { Scripts = scripts, Texts = texts };
-        var bytes = MessagePackSerializer.Serialize(data);
+        var playscriptData = new PlayscriptData { Scripts = data.Scripts, Texts = data.Texts };
+        var bytes = MessagePackSerializer.Serialize(playscriptData);
         var encrypted = PlayscriptLoader.AesEncrypt(bytes, AesKey);
 
         var dir = Path.GetDirectoryName(OutputPath);

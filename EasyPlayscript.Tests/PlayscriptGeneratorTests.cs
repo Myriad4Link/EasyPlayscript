@@ -503,12 +503,12 @@ public class PlayscriptGeneratorTests
     [Fact]
     public void Generator_ScriptBlock_PreservesConsumerCallStructure()
     {
-        var content = """
-            interface get_name() : string
-            script load_tooltip[
-            Hello @get_name().
-            ]
-            """;
+        const string content = """
+                               interface get_name() : string
+                               script load_tooltip[
+                               Hello @get_name().
+                               ]
+                               """;
         var code = GenerateCode(("file", content));
         Assert.Contains("public static Script LOAD_TOOLTIP", code);
         Assert.Contains("LoadScripts", code);
@@ -517,12 +517,12 @@ public class PlayscriptGeneratorTests
     [Fact]
     public void Generator_ScriptBlock_MixedTextAndCalls()
     {
-        var content = """
-            interface transition(type: string) : void
-            script load_tooltip[
-            Hello @transition("fade_out") world
-            ]
-            """;
+        const string content = """
+                               interface transition(type: string) : void
+                               script load_tooltip[
+                               Hello @transition("fade_out") world
+                               ]
+                               """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
         var code = GenerateCode(("file", content));

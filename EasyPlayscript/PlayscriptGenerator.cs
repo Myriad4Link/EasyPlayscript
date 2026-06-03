@@ -92,14 +92,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         var scriptBlocks = new List<(string name, ScriptBlock block, int line, int col)>();
         var textBlocks = new List<(string name, TextBlock block, int line, int col)>();
 
-        foreach (var (line, col, msg, isLexer) in structureResults.errors)
-        {
-            ct.ThrowIfCancellationRequested();
-            var descriptor = isLexer
-                ? PlayscriptDiagnostics.UnexpectedToken
-                : PlayscriptDiagnostics.MismatchedInput;
-            diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, line, col), msg));
-        }
+        AddContentDiagnostics(diagnostics, structureResults.errors, filePath, ct);
 
         foreach (var (identifier, name, rawContent, line, col) in structureResults.result.Results)
         {
@@ -110,47 +103,19 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
             var tree = parser.scriptContent();
 
-            foreach (var error in contentErrors)
-            {
-                ct.ThrowIfCancellationRequested();
-                var descriptor = error.IsLexer
-                    ? PlayscriptDiagnostics.UnexpectedToken
-                    : PlayscriptDiagnostics.MismatchedInput;
-                diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
-            }
-
+            AddContentDiagnostics(diagnostics, contentErrors, filePath, ct);
             if (contentErrors.Count > 0) continue;
 
             ct.ThrowIfCancellationRequested();
             var builder = new PlayscriptCodeBuilder(ct);
 
-            if (identifier == BlockType.Script)
+            if (TryBuildContent(builder, tree, identifier == BlockType.Script,
+                    diagnostics, filePath, ct, out var sb, out var tb))
             {
-                builder.BuildFromContent(tree);
-                foreach (var error in builder.Errors)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var descriptor = error.IsLexer
-                        ? PlayscriptDiagnostics.UnexpectedToken
-                        : PlayscriptDiagnostics.MismatchedInput;
-                    diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
-                }
-                if (builder.Errors.Count > 0) continue;
-                scriptBlocks.Add((name, builder.ContentResult, line, col));
-            }
-            else
-            {
-                builder.BuildTextFromContent(tree);
-                foreach (var error in builder.Errors)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    var descriptor = error.IsLexer
-                        ? PlayscriptDiagnostics.UnexpectedToken
-                        : PlayscriptDiagnostics.MismatchedInput;
-                    diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
-                }
-                if (builder.Errors.Count > 0) continue;
-                textBlocks.Add((name, builder.TextResult, line, col));
+                if (sb != null)
+                    scriptBlocks.Add((name, sb, line, col));
+                else
+                    textBlocks.Add((name, tb!, line, col));
             }
         }
 
@@ -232,5 +197,48 @@ public class PlayscriptGenerator : IIncrementalGenerator
     {
         var linePosition = new LinePosition(line - 1, col);
         return Location.Create(filePath, default, new LinePositionSpan(linePosition, linePosition));
+    }
+
+    private static void AddContentDiagnostics(
+        List<Diagnostic> diagnostics,
+        List<PlayscriptError> errors,
+        string filePath,
+        CancellationToken ct)
+    {
+        foreach (var error in errors)
+        {
+            ct.ThrowIfCancellationRequested();
+            var descriptor = error.IsLexer
+                ? PlayscriptDiagnostics.UnexpectedToken
+                : PlayscriptDiagnostics.MismatchedInput;
+            diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
+        }
+    }
+
+    private static bool TryBuildContent(
+        PlayscriptCodeBuilder builder,
+        PlayscriptContentParser.ScriptContentContext tree,
+        bool isScript,
+        List<Diagnostic> diagnostics,
+        string filePath,
+        CancellationToken ct,
+        out ScriptBlock? scriptBlock,
+        out TextBlock? textBlock)
+    {
+        if (isScript)
+        {
+            builder.BuildFromContent(tree);
+            scriptBlock = builder.ContentResult;
+            textBlock = null;
+        }
+        else
+        {
+            builder.BuildTextFromContent(tree);
+            scriptBlock = null;
+            textBlock = builder.TextResult;
+        }
+
+        AddContentDiagnostics(diagnostics, builder.Errors, filePath, ct);
+        return builder.Errors.Count == 0;
     }
 }

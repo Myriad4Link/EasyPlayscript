@@ -17,13 +17,13 @@ public class PlayscriptBuildTask : Task
     [Required]
     public string OutputPath { get; set; }
 
-    [Required]
     public string AesKey { get; set; }
 
     public override bool Execute()
     {
         var hasErrors = false;
         var data = new PlayscriptCompilationData();
+        AesKey ??= string.Empty;
 
         foreach (var file in SourceFiles)
         {

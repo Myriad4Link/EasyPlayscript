@@ -30,6 +30,9 @@ public static class PlayscriptLoader
 
     public static byte[] AesEncrypt(byte[] data, string key)
     {
+        if (string.IsNullOrEmpty(key))
+            return data;
+
         using (var aes = Aes.Create())
         {
             aes.Key = DeriveKey(key);
@@ -47,6 +50,9 @@ public static class PlayscriptLoader
 
     public static byte[] AesDecrypt(byte[] data, string key)
     {
+        if (string.IsNullOrEmpty(key))
+            return data;
+
         using (var aes = Aes.Create())
         {
             aes.Key = DeriveKey(key);

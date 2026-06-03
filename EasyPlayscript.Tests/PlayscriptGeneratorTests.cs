@@ -36,9 +36,14 @@ public class PlayscriptGeneratorTests
 
     private static string GenerateCode(params (string name, string content)[] files)
     {
+        return GenerateCodeWithKey(TestAesKey, files);
+    }
+
+    private static string GenerateCodeWithKey(string aesKey, params (string name, string content)[] files)
+    {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
             ("build_property.PlayscriptOutputPath", TestOutputPath),
-            ("build_property.PlayscriptAesKey", TestAesKey));
+            ("build_property.PlayscriptAesKey", aesKey));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -148,11 +153,25 @@ public class PlayscriptGeneratorTests
         Assert.Contains(TestAesKey, code);
     }
 
+    [Fact]
+    public void GeneratedCode_EmptyAesKey_EmbedsEmptyString()
+    {
+        var code = GenerateCodeWithKey("", ("Example", ScriptBlockExample));
+        Assert.Contains("LoadScripts(\"test-scripts.bin\", \"\")", code);
+        Assert.Contains("LoadTexts(\"test-scripts.bin\", \"\")", code);
+        Assert.DoesNotContain("dev-key-change-me", code);
+    }
+
     private static ImmutableArray<Diagnostic> GenerateDiagnostics(params (string name, string content)[] files)
+    {
+        return GenerateDiagnosticsWithKey(TestAesKey, files);
+    }
+
+    private static ImmutableArray<Diagnostic> GenerateDiagnosticsWithKey(string aesKey, params (string name, string content)[] files)
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
             ("build_property.PlayscriptOutputPath", TestOutputPath),
-            ("build_property.PlayscriptAesKey", TestAesKey));
+            ("build_property.PlayscriptAesKey", aesKey));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(

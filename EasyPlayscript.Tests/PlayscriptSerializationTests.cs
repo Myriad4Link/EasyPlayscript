@@ -171,6 +171,38 @@ public class PlayscriptSerializationTests
     }
 
     [Fact]
+    public void AesEncrypt_EmptyKey_ReturnsInputUnchanged()
+    {
+        var original = Encoding.UTF8.GetBytes("Hello world");
+        var result = PlayscriptLoader.AesEncrypt(original, "");
+        Assert.Same(original, result);
+    }
+
+    [Fact]
+    public void AesDecrypt_EmptyKey_ReturnsInputUnchanged()
+    {
+        var original = Encoding.UTF8.GetBytes("Hello world");
+        var result = PlayscriptLoader.AesDecrypt(original, "");
+        Assert.Same(original, result);
+    }
+
+    [Fact]
+    public void AesEncrypt_NullKey_ReturnsInputUnchanged()
+    {
+        var original = Encoding.UTF8.GetBytes("Hello world");
+        var result = PlayscriptLoader.AesEncrypt(original, null);
+        Assert.Same(original, result);
+    }
+
+    [Fact]
+    public void AesDecrypt_NullKey_ReturnsInputUnchanged()
+    {
+        var original = Encoding.UTF8.GetBytes("Hello world");
+        var result = PlayscriptLoader.AesDecrypt(original, null);
+        Assert.Same(original, result);
+    }
+
+    [Fact]
     public void FullPipeline_SerializeEncryptDeserialize()
     {
         var data = new PlayscriptData
@@ -225,6 +257,106 @@ public class PlayscriptSerializationTests
         Assert.IsType<StringArgument>(((ConsumerCallItem)items[1]).Arguments[0]);
         Assert.Equal("fade_out", ((StringArgument)((ConsumerCallItem)items[1]).Arguments[0]).Value);
         Assert.Equal(" world", ((TextItem)items[2]).Text);
+    }
+
+    [Fact]
+    public void FullPipeline_NoEncryption_EmptyKey()
+    {
+        var data = new PlayscriptData
+        {
+            Scripts = new Dictionary<string, ScriptBlock>
+            {
+                ["greeting"] = new ScriptBlock
+                {
+                    Pages = new List<Page>
+                    {
+                        new Page
+                        {
+                            Paragraphs = new List<Paragraph>
+                            {
+                                new Paragraph
+                                {
+                                    Lines = new List<Line>
+                                    {
+                                        new Line
+                                        {
+                                            Items = new List<LineItem>
+                                            {
+                                                new TextItem("Hello "),
+                                                new ConsumerCallItem("transition", new List<ArgumentValue> { new StringArgument("fade_out") }),
+                                                new TextItem(" world")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            Texts = new Dictionary<string, TextBlock>()
+        };
+
+        var bytes = MessagePackSerializer.Serialize(data);
+        var encrypted = PlayscriptLoader.AesEncrypt(bytes, "");
+        var decrypted = PlayscriptLoader.AesDecrypt(encrypted, "");
+        var deserialized = MessagePackSerializer.Deserialize<PlayscriptData>(decrypted);
+
+        // With empty key, data should pass through unchanged
+        Assert.Same(bytes, encrypted);
+        Assert.Same(encrypted, decrypted);
+
+        Assert.Single(deserialized.Scripts);
+        Assert.Empty(deserialized.Texts);
+
+        var items = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Items;
+        Assert.Equal(3, items.Count);
+        Assert.Equal("Hello ", ((TextItem)items[0]).Text);
+        Assert.Equal("transition", ((ConsumerCallItem)items[1]).Identifier);
+        Assert.Equal("fade_out", ((StringArgument)((ConsumerCallItem)items[1]).Arguments[0]).Value);
+        Assert.Equal(" world", ((TextItem)items[2]).Text);
+    }
+
+    [Fact]
+    public void PlayscriptLoader_LoadTexts_EmptyKey_NoEncryption()
+    {
+        var data = new PlayscriptData
+        {
+            Scripts = new Dictionary<string, ScriptBlock>(),
+            Texts = new Dictionary<string, TextBlock>
+            {
+                ["intro"] = new TextBlock
+                {
+                    Items = new List<LineItem>
+                    {
+                        new TextItem("Welcome, "),
+                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                        new TextItem("!")
+                    }
+                }
+            }
+        };
+
+        // Write raw MessagePack bytes (no encryption)
+        var bytes = MessagePackSerializer.Serialize(data);
+        var tempPath = System.IO.Path.GetTempFileName();
+        try
+        {
+            System.IO.File.WriteAllBytes(tempPath, bytes);
+            var result = PlayscriptLoader.LoadTexts(tempPath, "");
+
+            Assert.Single(result);
+            Assert.IsType<TextBlock>(result["intro"]);
+            var items = result["intro"].Items;
+            Assert.Equal(3, items.Count);
+            Assert.Equal("Welcome, ", ((TextItem)items[0]).Text);
+            Assert.Equal("get_name", ((ConsumerCallItem)items[1]).Identifier);
+            Assert.Equal("!", ((TextItem)items[2]).Text);
+        }
+        finally
+        {
+            System.IO.File.Delete(tempPath);
+        }
     }
 
     [Fact]

@@ -21,7 +21,9 @@ public class PlayscriptGenerator : IIncrementalGenerator
     {
         var scptProvider = context.AdditionalTextsProvider
             .Where(static f => f.Path.EndsWith(".scpt"))
-            .Select(static (file, ct) => ParseSingleFile(file.Path, file.GetText(ct)?.ToString() ?? string.Empty, ct));
+            .Select(static (file, ct) => ParseSingleFile(file.Path,
+                file.GetText(ct)?.ToString() ?? string.Empty, ct));
+        
 
         var allFilesProvider = scptProvider.Collect();
         var combinedProvider = context.AnalyzerConfigOptionsProvider.Combine(allFilesProvider);
@@ -52,7 +54,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptAesKey", out var aesKey);
 
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
-            aesKey = string.IsNullOrEmpty(aesKey) ? "dev-key-change-me" : aesKey;
+            aesKey ??= string.Empty;
 
             var code = RegistryEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey!);
 
@@ -104,14 +106,12 @@ public class PlayscriptGenerator : IIncrementalGenerator
             ct.ThrowIfCancellationRequested();
             var builder = new PlayscriptCodeBuilder(ct);
 
-            if (TryBuildContent(builder, tree, identifier == BlockType.Script,
-                    diagnostics, filePath, ct, out var sb, out var tb))
-            {
-                if (sb != null)
-                    scriptBlocks.Add((name, sb, line, col));
-                else
-                    textBlocks.Add((name, tb!, line, col));
-            }
+            if (!TryBuildContent(builder, tree, identifier == BlockType.Script,
+                    diagnostics, filePath, ct, out var sb, out var tb)) continue;
+            if (sb != null)
+                scriptBlocks.Add((name, sb, line, col));
+            else
+                textBlocks.Add((name, tb!, line, col));
         }
 
         var interfaces = structureResults.result.Interfaces;

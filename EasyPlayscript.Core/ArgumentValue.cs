@@ -13,7 +13,7 @@ public abstract class ArgumentValue { }
 public class StringArgument : ArgumentValue
 {
     [Key(0)]
-    public string Value { get; set; }
+    public string Value { get; set; } = null!;
 
     public StringArgument() { }
 

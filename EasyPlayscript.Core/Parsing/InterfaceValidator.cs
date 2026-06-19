@@ -23,21 +23,23 @@ public static class InterfaceValidator
                 yield return call;
     }
 
-    public static InterfaceType? GetArgumentType(ArgumentValue arg)
-    {
-        if (arg is StringArgument) return InterfaceType.String;
-        if (arg is IntArgument) return InterfaceType.Int;
-        if (arg is DoubleArgument) return InterfaceType.Decimal;
-        if (arg is BoolArgument) return InterfaceType.Bool;
-        return null;
-    }
+    public static InterfaceType? GetArgumentType(ArgumentValue arg) =>
+        arg switch
+        {
+            StringArgument => InterfaceType.String,
+            IntArgument => InterfaceType.Int,
+            DoubleArgument => InterfaceType.Decimal,
+            BoolArgument => InterfaceType.Bool,
+            _ => null,
+        };
 
-    public static bool IsAssignableTo(InterfaceType actual, InterfaceType expected)
-    {
-        if (actual == expected) return true;
-        if (actual == InterfaceType.Int && expected == InterfaceType.Decimal) return true;
-        return false;
-    }
+    public static bool IsAssignableTo(InterfaceType actual, InterfaceType expected) =>
+        (actual, expected) switch
+        {
+            (var a, var e) when a == e => true,
+            (InterfaceType.Int, InterfaceType.Decimal) => true,
+            _ => false,
+        };
 
     public static string MakeSignatureKey(InterfaceDeclaration decl)
     {

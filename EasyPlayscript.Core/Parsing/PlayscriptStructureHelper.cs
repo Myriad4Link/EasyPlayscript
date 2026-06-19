@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Antlr4.Runtime;
 
 namespace EasyPlayscript.Parsing;
@@ -47,13 +48,12 @@ public static class PlayscriptStructureHelper
             var blockTypeCtx = context.blockType();
             if (blockTypeCtx != null)
             {
-                BlockType blockType;
-                if (blockTypeCtx.SCRIPT() != null)
-                    blockType = BlockType.Script;
-                else if (blockTypeCtx.TEXT() != null)
-                    blockType = BlockType.Text;
-                else
-                    return string.Empty;
+                var blockType = blockTypeCtx.Start.Type switch
+                {
+                    PlayscriptStructureParser.SCRIPT => BlockType.Script,
+                    PlayscriptStructureParser.TEXT => BlockType.Text,
+                    _ => throw new System.InvalidOperationException("Unexpected blockType token"),
+                };
 
                 var nameNode = context.IDENTIFIER();
                 if (nameNode == null) return string.Empty;
@@ -62,14 +62,13 @@ public static class PlayscriptStructureHelper
                 var line = nameSymbol.Line;
                 var col = nameSymbol.Column;
 
-                string rawContent = null;
-                if (context.RAW_CONTENT() != null) rawContent = context.RAW_CONTENT().GetText();
+                var rawContent = context.RAW_CONTENT()?.GetText();
 
                 Results.Add(new StructureResult(blockType, nameNode.GetText(), rawContent, line, col));
                 return string.Empty;
             }
 
-            if (context.INTERFACE() != null)
+            if (context.INTERFACE() == null) return string.Empty;
             {
                 var nameNode = context.IDENTIFIER();
                 if (nameNode == null) return string.Empty;
@@ -85,12 +84,10 @@ public static class PlayscriptStructureHelper
                 var paramListCtx = context.paramList();
                 if (paramListCtx != null)
                 {
-                    foreach (var paramCtx in paramListCtx.parameter())
-                    {
-                        var paramName = paramCtx.IDENTIFIER().GetText();
-                        var paramType = MapTypeSpec(paramCtx.typeSpec());
-                        parameters.Add(new InterfaceParameter(paramName, paramType));
-                    }
+                    parameters.AddRange(from paramCtx in paramListCtx.parameter()
+                        let paramName = paramCtx.IDENTIFIER().GetText()
+                        let paramType = MapTypeSpec(paramCtx.typeSpec())
+                        select new InterfaceParameter(paramName, paramType));
                 }
 
                 var returnType = MapTypeSpec(typeSpecCtx);
@@ -101,14 +98,15 @@ public static class PlayscriptStructureHelper
             return string.Empty;
         }
 
-        private static InterfaceType MapTypeSpec(PlayscriptStructureParser.TypeSpecContext typeSpec)
-        {
-            if (typeSpec.STRING_TYPE() != null) return InterfaceType.String;
-            if (typeSpec.INT_TYPE() != null) return InterfaceType.Int;
-            if (typeSpec.DECIMAL_TYPE() != null) return InterfaceType.Decimal;
-            if (typeSpec.BOOL_TYPE() != null) return InterfaceType.Bool;
-            return InterfaceType.Void;
-        }
+        private static InterfaceType MapTypeSpec(PlayscriptStructureParser.TypeSpecContext typeSpec) =>
+            typeSpec.Start.Type switch
+            {
+                PlayscriptStructureParser.STRING_TYPE => InterfaceType.String,
+                PlayscriptStructureParser.INT_TYPE => InterfaceType.Int,
+                PlayscriptStructureParser.DECIMAL_TYPE => InterfaceType.Decimal,
+                PlayscriptStructureParser.BOOL_TYPE => InterfaceType.Bool,
+                _ => InterfaceType.Void,
+            };
     }
 
     private class CollectingErrorListener(List<PlayscriptError> errors, bool isLexer)

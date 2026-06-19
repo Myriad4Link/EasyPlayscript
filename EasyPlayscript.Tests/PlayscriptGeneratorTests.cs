@@ -507,12 +507,12 @@ public class PlayscriptGeneratorTests
     [Fact]
     public void Generator_TextBlock_HasConsumerCall()
     {
-        var content = """
-            interface get_name() : string
-            text intro[
-            @get_name()
-            ]
-            """;
+        const string content = """
+                               interface get_name() : string
+                               text intro[
+                               @get_name()
+                               ]
+                               """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
     }

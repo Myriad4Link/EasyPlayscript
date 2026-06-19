@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -23,7 +22,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             .Where(static f => f.Path.EndsWith(".scpt"))
             .Select(static (file, ct) => ParseSingleFile(file.Path,
                 file.GetText(ct)?.ToString() ?? string.Empty, ct));
-        
+
 
         var allFilesProvider = scptProvider.Collect();
         var combinedProvider = context.AnalyzerConfigOptionsProvider.Combine(allFilesProvider);
@@ -34,7 +33,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
             var ctx = new GeneratorContext(spc);
 
-            foreach (var diag in allResults.SelectMany(result => result.diagnostics))
+            foreach (var diag in allResults.SelectMany(result => result.Diagnostics))
             {
                 spc.CancellationToken.ThrowIfCancellationRequested();
                 spc.ReportDiagnostic(diag);
@@ -56,7 +55,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
             aesKey ??= string.Empty;
 
-            var code = RegistryEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey!);
+            var code = RegistryEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey);
 
             spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
@@ -74,22 +73,23 @@ public class PlayscriptGenerator : IIncrementalGenerator
         }
     }
 
-    private static (
-        List<(string name, ScriptBlock block, int line, int col)> scriptBlocks,
-        List<(string name, TextBlock block, int line, int col)> textBlocks,
-        List<InterfaceDeclaration> interfaces,
-        string filePath,
-        List<Diagnostic> diagnostics)
-        ParseSingleFile(string filePath, string content, CancellationToken ct)
+    private sealed class SingleFileResult
+    {
+        public List<(string name, ScriptBlock block, int line, int col)> ScriptBlocks { get; } = [];
+        public List<(string name, TextBlock block, int line, int col)> TextBlocks { get; } = [];
+        public List<InterfaceDeclaration> Interfaces { get; } = [];
+        public List<Diagnostic> Diagnostics { get; } = [];
+        public string FilePath { get; set; } = string.Empty;
+    }
+
+    private static SingleFileResult ParseSingleFile(string filePath, string content, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         var structureResults = PlayscriptStructureHelper.ParseStructureWithErrors(content);
 
-        var diagnostics = new List<Diagnostic>();
-        var scriptBlocks = new List<(string name, ScriptBlock block, int line, int col)>();
-        var textBlocks = new List<(string name, TextBlock block, int line, int col)>();
+        var result = new SingleFileResult { FilePath = filePath };
 
-        AddContentDiagnostics(diagnostics, structureResults.errors, filePath, ct);
+        AppendContentDiagnostics(result.Diagnostics, structureResults.errors, filePath, ct);
 
         foreach (var (identifier, name, rawContent, line, col) in structureResults.result.Results)
         {
@@ -100,38 +100,36 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
             var tree = parser.scriptContent();
 
-            AddContentDiagnostics(diagnostics, contentErrors, filePath, ct);
+            AppendContentDiagnostics(result.Diagnostics, contentErrors, filePath, ct);
             if (contentErrors.Count > 0) continue;
 
             ct.ThrowIfCancellationRequested();
             var builder = new PlayscriptCodeBuilder(ct);
 
             if (!TryBuildContent(builder, tree, identifier == BlockType.Script,
-                    diagnostics, filePath, ct, out var sb, out var tb)) continue;
+                    result.Diagnostics, filePath, ct, out var sb, out var tb)) continue;
             if (sb != null)
-                scriptBlocks.Add((name, sb, line, col));
+                result.ScriptBlocks.Add((name, sb, line, col));
             else
-                textBlocks.Add((name, tb!, line, col));
+                result.TextBlocks.Add((name, tb!, line, col));
         }
 
-        var interfaces = structureResults.result.Interfaces;
-        foreach (var i in interfaces)
+        foreach (var i in structureResults.result.Interfaces)
             i.FilePath = filePath;
+        result.Interfaces.AddRange(structureResults.result.Interfaces);
 
-        return (scriptBlocks, textBlocks, interfaces, filePath, diagnostics);
+        return result;
     }
 
     private static void MergeBlocks(
-        ImmutableArray<(List<(string name, ScriptBlock block, int line, int col)> scriptBlocks,
-            List<(string name, TextBlock block, int line, int col)> textBlocks,
-            List<InterfaceDeclaration> interfaces, string filePath, List<Diagnostic> diagnostics)> allResults,
+        ImmutableArray<SingleFileResult> allResults,
         GeneratorContext ctx)
     {
         foreach (var result in allResults)
         {
-            ctx.Data.Interfaces.AddRange(result.interfaces);
+            ctx.Data.Interfaces.AddRange(result.Interfaces);
 
-            foreach (var (name, block, line, col) in result.scriptBlocks)
+            foreach (var (name, block, line, col) in result.ScriptBlocks)
             {
                 if (ctx.Data.Scripts.ContainsKey(name))
                 {
@@ -141,12 +139,12 @@ public class PlayscriptGenerator : IIncrementalGenerator
                         "script", name));
                 }
                 else
-                    ctx.Data.ScriptLocations[name] = (result.filePath, line, col);
+                    ctx.Data.ScriptLocations[name] = (result.FilePath, line, col);
 
                 ctx.Data.Scripts[name] = block;
             }
 
-            foreach (var (name, block, line, col) in result.textBlocks)
+            foreach (var (name, block, line, col) in result.TextBlocks)
             {
                 if (ctx.Data.Texts.ContainsKey(name))
                 {
@@ -156,7 +154,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
                         "text", name));
                 }
                 else
-                    ctx.Data.TextLocations[name] = (result.filePath, line, col);
+                    ctx.Data.TextLocations[name] = (result.FilePath, line, col);
 
                 ctx.Data.Texts[name] = block;
             }
@@ -184,7 +182,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return Location.Create(filePath, default, new LinePositionSpan(linePosition, linePosition));
     }
 
-    private static void AddContentDiagnostics(
+    private static void AppendContentDiagnostics(
         List<Diagnostic> diagnostics,
         List<PlayscriptError> errors,
         string filePath,
@@ -223,7 +221,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             textBlock = builder.TextResult;
         }
 
-        AddContentDiagnostics(diagnostics, builder.Errors, filePath, ct);
+        AppendContentDiagnostics(diagnostics, builder.Errors, filePath, ct);
         return builder.Errors.Count == 0;
     }
 }

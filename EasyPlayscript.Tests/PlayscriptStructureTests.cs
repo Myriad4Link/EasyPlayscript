@@ -191,12 +191,12 @@ public class PlayscriptStructureTests
     [Fact]
     public void InterfaceDeclaration_MixedWithScriptBlocks()
     {
-        var input = """
-            interface transition(type: string) : void
-            script foo[
-            Hello @transition("fade_out")
-            ]
-            """;
+        const string input = """
+                             interface transition(type: string) : void
+                             script foo[
+                             Hello @transition("fade_out")
+                             ]
+                             """;
         var result = PlayscriptStructureHelper.ParseStructure(input);
         Assert.Single(result.Interfaces);
         Assert.Single(result.Results);

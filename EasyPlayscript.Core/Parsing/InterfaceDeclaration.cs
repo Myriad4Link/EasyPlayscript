@@ -23,7 +23,7 @@ public class InterfaceDeclaration
     public InterfaceType ReturnType { get; }
     public int Line { get; }
     public int Col { get; }
-    public string FilePath { get; set; }
+    public string FilePath { get; set; } = string.Empty;
 
     public InterfaceDeclaration(string name, List<InterfaceParameter> parameters,
         InterfaceType returnType, int line, int col)

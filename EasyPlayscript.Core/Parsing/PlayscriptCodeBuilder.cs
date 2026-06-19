@@ -11,8 +11,8 @@ namespace EasyPlayscript.Parsing;
 public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default)
     : PlayscriptContentParserBaseVisitor<string>
 {
-    public ScriptBlock ContentResult { get; private set; }
-    public TextBlock TextResult { get; private set; }
+    public ScriptBlock ContentResult { get; private set; } = null!;
+    public TextBlock TextResult { get; private set; } = null!;
     public List<PlayscriptError> Errors { get; } = [];
 
     /// <summary>
@@ -123,7 +123,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         TextResult = block;
     }
 
-    private ConsumerCallItem ParseConsumerCall(PlayscriptContentParser.ConsumerCallContext callCtx)
+    private ConsumerCallItem? ParseConsumerCall(PlayscriptContentParser.ConsumerCallContext callCtx)
     {
         var identifier = callCtx.IDENTIFIER();
         if (identifier == null) return null;
@@ -147,7 +147,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         };
     }
 
-    private ArgumentValue ParseArgument(PlayscriptContentParser.ArgumentContext argCtx)
+    private ArgumentValue? ParseArgument(PlayscriptContentParser.ArgumentContext argCtx)
     {
         if (argCtx.STRING_LITERAL() != null)
         {
@@ -161,16 +161,14 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
             {
                 return new IntArgument(intValue);
             }
-            else
-            {
-                var symbol = argCtx.INTEGER_LITERAL().Symbol;
-                Errors.Add(new PlayscriptError(
-                    symbol.Line,
-                    symbol.Column,
-                    $"Integer literal '{text}' is out of range for System.Int32 (expected value between -2147483648 and 2147483647).",
-                    isLexer: false));
-                return null;
-            }
+
+            var symbol = argCtx.INTEGER_LITERAL().Symbol;
+            Errors.Add(new PlayscriptError(
+                symbol.Line,
+                symbol.Column,
+                $"Integer literal '{text}' is out of range for System.Int32 (expected value between -2147483648 and 2147483647).",
+                isLexer: false));
+            return null;
         }
 
         if (argCtx.FLOAT_LITERAL() != null)

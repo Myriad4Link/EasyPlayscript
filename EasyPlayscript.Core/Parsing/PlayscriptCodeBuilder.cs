@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Antlr4.Runtime.Tree;
@@ -19,108 +20,114 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
     /// Builds a <see cref="ScriptBlock"/> from Pass 2 content AST.
     /// Used when processing raw content extracted by Pass 1.
     /// </summary>
-    public void BuildScriptFromContent(PlayscriptContentParser.ScriptContentContext context)
+    public void BuildContent(PlayscriptContentParser.ScriptContentContext? context, bool isScript)
+    {
+        if (isScript)
+            BuildScriptFromContent(context);
+        else
+            BuildTextFromContent(context);
+    }
+
+    public void BuildScriptFromContent(PlayscriptContentParser.ScriptContentContext? context)
     {
         var block = new ScriptBlock();
+        Page? page = null;
+        Paragraph? paragraph = null;
 
-        var pages = context?.page();
-        if (pages == null)
-        {
-            ContentResult = block;
-            return;
-        }
-
-        foreach (var pageCtx in pages)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var page = new Page();
-
-            var paragraphs = pageCtx?.paragraph();
-            if (paragraphs == null) continue;
-
-            foreach (var paragraphCtx in paragraphs)
+        ProcessContent(context,
+            onPage: _ =>
             {
-                var paragraph = new Paragraph();
+                page = new Page();
+                block.Pages.Add(page);
+            },
+            onParagraph: _ =>
+            {
+                paragraph = new Paragraph();
+                page!.Paragraphs.Add(paragraph);
+            },
+            onLine: lineCtx => paragraph!.Lines.Add(new Line { Items = ParseLineItems(lineCtx) }));
 
-                var lines = paragraphCtx?.line();
-                if (lines == null) continue;
-
-                foreach (var lineCtx in lines)
-                {
-                    var line = new Line();
-
-                    var children = lineCtx?.children;
-                    if (children != null)
-                    {
-                        foreach (var child in children)
-                        {
-                            switch (child)
-                            {
-                                case PlayscriptContentParser.ConsumerCallContext callCtx:
-                                    var call = ParseConsumerCall(callCtx);
-                                    if (call != null)
-                                        line.Items.Add(call);
-                                    break;
-                                case ITerminalNode { Symbol.Type: PlayscriptContentLexer.TEXT } terminal:
-                                    line.Items.Add(new TextItem(terminal.GetText()));
-                                    break;
-                            }
-                        }
-                    }
-
-                    paragraph.Lines.Add(line);
-                }
-
-                page.Paragraphs.Add(paragraph);
-            }
-
-            block.Pages.Add(page);
-        }
         ContentResult = block;
     }
 
-    public void BuildTextFromContent(PlayscriptContentParser.ScriptContentContext context)
+    public void BuildTextFromContent(PlayscriptContentParser.ScriptContentContext? context)
     {
         var block = new TextBlock();
         if (context?.page() == null) { TextResult = block; return; }
 
         var firstPage = true;
-        foreach (var pageCtx in context.page())
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!firstPage) block.Items.Add(new TextItem("\n"));
-            firstPage = false;
+        var firstParagraph = true;
+        var firstLine = true;
 
-            var firstParagraph = true;
-            foreach (var paragraphCtx in pageCtx.paragraph() ?? new PlayscriptContentParser.ParagraphContext[0])
+        ProcessContent(context,
+            onPage: _ =>
+            {
+                if (!firstPage) block.Items.Add(new TextItem("\n"));
+                firstPage = false;
+                firstParagraph = true;
+            },
+            onParagraph: _ =>
             {
                 if (!firstParagraph) block.Items.Add(new TextItem("\n"));
                 firstParagraph = false;
+                firstLine = true;
+            },
+            onLine: lineCtx =>
+            {
+                if (!firstLine) block.Items.Add(new TextItem("\n"));
+                firstLine = false;
+                block.Items.AddRange(ParseLineItems(lineCtx));
+            });
 
-                var firstLine = true;
-                foreach (var lineCtx in paragraphCtx.line() ?? [])
+        TextResult = block;
+    }
+
+    private List<LineItem> ParseLineItems(PlayscriptContentParser.LineContext? lineCtx)
+    {
+        var items = new List<LineItem>();
+        if (lineCtx?.children == null) return items;
+
+        foreach (var child in lineCtx.children)
+        {
+            switch (child)
+            {
+                case PlayscriptContentParser.ConsumerCallContext callCtx:
+                    var call = ParseConsumerCall(callCtx);
+                    if (call != null)
+                        items.Add(call);
+                    break;
+                case ITerminalNode { Symbol.Type: PlayscriptContentLexer.TEXT } terminal:
+                    items.Add(new TextItem(terminal.GetText()));
+                    break;
+            }
+        }
+        return items;
+    }
+
+    private void ProcessContent(
+        PlayscriptContentParser.ScriptContentContext? context,
+        Action<PlayscriptContentParser.PageContext> onPage,
+        Action<PlayscriptContentParser.ParagraphContext> onParagraph,
+        Action<PlayscriptContentParser.LineContext> onLine)
+    {
+        var pages = context?.page();
+        if (pages == null) return;
+
+        foreach (var pageCtx in pages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            onPage(pageCtx);
+
+            foreach (var paragraphCtx in pageCtx?.paragraph() ?? System.Array.Empty<PlayscriptContentParser.ParagraphContext>())
+            {
+                onParagraph(paragraphCtx);
+
+                foreach (var lineCtx in paragraphCtx?.line() ?? System.Array.Empty<PlayscriptContentParser.LineContext>())
                 {
-                    if (!firstLine) block.Items.Add(new TextItem("\n"));
-                    firstLine = false;
-
-                    foreach (var child in lineCtx.children ?? new IParseTree[0])
-                    {
-                        switch (child)
-                        {
-                            case PlayscriptContentParser.ConsumerCallContext callCtx:
-                                var call = ParseConsumerCall(callCtx);
-                                if (call != null)
-                                    block.Items.Add(call);
-                                break;
-                            case ITerminalNode { Symbol.Type: PlayscriptContentLexer.TEXT } terminal:
-                                block.Items.Add(new TextItem(terminal.GetText()));
-                                break;
-                        }
-                    }
+                    onLine(lineCtx);
                 }
             }
         }
-        TextResult = block;
     }
 
     private ConsumerCallItem? ParseConsumerCall(PlayscriptContentParser.ConsumerCallContext callCtx)

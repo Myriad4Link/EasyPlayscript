@@ -41,8 +41,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     ctx.Data.HasErrors = true;
             }
 
-            MergeBlocks(allResults, ctx);
-            ReportValidationDiagnostics(ctx);
+            ctx.MergeBlocks(allResults);
+            ctx.ReportValidationDiagnostics();
 
             if (ctx.Data.HasErrors)
                 return;
@@ -55,7 +55,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
             aesKey ??= string.Empty;
 
-            var code = RegistryEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey);
+            var code = RegistryEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey!);
 
             spc.CancellationToken.ThrowIfCancellationRequested();
             spc.AddSource("Registry.g.cs", SourceText.From(code, Encoding.UTF8));
@@ -66,10 +66,63 @@ public class PlayscriptGenerator : IIncrementalGenerator
     {
         public PlayscriptCompilationData Data { get; } = new();
 
-        public void ReportDiagnostic(Diagnostic diag)
+        private void ReportDiagnostic(Diagnostic diag)
         {
             spc.ReportDiagnostic(diag);
             Data.HasErrors = true;
+        }
+
+        public void MergeBlocks(ImmutableArray<SingleFileResult> allResults)
+        {
+            foreach (var result in allResults)
+            {
+                Data.Interfaces.AddRange(result.Interfaces);
+
+                foreach (var (name, block, line, col) in result.ScriptBlocks)
+                {
+                    if (Data.Scripts.ContainsKey(name))
+                    {
+                        var loc = Data.ScriptLocations[name];
+                        ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                            MakeLocation(loc.filePath, loc.line, loc.col),
+                            "script", name));
+                    }
+                    else
+                        Data.ScriptLocations[name] = (result.FilePath, line, col);
+
+                    Data.Scripts[name] = block;
+                }
+
+                foreach (var (name, block, line, col) in result.TextBlocks)
+                {
+                    if (Data.Texts.ContainsKey(name))
+                    {
+                        var loc = Data.TextLocations[name];
+                        ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
+                            MakeLocation(loc.filePath, loc.line, loc.col),
+                            "text", name));
+                    }
+                    else
+                        Data.TextLocations[name] = (result.FilePath, line, col);
+
+                    Data.Texts[name] = block;
+                }
+            }
+        }
+
+        public void ReportValidationDiagnostics()
+        {
+            var allDiagnostics = new List<ValidationDiagnostic>();
+            allDiagnostics.AddRange(InterfaceValidator.ValidateUndeclaredCalls(Data));
+            allDiagnostics.AddRange(InterfaceValidator.ValidateDuplicateSignatures(Data));
+            allDiagnostics.AddRange(InterfaceValidator.ValidateArgumentTypes(Data));
+
+            foreach (var diag in allDiagnostics)
+            {
+                var descriptor = PlayscriptDiagnostics.GetDescriptor(diag.Code);
+                ReportDiagnostic(Diagnostic.Create(descriptor,
+                    MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
+            }
         }
     }
 
@@ -100,18 +153,20 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
             var tree = parser.scriptContent();
 
-            AppendContentDiagnostics(result.Diagnostics, contentErrors, filePath, ct);
+            AppendContentDiagnostics(to: result.Diagnostics, contentErrors, filePath, ct);
             if (contentErrors.Count > 0) continue;
 
             ct.ThrowIfCancellationRequested();
             var builder = new PlayscriptCodeBuilder(ct);
 
-            if (!TryBuildContent(builder, tree, identifier == BlockType.Script,
-                    result.Diagnostics, filePath, ct, out var sb, out var tb)) continue;
-            if (sb != null)
-                result.ScriptBlocks.Add((name, sb, line, col));
+            builder.BuildContent(tree, identifier == BlockType.Script);
+            AppendContentDiagnostics(result.Diagnostics, builder.Errors, filePath, ct);
+            if (builder.Errors.Count > 0) continue;
+
+            if (identifier == BlockType.Script)
+                result.ScriptBlocks.Add((name, builder.ContentResult, line, col));
             else
-                result.TextBlocks.Add((name, tb!, line, col));
+                result.TextBlocks.Add((name, builder.TextResult, line, col));
         }
 
         foreach (var i in structureResults.result.Interfaces)
@@ -121,61 +176,6 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return result;
     }
 
-    private static void MergeBlocks(
-        ImmutableArray<SingleFileResult> allResults,
-        GeneratorContext ctx)
-    {
-        foreach (var result in allResults)
-        {
-            ctx.Data.Interfaces.AddRange(result.Interfaces);
-
-            foreach (var (name, block, line, col) in result.ScriptBlocks)
-            {
-                if (ctx.Data.Scripts.ContainsKey(name))
-                {
-                    var loc = ctx.Data.ScriptLocations[name];
-                    ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
-                        MakeLocation(loc.filePath, loc.line, loc.col),
-                        "script", name));
-                }
-                else
-                    ctx.Data.ScriptLocations[name] = (result.FilePath, line, col);
-
-                ctx.Data.Scripts[name] = block;
-            }
-
-            foreach (var (name, block, line, col) in result.TextBlocks)
-            {
-                if (ctx.Data.Texts.ContainsKey(name))
-                {
-                    var loc = ctx.Data.TextLocations[name];
-                    ctx.ReportDiagnostic(Diagnostic.Create(PlayscriptDiagnostics.DuplicateScriptName,
-                        MakeLocation(loc.filePath, loc.line, loc.col),
-                        "text", name));
-                }
-                else
-                    ctx.Data.TextLocations[name] = (result.FilePath, line, col);
-
-                ctx.Data.Texts[name] = block;
-            }
-        }
-    }
-
-    private static void ReportValidationDiagnostics(GeneratorContext ctx)
-    {
-        var allDiagnostics = new List<ValidationDiagnostic>();
-        allDiagnostics.AddRange(InterfaceValidator.ValidateUndeclaredCalls(ctx.Data));
-        allDiagnostics.AddRange(InterfaceValidator.ValidateDuplicateSignatures(ctx.Data));
-        allDiagnostics.AddRange(InterfaceValidator.ValidateArgumentTypes(ctx.Data));
-
-        foreach (var diag in allDiagnostics)
-        {
-            var descriptor = PlayscriptDiagnostics.GetDescriptor(diag.Code);
-            ctx.ReportDiagnostic(Diagnostic.Create(descriptor,
-                MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
-        }
-    }
-
     private static Location MakeLocation(string filePath, int line, int col)
     {
         var linePosition = new LinePosition(line - 1, col);
@@ -183,7 +183,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
     }
 
     private static void AppendContentDiagnostics(
-        List<Diagnostic> diagnostics,
+        List<Diagnostic> to,
         List<PlayscriptError> errors,
         string filePath,
         CancellationToken ct)
@@ -194,34 +194,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var descriptor = error.IsLexer
                 ? PlayscriptDiagnostics.UnexpectedToken
                 : PlayscriptDiagnostics.MismatchedInput;
-            diagnostics.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
+            to.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
         }
-    }
-
-    private static bool TryBuildContent(
-        PlayscriptCodeBuilder builder,
-        PlayscriptContentParser.ScriptContentContext tree,
-        bool isScript,
-        List<Diagnostic> diagnostics,
-        string filePath,
-        CancellationToken ct,
-        out ScriptBlock? scriptBlock,
-        out TextBlock? textBlock)
-    {
-        if (isScript)
-        {
-            builder.BuildScriptFromContent(tree);
-            scriptBlock = builder.ContentResult;
-            textBlock = null;
-        }
-        else
-        {
-            builder.BuildTextFromContent(tree);
-            scriptBlock = null;
-            textBlock = builder.TextResult;
-        }
-
-        AppendContentDiagnostics(diagnostics, builder.Errors, filePath, ct);
-        return builder.Errors.Count == 0;
     }
 }

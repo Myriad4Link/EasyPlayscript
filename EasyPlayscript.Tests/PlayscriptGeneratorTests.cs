@@ -162,6 +162,31 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain("dev-key-change-me", code);
     }
 
+    private static string GenerateCodeWithNoConfig(params (string name, string content)[] files)
+    {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ImmutableDictionary<string, string>.Empty);
+
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            optionsProvider: optionsProvider);
+
+        var additionalFiles = files
+            .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
+            .ToImmutableArray<AdditionalText>();
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
+
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests));
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out _);
+
+        var generatedFile = newCompilation.SyntaxTrees
+            .Single(t => Path.GetFileName(t.FilePath) == "Registry.g.cs");
+
+        return generatedFile.GetText().ToString();
+    }
+
     private static ImmutableArray<Diagnostic> GenerateDiagnostics(params (string name, string content)[] files)
     {
         return GenerateDiagnosticsWithKey(TestAesKey, files);
@@ -546,5 +571,23 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
         var code = GenerateCode(("file", content));
         Assert.Contains("public static Script LOAD_TOOLTIP", code);
+    }
+
+    // ─── Config Fallbacks ───────────────────────────────────────────────────
+
+    [Fact]
+    public void MissingOutputPath_DefaultsToPlayscriptsBin()
+    {
+        var code = GenerateCodeWithNoConfig(("Example", ScriptBlockExample));
+        Assert.Contains("LoadScripts(\"playscripts.bin\"", code);
+        Assert.Contains("LoadTexts(\"playscripts.bin\"", code);
+    }
+
+    [Fact]
+    public void MissingAesKey_DefaultsToEmptyString()
+    {
+        var code = GenerateCodeWithNoConfig(("Example", ScriptBlockExample));
+        Assert.Contains(", \"\")", code);
+        Assert.DoesNotContain("dev-key-change-me", code);
     }
 }

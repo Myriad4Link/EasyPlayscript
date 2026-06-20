@@ -28,14 +28,14 @@ public static class PlayscriptLoader
         return MessagePackSerializer.Deserialize<PlayscriptData>(decrypted);
     }
 
-    public static byte[] AesEncrypt(byte[] data, string key)
+    public static byte[] AesEncrypt(byte[] data, string? key)
     {
         if (string.IsNullOrEmpty(key))
             return data;
 
         using (var aes = Aes.Create())
         {
-            aes.Key = DeriveKey(key);
+            aes.Key = DeriveKey(key!);
             aes.GenerateIV();
             using (var encryptor = aes.CreateEncryptor())
             {
@@ -48,14 +48,14 @@ public static class PlayscriptLoader
         }
     }
 
-    public static byte[] AesDecrypt(byte[] data, string key)
+    public static byte[] AesDecrypt(byte[] data, string? key)
     {
         if (string.IsNullOrEmpty(key))
             return data;
 
         using (var aes = Aes.Create())
         {
-            aes.Key = DeriveKey(key);
+            aes.Key = DeriveKey(key!);
             var iv = new byte[16];
             Buffer.BlockCopy(data, 0, iv, 0, 16);
             aes.IV = iv;

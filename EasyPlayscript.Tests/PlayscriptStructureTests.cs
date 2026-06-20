@@ -210,7 +210,7 @@ public class PlayscriptStructureTests
         Assert.Single(result.Results);
         Assert.NotNull(result.Results[0].RawContent);
 
-        var trimmed = result.Results[0].RawContent.Trim('\r', '\n');
+        var trimmed = result.Results[0].RawContent!.Trim('\r', '\n');
         var (parser, errors) = PlayscriptContentHelper.Parse(trimmed);
         Assert.Empty(errors);
 
@@ -358,7 +358,7 @@ public class PlayscriptStructureTests
         Assert.Single(result.Results);
         Assert.NotNull(result.Results[0].RawContent);
 
-        var trimmed = result.Results[0].RawContent.Trim('\r', '\n');
+        var trimmed = result.Results[0].RawContent!.Trim('\r', '\n');
         var (parser, errors) = PlayscriptContentHelper.Parse(trimmed);
         Assert.Empty(errors);
 

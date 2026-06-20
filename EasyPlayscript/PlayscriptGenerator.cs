@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Antlr4.Runtime.Tree;
 using EasyPlayscript.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -151,40 +152,28 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
             var trimmedContent = rawContent.Trim('\r', '\n');
 
+            var (parser, contentErrors) = identifier == BlockType.Script
+                ? PlayscriptContentHelper.ParseScript(trimmedContent)
+                : PlayscriptContentHelper.ParseText(trimmedContent);
+
+            IParseTree? tree = identifier == BlockType.Script
+                ? parser.scriptContent()
+                : parser.textContent();
+
+            AppendContentDiagnostics(to: result.Diagnostics, contentErrors, filePath, ct);
+            if (contentErrors.Count > 0) continue;
+
+            ct.ThrowIfCancellationRequested();
+            var builder = new PlayscriptCodeBuilder(ct);
+
+            builder.Build(identifier, tree);
+            AppendContentDiagnostics(result.Diagnostics, builder.Errors, filePath, ct);
+            if (builder.Errors.Count > 0) continue;
+
             if (identifier == BlockType.Script)
-            {
-                var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
-                var tree = parser.scriptContent();
-
-                AppendContentDiagnostics(to: result.Diagnostics, contentErrors, filePath, ct);
-                if (contentErrors.Count > 0) continue;
-
-                ct.ThrowIfCancellationRequested();
-                var builder = new PlayscriptCodeBuilder(ct);
-
-                builder.BuildScriptFromContent(tree);
-                AppendContentDiagnostics(result.Diagnostics, builder.Errors, filePath, ct);
-                if (builder.Errors.Count > 0) continue;
-
                 result.ScriptBlocks.Add((name, builder.ContentResult, line, col));
-            }
             else
-            {
-                var (parser, contentErrors) = PlayscriptContentHelper.ParseText(trimmedContent);
-                var tree = parser.textContent();
-
-                AppendContentDiagnostics(to: result.Diagnostics, contentErrors, filePath, ct);
-                if (contentErrors.Count > 0) continue;
-
-                ct.ThrowIfCancellationRequested();
-                var builder = new PlayscriptCodeBuilder(ct);
-
-                builder.BuildTextFromContent(tree);
-                AppendContentDiagnostics(result.Diagnostics, builder.Errors, filePath, ct);
-                if (builder.Errors.Count > 0) continue;
-
                 result.TextBlocks.Add((name, builder.TextResult, line, col));
-            }
         }
 
         foreach (var i in structureResults.result.Interfaces)

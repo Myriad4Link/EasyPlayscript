@@ -16,6 +16,14 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
     public TextBlock TextResult { get; private set; } = null!;
     public List<PlayscriptError> Errors { get; } = [];
 
+    public void Build(BlockType type, IParseTree tree)
+    {
+        if (type == BlockType.Script)
+            BuildScriptFromContent((PlayscriptContentParser.ScriptContentContext)tree);
+        else
+            BuildTextFromContent((PlayscriptContentParser.TextContentContext)tree);
+    }
+
     public void BuildScriptFromContent(PlayscriptContentParser.ScriptContentContext? context)
     {
         var block = new ScriptBlock();

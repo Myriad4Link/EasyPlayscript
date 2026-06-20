@@ -211,7 +211,7 @@ public class PlayscriptStructureTests
         Assert.NotNull(result.Results[0].RawContent);
 
         var trimmed = result.Results[0].RawContent!.Trim('\r', '\n');
-        var (parser, errors) = PlayscriptContentHelper.Parse(trimmed);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(trimmed);
         Assert.Empty(errors);
 
         var builder = new PlayscriptCodeBuilder();

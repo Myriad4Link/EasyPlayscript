@@ -9,7 +9,7 @@ public class InterfaceValidatorTests
 {
     private static ScriptBlock BuildScriptBlock(string input)
     {
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
         builder.BuildScriptFromContent(parser.scriptContent());

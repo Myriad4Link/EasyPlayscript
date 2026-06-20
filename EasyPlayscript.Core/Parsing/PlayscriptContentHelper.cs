@@ -10,7 +10,7 @@ namespace EasyPlayscript.Parsing;
 /// </summary>
 public static class PlayscriptContentHelper
 {
-    public static (PlayscriptContentParser parser, List<PlayscriptError> errors) Parse(string input)
+    public static (PlayscriptContentParser parser, List<PlayscriptError> errors) ParseScript(string input)
     {
         var inputStream = new AntlrInputStream(input.Trim());
         var lexer = new PlayscriptContentLexer(inputStream);

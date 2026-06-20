@@ -43,26 +43,31 @@ public class PlayscriptBuildTask : Task
 
                 var trimmedContent = rawContent.Trim('\r', '\n');
 
+                var (parser, contentErrors) = identifier == BlockType.Script
+                    ? PlayscriptContentHelper.ParseScript(trimmedContent)
+                    : PlayscriptContentHelper.ParseText(trimmedContent);
+
+                var tree = identifier == BlockType.Script
+                    ? (Antlr4.Runtime.Tree.IParseTree)parser.scriptContent()
+                    : parser.textContent();
+
+                if (contentErrors.Count > 0)
+                {
+                    foreach (var error in contentErrors)
+                        Log.LogError("Playscript", "SCPT002", null,
+                            filePath, error.Line, error.Col, 0, 0, error.Msg);
+                    hasErrors = true;
+                    continue;
+                }
+
+                if (tree == null) continue;
+
+                var builder = new PlayscriptCodeBuilder();
+                builder.Build(identifier, tree);
+
                 if (identifier == BlockType.Script)
                 {
-                    var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
-                    var tree = parser.scriptContent();
-
-                    if (contentErrors.Count > 0)
-                    {
-                        foreach (var error in contentErrors)
-                            Log.LogError("Playscript", "SCPT002", null,
-                                filePath, error.Line, error.Col, 0, 0, error.Msg);
-                        hasErrors = true;
-                        continue;
-                    }
-
-                    if (tree == null) continue;
-
-                    var builder = new PlayscriptCodeBuilder();
-                    builder.BuildScriptFromContent(tree);
                     var block = builder.ContentResult;
-
                     if (block == null) continue;
 
                     if (data.Scripts.ContainsKey(name))
@@ -78,26 +83,9 @@ public class PlayscriptBuildTask : Task
 
                     data.Scripts[name] = block;
                 }
-                else if (identifier == BlockType.Text)
+                else
                 {
-                    var (parser, contentErrors) = PlayscriptContentHelper.ParseText(trimmedContent);
-                    var tree = parser.textContent();
-
-                    if (contentErrors.Count > 0)
-                    {
-                        foreach (var error in contentErrors)
-                            Log.LogError("Playscript", "SCPT002", null,
-                                filePath, error.Line, error.Col, 0, 0, error.Msg);
-                        hasErrors = true;
-                        continue;
-                    }
-
-                    if (tree == null) continue;
-
-                    var builder = new PlayscriptCodeBuilder();
-                    builder.BuildTextFromContent(tree);
                     var block = builder.TextResult;
-
                     if (block == null) continue;
 
                     if (data.Texts.ContainsKey(name))

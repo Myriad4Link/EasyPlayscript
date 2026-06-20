@@ -12,7 +12,7 @@ public class PlayscriptContentTests
     public void SingleLine_OneParagraph()
     {
         const string input = "Hello world";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -28,7 +28,7 @@ public class PlayscriptContentTests
     public void TwoLines_SameParagraph()
     {
         const string input = "line 1\nline 2";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -43,7 +43,7 @@ public class PlayscriptContentTests
     public void BlankLine_SeparatesParagraphs()
     {
         const string input = "para 1\n\npara 2";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -57,7 +57,7 @@ public class PlayscriptContentTests
     public void SlashOnOwnLine_SeparatesPages()
     {
         const string input = "page 1\n/\npage 2";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -70,7 +70,7 @@ public class PlayscriptContentTests
     public void SlashAtEndOfLine_SeparatesPages()
     {
         const string input = "page 1 /\npage 2";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -84,7 +84,7 @@ public class PlayscriptContentTests
     public void SlashWithBlankLines_SeparatesPages()
     {
         const string input = "page 1\n\n/\n\npage 2";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -95,7 +95,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_MixedWithText()
     {
         const string input = "Hello @transition(\"fade_out\") world";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -115,7 +115,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_Standalone()
     {
         const string input = "@transition(\"fade_out\")";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -134,7 +134,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_NoParams_Parses()
     {
         const string input = "@func()";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -149,7 +149,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_MultipleParams_Parses()
     {
         const string input = "@func(\"a\", \"b\", \"c\")";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -197,7 +197,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_IntegerParam_Parses()
     {
         const string input = "@func(42)";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -212,7 +212,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_NegativeInteger_Parses()
     {
         const string input = "@func(-3)";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -226,7 +226,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_FloatParam_Parses()
     {
         const string input = "@func(3.14)";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -240,7 +240,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_NegativeFloat_Parses()
     {
         const string input = "@func(-0.5)";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -254,7 +254,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_BoolParam_Parses()
     {
         const string input = "@func(true)";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -268,7 +268,7 @@ public class PlayscriptContentTests
     public void ConsumerCall_MixedTypes_Parses()
     {
         const string input = "@func(\"str\", 42, 3.14, true)";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -349,7 +349,7 @@ public class PlayscriptContentTests
     [Fact]
     public void Builder_IntegerOverflow_ReportsError()
     {
-        var (parser, errors) = PlayscriptContentHelper.Parse("@func(9999999999)");
+        var (parser, errors) = PlayscriptContentHelper.ParseScript("@func(9999999999)");
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
         builder.BuildScriptFromContent(parser.scriptContent());
@@ -360,7 +360,7 @@ public class PlayscriptContentTests
     [Fact]
     public void Builder_FloatOverflow_ReportsError()
     {
-        var (parser, errors) = PlayscriptContentHelper.Parse("@func(1e999)");
+        var (parser, errors) = PlayscriptContentHelper.ParseScript("@func(1e999)");
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
         builder.BuildScriptFromContent(parser.scriptContent());
@@ -372,7 +372,7 @@ public class PlayscriptContentTests
     public void MultiplePages_WithParagraphs()
     {
         const string input = "p1l1\np1l2\n\np2l1\n/\np3l1";
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         var tree = parser.scriptContent();
 
         Assert.Empty(errors);
@@ -512,7 +512,7 @@ public class PlayscriptContentTests
 
     private static ScriptBlock BuildScriptBlock(string input)
     {
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
         builder.BuildScriptFromContent(parser.scriptContent());

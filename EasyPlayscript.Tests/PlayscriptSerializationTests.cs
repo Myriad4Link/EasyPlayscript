@@ -128,7 +128,10 @@ public class PlayscriptSerializationTests
             {
                 ["intro"] = new TextBlock
                 {
-                    Items = new List<LineItem> { new TextItem("Welcome") }
+                    Lines = new List<Line>
+                    {
+                        new Line { Items = new List<LineItem> { new TextItem("Welcome") } }
+                    }
                 }
             }
         };
@@ -137,7 +140,7 @@ public class PlayscriptSerializationTests
         Assert.Single(deserialized.Scripts);
         Assert.Single(deserialized.Texts);
         Assert.Equal("Hello", ((TextItem)deserialized.Scripts["test"].Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("Welcome", ((TextItem)deserialized.Texts["intro"].Items[0]).Text);
+        Assert.Equal("Welcome", ((TextItem)deserialized.Texts["intro"].Lines[0].Items[0]).Text);
     }
 
     [Fact]
@@ -327,11 +330,17 @@ public class PlayscriptSerializationTests
             {
                 ["intro"] = new TextBlock
                 {
-                    Items = new List<LineItem>
+                    Lines = new List<Line>
                     {
-                        new TextItem("Welcome, "),
-                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                        new TextItem("!")
+                        new Line
+                        {
+                            Items = new List<LineItem>
+                            {
+                                new TextItem("Welcome, "),
+                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                new TextItem("!")
+                            }
+                        }
                     }
                 }
             }
@@ -347,11 +356,12 @@ public class PlayscriptSerializationTests
 
             Assert.Single(result);
             Assert.IsType<TextBlock>(result["intro"]);
-            var items = result["intro"].Items;
-            Assert.Equal(3, items.Count);
-            Assert.Equal("Welcome, ", ((TextItem)items[0]).Text);
-            Assert.Equal("get_name", ((ConsumerCallItem)items[1]).Identifier);
-            Assert.Equal("!", ((TextItem)items[2]).Text);
+            var lines = result["intro"].Lines;
+            Assert.Single(lines);
+            Assert.Equal(3, lines[0].Items.Count);
+            Assert.Equal("Welcome, ", ((TextItem)lines[0].Items[0]).Text);
+            Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Items[1]).Identifier);
+            Assert.Equal("!", ((TextItem)lines[0].Items[2]).Text);
         }
         finally
         {
@@ -365,35 +375,36 @@ public class PlayscriptSerializationTests
         var block = new TextBlock();
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
-        Assert.Empty(deserialized.Items);
+        Assert.Empty(deserialized.Lines);
     }
 
     [Fact]
-    public void TextBlock_RoundTrip_SingleTextItem()
+    public void TextBlock_RoundTrip_SingleLine()
     {
-        var block = new TextBlock { Items = new List<LineItem> { new TextItem("Hello") } };
+        var block = new TextBlock { Lines = new List<Line> { new Line { Items = new List<LineItem> { new TextItem("Hello") } } } };
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
-        Assert.Single(deserialized.Items);
-        Assert.Equal("Hello", ((TextItem)deserialized.Items[0]).Text);
+        Assert.Single(deserialized.Lines);
+        Assert.Single(deserialized.Lines[0].Items);
+        Assert.Equal("Hello", ((TextItem)deserialized.Lines[0].Items[0]).Text);
     }
 
     [Fact]
-    public void TextBlock_RoundTrip_MultipleItems()
+    public void TextBlock_RoundTrip_MultipleLines()
     {
         var block = new TextBlock
         {
-            Items = new List<LineItem>
+            Lines = new List<Line>
             {
-                new TextItem("Hello "),
-                new TextItem("World")
+                new Line { Items = new List<LineItem> { new TextItem("Hello ") } },
+                new Line { Items = new List<LineItem> { new TextItem("World") } }
             }
         };
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
-        Assert.Equal(2, deserialized.Items.Count);
-        Assert.Equal("Hello ", ((TextItem)deserialized.Items[0]).Text);
-        Assert.Equal("World", ((TextItem)deserialized.Items[1]).Text);
+        Assert.Equal(2, deserialized.Lines.Count);
+        Assert.Equal("Hello ", ((TextItem)deserialized.Lines[0].Items[0]).Text);
+        Assert.Equal("World", ((TextItem)deserialized.Lines[1].Items[0]).Text);
     }
 
     [Fact]
@@ -401,22 +412,29 @@ public class PlayscriptSerializationTests
     {
         var block = new TextBlock
         {
-            Items = new List<LineItem>
+            Lines = new List<Line>
             {
-                new TextItem("Hi, "),
-                new ConsumerCallItem("get_name", new List<ArgumentValue> { new StringArgument("test") }),
-                new TextItem(".")
+                new Line
+                {
+                    Items = new List<LineItem>
+                    {
+                        new TextItem("Hi, "),
+                        new ConsumerCallItem("get_name", new List<ArgumentValue> { new StringArgument("test") }),
+                        new TextItem(".")
+                    }
+                }
             }
         };
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
-        Assert.Equal(3, deserialized.Items.Count);
-        Assert.Equal("Hi, ", ((TextItem)deserialized.Items[0]).Text);
-        Assert.Equal("get_name", ((ConsumerCallItem)deserialized.Items[1]).Identifier);
-        Assert.Single(((ConsumerCallItem)deserialized.Items[1]).Arguments);
-        Assert.IsType<StringArgument>(((ConsumerCallItem)deserialized.Items[1]).Arguments[0]);
-        Assert.Equal("test", ((StringArgument)((ConsumerCallItem)deserialized.Items[1]).Arguments[0]).Value);
-        Assert.Equal(".", ((TextItem)deserialized.Items[2]).Text);
+        Assert.Single(deserialized.Lines);
+        Assert.Equal(3, deserialized.Lines[0].Items.Count);
+        Assert.Equal("Hi, ", ((TextItem)deserialized.Lines[0].Items[0]).Text);
+        Assert.Equal("get_name", ((ConsumerCallItem)deserialized.Lines[0].Items[1]).Identifier);
+        Assert.Single(((ConsumerCallItem)deserialized.Lines[0].Items[1]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)deserialized.Lines[0].Items[1]).Arguments[0]);
+        Assert.Equal("test", ((StringArgument)((ConsumerCallItem)deserialized.Lines[0].Items[1]).Arguments[0]).Value);
+        Assert.Equal(".", ((TextItem)deserialized.Lines[0].Items[2]).Text);
     }
 
     [Fact]
@@ -424,21 +442,28 @@ public class PlayscriptSerializationTests
     {
         var block = new TextBlock
         {
-            Items = new List<LineItem>
+            Lines = new List<Line>
             {
-                new ConsumerCallItem("do_thing", new List<ArgumentValue>
+                new Line
                 {
-                    new StringArgument("hello"),
-                    new IntArgument(42),
-                    new DoubleArgument(3.14),
-                    new BoolArgument(true)
-                })
+                    Items = new List<LineItem>
+                    {
+                        new ConsumerCallItem("do_thing", new List<ArgumentValue>
+                        {
+                            new StringArgument("hello"),
+                            new IntArgument(42),
+                            new DoubleArgument(3.14),
+                            new BoolArgument(true)
+                        })
+                    }
+                }
             }
         };
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
-        Assert.Single(deserialized.Items);
-        var call = (ConsumerCallItem)deserialized.Items[0];
+        Assert.Single(deserialized.Lines);
+        Assert.Single(deserialized.Lines[0].Items);
+        var call = (ConsumerCallItem)deserialized.Lines[0].Items[0];
         Assert.Equal("do_thing", call.Identifier);
         Assert.Equal(4, call.Arguments.Count);
         Assert.IsType<StringArgument>(call.Arguments[0]);
@@ -461,11 +486,17 @@ public class PlayscriptSerializationTests
             {
                 ["intro"] = new TextBlock
                 {
-                    Items = new List<LineItem>
+                    Lines = new List<Line>
                     {
-                        new TextItem("Welcome, "),
-                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                        new TextItem("!")
+                        new Line
+                        {
+                            Items = new List<LineItem>
+                            {
+                                new TextItem("Welcome, "),
+                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                new TextItem("!")
+                            }
+                        }
                     }
                 }
             }
@@ -482,11 +513,12 @@ public class PlayscriptSerializationTests
 
             Assert.Single(result);
             Assert.IsType<TextBlock>(result["intro"]);
-            var items = result["intro"].Items;
-            Assert.Equal(3, items.Count);
-            Assert.Equal("Welcome, ", ((TextItem)items[0]).Text);
-            Assert.Equal("get_name", ((ConsumerCallItem)items[1]).Identifier);
-            Assert.Equal("!", ((TextItem)items[2]).Text);
+            var lines = result["intro"].Lines;
+            Assert.Single(lines);
+            Assert.Equal(3, lines[0].Items.Count);
+            Assert.Equal("Welcome, ", ((TextItem)lines[0].Items[0]).Text);
+            Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Items[1]).Identifier);
+            Assert.Equal("!", ((TextItem)lines[0].Items[2]).Text);
         }
         finally
         {
@@ -504,11 +536,17 @@ public class PlayscriptSerializationTests
             {
                 ["intro"] = new TextBlock
                 {
-                    Items = new List<LineItem>
+                    Lines = new List<Line>
                     {
-                        new TextItem("Welcome, "),
-                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                        new TextItem("!")
+                        new Line
+                        {
+                            Items = new List<LineItem>
+                            {
+                                new TextItem("Welcome, "),
+                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                new TextItem("!")
+                            }
+                        }
                     }
                 }
             }
@@ -518,11 +556,12 @@ public class PlayscriptSerializationTests
         Assert.Empty(deserialized.Scripts);
         Assert.Single(deserialized.Texts);
         Assert.IsType<TextBlock>(deserialized.Texts["intro"]);
-        var items = deserialized.Texts["intro"].Items;
-        Assert.Equal(3, items.Count);
-        Assert.Equal("Welcome, ", ((TextItem)items[0]).Text);
-        Assert.Equal("get_name", ((ConsumerCallItem)items[1]).Identifier);
-        Assert.Equal("!", ((TextItem)items[2]).Text);
+        var lines = deserialized.Texts["intro"].Lines;
+        Assert.Single(lines);
+        Assert.Equal(3, lines[0].Items.Count);
+        Assert.Equal("Welcome, ", ((TextItem)lines[0].Items[0]).Text);
+        Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Items[1]).Identifier);
+        Assert.Equal("!", ((TextItem)lines[0].Items[2]).Text);
     }
 
     // ─── Phase 10: Script Block Verification ────────────────────────────────
@@ -606,11 +645,17 @@ public class PlayscriptSerializationTests
             {
                 ["intro"] = new TextBlock
                 {
-                    Items = new List<LineItem>
+                    Lines = new List<Line>
                     {
-                        new TextItem("Welcome, "),
-                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                        new TextItem("!")
+                        new Line
+                        {
+                            Items = new List<LineItem>
+                            {
+                                new TextItem("Welcome, "),
+                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                new TextItem("!")
+                            }
+                        }
                     }
                 }
             }
@@ -626,9 +671,10 @@ public class PlayscriptSerializationTests
 
         Assert.Single(deserialized.Texts);
         Assert.IsType<TextBlock>(deserialized.Texts["intro"]);
-        var textItems = deserialized.Texts["intro"].Items;
-        Assert.Equal("Welcome, ", ((TextItem)textItems[0]).Text);
-        Assert.Equal("get_name", ((ConsumerCallItem)textItems[1]).Identifier);
-        Assert.Equal("!", ((TextItem)textItems[2]).Text);
+        var textLines = deserialized.Texts["intro"].Lines;
+        Assert.Single(textLines);
+        Assert.Equal("Welcome, ", ((TextItem)textLines[0].Items[0]).Text);
+        Assert.Equal("get_name", ((ConsumerCallItem)textLines[0].Items[1]).Identifier);
+        Assert.Equal("!", ((TextItem)textLines[0].Items[2]).Text);
     }
 }

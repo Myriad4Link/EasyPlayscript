@@ -4,10 +4,14 @@ options { tokenVocab = PlayscriptContentLexer; }
 
 @header { namespace EasyPlayscript.Parsing; }
 
-// ─── Entry Point ────────────────────────────────────────────────────────────
+// ─── Entry Points ───────────────────────────────────────────────────────────
 
 scriptContent
     : page (pageBreak page)* EOF
+    ;
+
+textContent
+    : textParagraph (BLANK_LINE textParagraph)* EOF
     ;
 
 // ─── Content Structure ──────────────────────────────────────────────────────
@@ -22,6 +26,14 @@ paragraph
 
 line
     : (TEXT | consumerCall)+
+    ;
+
+textParagraph
+    : textLine (SINGLE_NEWLINE textLine)*
+    ;
+
+textLine
+    : (TEXT | SLASH | consumerCall)+
     ;
 
 pageBreak

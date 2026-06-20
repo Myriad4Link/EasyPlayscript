@@ -16,18 +16,6 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
     public TextBlock TextResult { get; private set; } = null!;
     public List<PlayscriptError> Errors { get; } = [];
 
-    /// <summary>
-    /// Builds a <see cref="ScriptBlock"/> from Pass 2 content AST.
-    /// Used when processing raw content extracted by Pass 1.
-    /// </summary>
-    public void BuildContent(PlayscriptContentParser.ScriptContentContext? context, bool isScript)
-    {
-        if (isScript)
-            BuildScriptFromContent(context);
-        else
-            BuildTextFromContent(context);
-    }
-
     public void BuildScriptFromContent(PlayscriptContentParser.ScriptContentContext? context)
     {
         var block = new ScriptBlock();
@@ -43,6 +31,8 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
             onParagraph: _ =>
             {
                 paragraph = new Paragraph();
+                // `paragraph` is always evaluated after `page` gets evaluated.
+                // So `page` here is guaranteed non-null. 
                 page!.Paragraphs.Add(paragraph);
             },
             onLine: lineCtx => paragraph!.Lines.Add(new Line { Items = ParseLineItems(lineCtx) }));
@@ -50,34 +40,24 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         ContentResult = block;
     }
 
-    public void BuildTextFromContent(PlayscriptContentParser.ScriptContentContext? context)
+    public void BuildTextFromContent(PlayscriptContentParser.TextContentContext? context)
     {
         var block = new TextBlock();
-        if (context?.page() == null) { TextResult = block; return; }
+        if (context?.textParagraph() == null) { TextResult = block; return; }
 
-        var firstPage = true;
         var firstParagraph = true;
-        var firstLine = true;
+        foreach (var paraCtx in context.textParagraph())
+        {
+            if (!firstParagraph) block.Lines.Add(new Line());
+            firstParagraph = false;
 
-        ProcessContent(context,
-            onPage: _ =>
+            foreach (var lineCtx in paraCtx.textLine())
             {
-                if (!firstPage) block.Items.Add(new TextItem("\n"));
-                firstPage = false;
-                firstParagraph = true;
-            },
-            onParagraph: _ =>
-            {
-                if (!firstParagraph) block.Items.Add(new TextItem("\n"));
-                firstParagraph = false;
-                firstLine = true;
-            },
-            onLine: lineCtx =>
-            {
-                if (!firstLine) block.Items.Add(new TextItem("\n"));
-                firstLine = false;
-                block.Items.AddRange(ParseLineItems(lineCtx));
-            });
+                var items = ParseTextLineItems(lineCtx);
+                if (items.Count > 0)
+                    block.Lines.Add(new Line { Items = items });
+            }
+        }
 
         TextResult = block;
     }
@@ -104,6 +84,31 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         return items;
     }
 
+    private List<LineItem> ParseTextLineItems(PlayscriptContentParser.TextLineContext? lineCtx)
+    {
+        var items = new List<LineItem>();
+        if (lineCtx?.children == null) return items;
+
+        foreach (var child in lineCtx.children)
+        {
+            switch (child)
+            {
+                case PlayscriptContentParser.ConsumerCallContext callCtx:
+                    var call = ParseConsumerCall(callCtx);
+                    if (call != null)
+                        items.Add(call);
+                    break;
+                case ITerminalNode { Symbol.Type: PlayscriptContentLexer.TEXT } terminal:
+                    items.Add(new TextItem(terminal.GetText()));
+                    break;
+                case ITerminalNode { Symbol.Type: PlayscriptContentLexer.SLASH } terminal:
+                    items.Add(new TextItem(terminal.GetText()));
+                    break;
+            }
+        }
+        return items;
+    }
+
     private void ProcessContent(
         PlayscriptContentParser.ScriptContentContext? context,
         Action<PlayscriptContentParser.PageContext> onPage,
@@ -118,14 +123,11 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
             cancellationToken.ThrowIfCancellationRequested();
             onPage(pageCtx);
 
-            foreach (var paragraphCtx in pageCtx?.paragraph() ?? System.Array.Empty<PlayscriptContentParser.ParagraphContext>())
+            foreach (var paragraphCtx in pageCtx.paragraph() ?? [])
             {
                 onParagraph(paragraphCtx);
 
-                foreach (var lineCtx in paragraphCtx?.line() ?? System.Array.Empty<PlayscriptContentParser.LineContext>())
-                {
-                    onLine(lineCtx);
-                }
+                foreach (var lineCtx in paragraphCtx.line() ?? []) onLine(lineCtx);
             }
         }
     }
@@ -157,9 +159,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
     private ArgumentValue? ParseArgument(PlayscriptContentParser.ArgumentContext argCtx)
     {
         if (argCtx.STRING_LITERAL() != null)
-        {
             return new StringArgument(argCtx.STRING_LITERAL().GetText().Trim('"'));
-        }
 
         if (argCtx.INTEGER_LITERAL() != null)
         {

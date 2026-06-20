@@ -359,14 +359,15 @@ public class PlayscriptStructureTests
         Assert.NotNull(result.Results[0].RawContent);
 
         var trimmed = result.Results[0].RawContent!.Trim('\r', '\n');
-        var (parser, errors) = PlayscriptContentHelper.Parse(trimmed);
+        var (parser, errors) = PlayscriptContentHelper.ParseText(trimmed);
         Assert.Empty(errors);
 
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildTextFromContent(parser.scriptContent());
+        builder.BuildTextFromContent(parser.textContent());
         var block = builder.TextResult;
 
-        Assert.Single(block.Items);
-        Assert.Equal("Welcome", ((TextItem)block.Items[0]).Text);
+        Assert.Single(block.Lines);
+        Assert.Single(block.Lines[0].Items);
+        Assert.Equal("Welcome", ((TextItem)block.Lines[0].Items[0]).Text);
     }
 }

@@ -383,6 +383,131 @@ public class PlayscriptContentTests
         Assert.Single(tree.page(1).paragraph());
     }
 
+    // ─── textContent Parser Tests ─────────────────────────────────────────────
+
+    [Fact]
+    public void TextContent_SingleLine_OneParagraph()
+    {
+        const string input = "Hello world";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        Assert.Single(tree.textParagraph());
+        Assert.Single(tree.textParagraph(0).textLine());
+        var texts = tree.textParagraph(0).textLine(0).TEXT();
+        Assert.Single(texts);
+        Assert.Equal("Hello world", texts[0].GetText());
+    }
+
+    [Fact]
+    public void TextContent_TwoLines_SameParagraph()
+    {
+        const string input = "line 1\nline 2";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        Assert.Single(tree.textParagraph());
+        Assert.Equal(2, tree.textParagraph(0).textLine().Length);
+        Assert.Equal("line 1", tree.textParagraph(0).textLine(0).TEXT()[0].GetText());
+        Assert.Equal("line 2", tree.textParagraph(0).textLine(1).TEXT()[0].GetText());
+    }
+
+    [Fact]
+    public void TextContent_BlankLine_TwoParagraphs()
+    {
+        const string input = "para 1\n\npara 2";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        Assert.Equal(2, tree.textParagraph().Length);
+        Assert.Equal("para 1", tree.textParagraph(0).textLine(0).TEXT()[0].GetText());
+        Assert.Equal("para 2", tree.textParagraph(1).textLine(0).TEXT()[0].GetText());
+    }
+
+    [Fact]
+    public void TextContent_SlashIsLineContent()
+    {
+        const string input = "before\n/\nafter";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        Assert.Single(tree.textParagraph());
+        Assert.Equal(3, tree.textParagraph(0).textLine().Length);
+        Assert.Equal("before", tree.textParagraph(0).textLine(0).TEXT()[0].GetText());
+        Assert.Single(tree.textParagraph(0).textLine(1).SLASH());
+        Assert.Equal("/", tree.textParagraph(0).textLine(1).SLASH(0).GetText());
+        Assert.Equal("after", tree.textParagraph(0).textLine(2).TEXT()[0].GetText());
+    }
+
+    [Fact]
+    public void TextContent_SlashInlineWithText()
+    {
+        const string input = "price is 5/10";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        var line = tree.textParagraph(0).textLine(0);
+        // Should have TEXT, SLASH, TEXT
+        Assert.Equal(2, line.TEXT().Length);
+        Assert.Single(line.SLASH());
+        Assert.Equal("price is 5", line.TEXT()[0].GetText());
+        Assert.Equal("/", line.SLASH(0).GetText());
+        Assert.Equal("10", line.TEXT()[1].GetText());
+    }
+
+    [Fact]
+    public void TextContent_ConsumerCall_MixedWithText()
+    {
+        const string input = "Hello @get_name() world";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        var line = tree.textParagraph(0).textLine(0);
+        Assert.Equal(2, line.TEXT().Length);
+        Assert.Single(line.consumerCall());
+        Assert.Equal("Hello ", line.TEXT()[0].GetText());
+        Assert.Equal(" world", line.TEXT()[1].GetText());
+        Assert.Equal("get_name", line.consumerCall(0).IDENTIFIER().GetText());
+    }
+
+    [Fact]
+    public void TextContent_EmptyInput_ReportsError()
+    {
+        const string input = "";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        parser.textContent();
+
+        // Empty input produces a parser error (EOF unexpected)
+        Assert.NotEmpty(errors);
+    }
+
+    [Fact]
+    public void TextContent_ThreeParagraphs_MixedContent()
+    {
+        const string input = "Hi!\n\nHow's your day, @get_name()?\nLook at this wonderful slash:\n/\nIt's great, isn't it?";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        Assert.Equal(2, tree.textParagraph().Length);
+
+        // Paragraph 1: "Hi!"
+        Assert.Single(tree.textParagraph(0).textLine());
+        Assert.Equal("Hi!", tree.textParagraph(0).textLine(0).TEXT()[0].GetText());
+
+        // Paragraph 2: 4 lines (single newlines within paragraph)
+        Assert.Equal(4, tree.textParagraph(1).textLine().Length);
+        Assert.Single(tree.textParagraph(1).textLine(0).consumerCall());
+        Assert.Equal("get_name", tree.textParagraph(1).textLine(0).consumerCall(0).IDENTIFIER().GetText());
+        Assert.Single(tree.textParagraph(1).textLine(2).SLASH());
+    }
+
     // ─── Phase 4: Builder Tests ───────────────────────────────────────────────
 
     private static ScriptBlock BuildScriptBlock(string input)
@@ -488,10 +613,10 @@ public class PlayscriptContentTests
 
     private static TextBlock BuildTextBlock(string input)
     {
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildTextFromContent(parser.scriptContent());
+        builder.BuildTextFromContent(parser.textContent());
         return builder.TextResult;
     }
 
@@ -499,91 +624,122 @@ public class PlayscriptContentTests
     public void Builder_TextBlock_SingleLine()
     {
         var block = BuildTextBlock("Hello world");
-        Assert.Single(block.Items);
-        Assert.IsType<TextItem>(block.Items[0]);
-        Assert.Equal("Hello world", ((TextItem)block.Items[0]).Text);
+        Assert.Single(block.Lines);
+        Assert.Single(block.Lines[0].Items);
+        Assert.IsType<TextItem>(block.Lines[0].Items[0]);
+        Assert.Equal("Hello world", ((TextItem)block.Lines[0].Items[0]).Text);
     }
 
     [Fact]
     public void Builder_TextBlock_TwoLines_SameParagraph()
     {
         var block = BuildTextBlock("line 1\nline 2");
-        Assert.Equal(3, block.Items.Count);
-        Assert.Equal("line 1", ((TextItem)block.Items[0]).Text);
-        Assert.Equal("\n", ((TextItem)block.Items[1]).Text);
-        Assert.Equal("line 2", ((TextItem)block.Items[2]).Text);
+        Assert.Equal(2, block.Lines.Count);
+        Assert.Equal("line 1", ((TextItem)block.Lines[0].Items[0]).Text);
+        Assert.Equal("line 2", ((TextItem)block.Lines[1].Items[0]).Text);
     }
 
     [Fact]
-    public void Builder_TextBlock_BlankLine_SeparatesContent()
+    public void Builder_TextBlock_BlankLine_Preserved()
     {
         var block = BuildTextBlock("para 1\n\npara 2");
-        Assert.Equal(3, block.Items.Count);
-        Assert.Equal("para 1", ((TextItem)block.Items[0]).Text);
-        Assert.Equal("\n", ((TextItem)block.Items[1]).Text);
-        Assert.Equal("para 2", ((TextItem)block.Items[2]).Text);
+        Assert.Equal(3, block.Lines.Count);
+        Assert.Equal("para 1", ((TextItem)block.Lines[0].Items[0]).Text);
+        Assert.Empty(block.Lines[1].Items);
+        Assert.Equal("para 2", ((TextItem)block.Lines[2].Items[0]).Text);
     }
 
     [Fact]
-    public void Builder_TextBlock_PageBreak_SeparatesContent()
+    public void Builder_TextBlock_SlashIsLineContent()
     {
-        var block = BuildTextBlock("page 1\n/\npage 2");
-        Assert.Equal(3, block.Items.Count);
-        Assert.Equal("page 1", ((TextItem)block.Items[0]).Text);
-        Assert.Equal("\n", ((TextItem)block.Items[1]).Text);
-        Assert.Equal("page 2", ((TextItem)block.Items[2]).Text);
+        var block = BuildTextBlock("before\n/\nafter");
+        Assert.Equal(3, block.Lines.Count);
+        Assert.Equal("before", ((TextItem)block.Lines[0].Items[0]).Text);
+        Assert.Single(block.Lines[1].Items);
+        Assert.IsType<TextItem>(block.Lines[1].Items[0]);
+        Assert.Equal("/", ((TextItem)block.Lines[1].Items[0]).Text);
+        Assert.Equal("after", ((TextItem)block.Lines[2].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_InlineSlash()
+    {
+        var block = BuildTextBlock("price is 5/10");
+        Assert.Single(block.Lines);
+        var items = block.Lines[0].Items;
+        Assert.Equal(3, items.Count);
+        Assert.Equal("price is 5", ((TextItem)items[0]).Text);
+        Assert.Equal("/", ((TextItem)items[1]).Text);
+        Assert.Equal("10", ((TextItem)items[2]).Text);
     }
 
     [Fact]
     public void Builder_TextBlock_InlineConsumerCall()
     {
         var block = BuildTextBlock("Hi, @get_name().");
-        Assert.Equal(3, block.Items.Count);
-        Assert.IsType<TextItem>(block.Items[0]);
-        Assert.Equal("Hi, ", ((TextItem)block.Items[0]).Text);
-        Assert.IsType<ConsumerCallItem>(block.Items[1]);
-        Assert.Equal("get_name", ((ConsumerCallItem)block.Items[1]).Identifier);
-        Assert.IsType<TextItem>(block.Items[2]);
-        Assert.Equal(".", ((TextItem)block.Items[2]).Text);
+        Assert.Single(block.Lines);
+        var items = block.Lines[0].Items;
+        Assert.Equal(3, items.Count);
+        Assert.IsType<TextItem>(items[0]);
+        Assert.Equal("Hi, ", ((TextItem)items[0]).Text);
+        Assert.IsType<ConsumerCallItem>(items[1]);
+        Assert.Equal("get_name", ((ConsumerCallItem)items[1]).Identifier);
+        Assert.IsType<TextItem>(items[2]);
+        Assert.Equal(".", ((TextItem)items[2]).Text);
     }
 
     [Fact]
     public void Builder_TextBlock_EmptyInput()
     {
         var block = BuildTextBlock("");
-        Assert.Empty(block.Items);
+        Assert.Empty(block.Lines);
     }
 
     [Fact]
-    public void Builder_TextBlock_MultiplePagesWithCalls()
+    public void Builder_TextBlock_MultipleParagraphsWithCalls()
     {
-        var block = BuildTextBlock("Hello @a()\n/\nWorld @b(\"x\")");
-        Assert.Equal(5, block.Items.Count);
-        Assert.Equal("Hello ", ((TextItem)block.Items[0]).Text);
-        Assert.IsType<ConsumerCallItem>(block.Items[1]);
-        Assert.Equal("a", ((ConsumerCallItem)block.Items[1]).Identifier);
-        Assert.Empty(((ConsumerCallItem)block.Items[1]).Arguments);
-        Assert.Equal("\n", ((TextItem)block.Items[2]).Text);
-        Assert.Equal("World ", ((TextItem)block.Items[3]).Text);
-        Assert.IsType<ConsumerCallItem>(block.Items[4]);
-        Assert.Equal("b", ((ConsumerCallItem)block.Items[4]).Identifier);
-        Assert.Single(((ConsumerCallItem)block.Items[4]).Arguments);
-        Assert.IsType<StringArgument>(((ConsumerCallItem)block.Items[4]).Arguments[0]);
-        Assert.Equal("x", ((StringArgument)((ConsumerCallItem)block.Items[4]).Arguments[0]).Value);
+        var block = BuildTextBlock("Hello @a()\n\nWorld @b(\"x\")");
+        Assert.Equal(3, block.Lines.Count);
+        Assert.Equal("Hello ", ((TextItem)block.Lines[0].Items[0]).Text);
+        Assert.IsType<ConsumerCallItem>(block.Lines[0].Items[1]);
+        Assert.Equal("a", ((ConsumerCallItem)block.Lines[0].Items[1]).Identifier);
+        Assert.Empty(block.Lines[1].Items);
+        Assert.Equal("World ", ((TextItem)block.Lines[2].Items[0]).Text);
+        Assert.IsType<ConsumerCallItem>(block.Lines[2].Items[1]);
+        Assert.Equal("b", ((ConsumerCallItem)block.Lines[2].Items[1]).Identifier);
+        Assert.Single(((ConsumerCallItem)block.Lines[2].Items[1]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)block.Lines[2].Items[1]).Arguments[0]);
+        Assert.Equal("x", ((StringArgument)((ConsumerCallItem)block.Lines[2].Items[1]).Arguments[0]).Value);
     }
 
     [Fact]
-    public void Builder_TextBlock_OnlyNewlines()
+    public void Builder_TextBlock_OnlyBlankLines()
     {
         var block = BuildTextBlock("\n\n\n");
-        Assert.Empty(block.Items);
+        Assert.Empty(block.Lines);
     }
 
     [Fact]
     public void Builder_TextBlock_LeadingTrailingNewlines()
     {
         var block = BuildTextBlock("\nHello\n");
-        Assert.Single(block.Items);
-        Assert.Equal("Hello", ((TextItem)block.Items[0]).Text);
+        Assert.Single(block.Lines);
+        Assert.Equal("Hello", ((TextItem)block.Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Builder_TextBlock_ThreeParagraphs_MixedContent()
+    {
+        var block = BuildTextBlock("Hi!\n\nHow's your day, @get_name()?\nLook at this wonderful slash:\n/\nIt's great, isn't it?");
+        Assert.Equal(6, block.Lines.Count);
+        Assert.Equal("Hi!", ((TextItem)block.Lines[0].Items[0]).Text);
+        Assert.Empty(block.Lines[1].Items);
+        Assert.Equal(3, block.Lines[2].Items.Count);
+        Assert.Equal("How's your day, ", ((TextItem)block.Lines[2].Items[0]).Text);
+        Assert.Equal("get_name", ((ConsumerCallItem)block.Lines[2].Items[1]).Identifier);
+        Assert.Equal("?", ((TextItem)block.Lines[2].Items[2]).Text);
+        Assert.Equal("Look at this wonderful slash:", ((TextItem)block.Lines[3].Items[0]).Text);
+        Assert.Equal("/", ((TextItem)block.Lines[4].Items[0]).Text);
+        Assert.Equal("It's great, isn't it?", ((TextItem)block.Lines[5].Items[0]).Text);
     }
 }

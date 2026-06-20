@@ -18,7 +18,9 @@ public static class InterfaceValidator
 
     public static IEnumerable<ConsumerCallItem> GetConsumerCalls(TextBlock block)
     {
-        foreach (var item in block.Items)
+        foreach (var item in from line in block.Lines
+                 from item in line.Items
+                 select item)
             if (item is ConsumerCallItem call)
                 yield return call;
     }

@@ -42,22 +42,23 @@ public class PlayscriptBuildTask : Task
                 if (rawContent == null) continue;
 
                 var trimmedContent = rawContent.Trim('\r', '\n');
-                var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
-                var tree = parser.scriptContent();
-
-                if (contentErrors.Count > 0)
-                {
-                    foreach (var error in contentErrors)
-                        Log.LogError("Playscript", "SCPT002", null,
-                            filePath, error.Line, error.Col, 0, 0, error.Msg);
-                    hasErrors = true;
-                    continue;
-                }
-
-                if (tree == null) continue;
 
                 if (identifier == BlockType.Script)
                 {
+                    var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
+                    var tree = parser.scriptContent();
+
+                    if (contentErrors.Count > 0)
+                    {
+                        foreach (var error in contentErrors)
+                            Log.LogError("Playscript", "SCPT002", null,
+                                filePath, error.Line, error.Col, 0, 0, error.Msg);
+                        hasErrors = true;
+                        continue;
+                    }
+
+                    if (tree == null) continue;
+
                     var builder = new PlayscriptCodeBuilder();
                     builder.BuildScriptFromContent(tree);
                     var block = builder.ContentResult;
@@ -79,6 +80,20 @@ public class PlayscriptBuildTask : Task
                 }
                 else if (identifier == BlockType.Text)
                 {
+                    var (parser, contentErrors) = PlayscriptContentHelper.ParseText(trimmedContent);
+                    var tree = parser.textContent();
+
+                    if (contentErrors.Count > 0)
+                    {
+                        foreach (var error in contentErrors)
+                            Log.LogError("Playscript", "SCPT002", null,
+                                filePath, error.Line, error.Col, 0, 0, error.Msg);
+                        hasErrors = true;
+                        continue;
+                    }
+
+                    if (tree == null) continue;
+
                     var builder = new PlayscriptCodeBuilder();
                     builder.BuildTextFromContent(tree);
                     var block = builder.TextResult;

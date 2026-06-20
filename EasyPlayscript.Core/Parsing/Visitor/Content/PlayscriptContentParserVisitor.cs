@@ -39,6 +39,12 @@ public interface IPlayscriptContentParserVisitor<Result> : IParseTreeVisitor<Res
 	/// <return>The visitor result.</return>
 	Result VisitScriptContent([NotNull] PlayscriptContentParser.ScriptContentContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.textContent"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitTextContent([NotNull] PlayscriptContentParser.TextContentContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.page"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -56,6 +62,18 @@ public interface IPlayscriptContentParserVisitor<Result> : IParseTreeVisitor<Res
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitLine([NotNull] PlayscriptContentParser.LineContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.textParagraph"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitTextParagraph([NotNull] PlayscriptContentParser.TextParagraphContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.textLine"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitTextLine([NotNull] PlayscriptContentParser.TextLineContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.pageBreak"/>.
 	/// </summary>

@@ -18,10 +18,10 @@ public class InterfaceValidatorTests
 
     private static TextBlock BuildTextBlock(string input)
     {
-        var (parser, errors) = PlayscriptContentHelper.Parse(input);
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
         Assert.Empty(errors);
         var builder = new PlayscriptCodeBuilder();
-        builder.BuildTextFromContent(parser.scriptContent());
+        builder.BuildTextFromContent(parser.textContent());
         return builder.TextResult;
     }
 

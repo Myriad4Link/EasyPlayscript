@@ -150,23 +150,41 @@ public class PlayscriptGenerator : IIncrementalGenerator
             if (rawContent == null) continue;
 
             var trimmedContent = rawContent.Trim('\r', '\n');
-            var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
-            var tree = parser.scriptContent();
-
-            AppendContentDiagnostics(to: result.Diagnostics, contentErrors, filePath, ct);
-            if (contentErrors.Count > 0) continue;
-
-            ct.ThrowIfCancellationRequested();
-            var builder = new PlayscriptCodeBuilder(ct);
-
-            builder.BuildContent(tree, identifier == BlockType.Script);
-            AppendContentDiagnostics(result.Diagnostics, builder.Errors, filePath, ct);
-            if (builder.Errors.Count > 0) continue;
 
             if (identifier == BlockType.Script)
+            {
+                var (parser, contentErrors) = PlayscriptContentHelper.Parse(trimmedContent);
+                var tree = parser.scriptContent();
+
+                AppendContentDiagnostics(to: result.Diagnostics, contentErrors, filePath, ct);
+                if (contentErrors.Count > 0) continue;
+
+                ct.ThrowIfCancellationRequested();
+                var builder = new PlayscriptCodeBuilder(ct);
+
+                builder.BuildScriptFromContent(tree);
+                AppendContentDiagnostics(result.Diagnostics, builder.Errors, filePath, ct);
+                if (builder.Errors.Count > 0) continue;
+
                 result.ScriptBlocks.Add((name, builder.ContentResult, line, col));
+            }
             else
+            {
+                var (parser, contentErrors) = PlayscriptContentHelper.ParseText(trimmedContent);
+                var tree = parser.textContent();
+
+                AppendContentDiagnostics(to: result.Diagnostics, contentErrors, filePath, ct);
+                if (contentErrors.Count > 0) continue;
+
+                ct.ThrowIfCancellationRequested();
+                var builder = new PlayscriptCodeBuilder(ct);
+
+                builder.BuildTextFromContent(tree);
+                AppendContentDiagnostics(result.Diagnostics, builder.Errors, filePath, ct);
+                if (builder.Errors.Count > 0) continue;
+
                 result.TextBlocks.Add((name, builder.TextResult, line, col));
+            }
         }
 
         foreach (var i in structureResults.result.Interfaces)

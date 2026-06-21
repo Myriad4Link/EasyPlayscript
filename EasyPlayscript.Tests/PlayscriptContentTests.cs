@@ -742,4 +742,119 @@ public class PlayscriptContentTests
         Assert.Equal("/", ((TextItem)block.Lines[4].Items[0]).Text);
         Assert.Equal("It's great, isn't it?", ((TextItem)block.Lines[5].Items[0]).Text);
     }
+
+    // ─── Phase 5: Escape Characters ───────────────────────────────────────────
+
+    [Fact]
+    public void Escape_AtSign_InScript()
+    {
+        var block = BuildScriptBlock(@"hello \@world");
+        var text = ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text;
+        Assert.Equal("hello @world", text);
+    }
+
+    [Fact]
+    public void Escape_AtSign_InText()
+    {
+        var block = BuildTextBlock(@"hello \@world");
+        Assert.Single(block.Lines);
+        Assert.Single(block.Lines[0].Items);
+        Assert.Equal("hello @world", ((TextItem)block.Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Hash_InScript()
+    {
+        var block = BuildScriptBlock(@"cost is \#5");
+        Assert.Equal("cost is #5", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Hash_InText()
+    {
+        var block = BuildTextBlock(@"cost is \#5");
+        Assert.Equal("cost is #5", ((TextItem)block.Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Slash_InScript()
+    {
+        var block = BuildScriptBlock(@"a\/b");
+        // Should be a single TextItem with "/" as literal text, not a page break
+        Assert.Single(block.Pages);
+        Assert.Single(block.Pages[0].Paragraphs[0].Lines[0].Items);
+        Assert.Equal("a/b", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Slash_InText()
+    {
+        var block = BuildTextBlock(@"a\/b");
+        Assert.Single(block.Lines);
+        Assert.Single(block.Lines[0].Items);
+        Assert.Equal("a/b", ((TextItem)block.Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Backslash_InScript()
+    {
+        var block = BuildScriptBlock(@"path\\to");
+        Assert.Equal("path\\to", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Backslash_InText()
+    {
+        var block = BuildTextBlock(@"path\\to");
+        Assert.Equal("path\\to", ((TextItem)block.Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Newline_InScript()
+    {
+        var block = BuildScriptBlock("before\\nafter");
+        // \n escape should produce a single line with an embedded newline, not two lines
+        Assert.Single(block.Pages[0].Paragraphs[0].Lines);
+        Assert.Equal("before\nafter", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Newline_InText()
+    {
+        var block = BuildTextBlock("before\\nafter");
+        Assert.Single(block.Lines);
+        Assert.Equal("before\nafter", ((TextItem)block.Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_Unknown_KeptAsIs()
+    {
+        var block = BuildScriptBlock(@"\a\b\c");
+        Assert.Equal(@"\a\b\c", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_MultipleEscapes()
+    {
+        var block = BuildScriptBlock(@"use \# \@ \/ \\");
+        Assert.Equal(@"use # @ / \", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_NoEscape_Unchanged()
+    {
+        var block = BuildScriptBlock("plain text");
+        Assert.Equal("plain text", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+    }
+
+    [Fact]
+    public void Escape_EscapedAtSign_PreventsConsumerCall()
+    {
+        var block = BuildScriptBlock(@"literal \@get_name()");
+        var items = block.Pages[0].Paragraphs[0].Lines[0].Items;
+        // Escaped @ should be literal text, NOT a consumer call
+        Assert.Single(items);
+        Assert.IsType<TextItem>(items[0]);
+        Assert.Equal("literal @get_name()", ((TextItem)items[0]).Text);
+    }
 }

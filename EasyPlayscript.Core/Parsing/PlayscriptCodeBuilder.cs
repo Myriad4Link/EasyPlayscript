@@ -85,7 +85,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                         items.Add(call);
                     break;
                 case ITerminalNode { Symbol.Type: PlayscriptContentLexer.TEXT } terminal:
-                    items.Add(new TextItem(terminal.GetText()));
+                    items.Add(new TextItem(Unescape(terminal.GetText())));
                     break;
             }
         }
@@ -107,7 +107,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                         items.Add(call);
                     break;
                 case ITerminalNode { Symbol.Type: PlayscriptContentLexer.TEXT } terminal:
-                    items.Add(new TextItem(terminal.GetText()));
+                    items.Add(new TextItem(Unescape(terminal.GetText())));
                     break;
                 case ITerminalNode { Symbol.Type: PlayscriptContentLexer.SLASH } terminal:
                     items.Add(new TextItem(terminal.GetText()));
@@ -115,6 +115,33 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
             }
         }
         return items;
+    }
+
+    private static string Unescape(string text)
+    {
+        if (text.IndexOf('\\') < 0) return text;
+        var sb = new System.Text.StringBuilder(text.Length);
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] == '\\' && i + 1 < text.Length)
+            {
+                i++;
+                switch (text[i])
+                {
+                    case '@': sb.Append('@'); break;
+                    case '#': sb.Append('#'); break;
+                    case '/': sb.Append('/'); break;
+                    case '\\': sb.Append('\\'); break;
+                    case 'n': sb.Append('\n'); break;
+                    default: sb.Append('\\'); sb.Append(text[i]); break;
+                }
+            }
+            else
+            {
+                sb.Append(text[i]);
+            }
+        }
+        return sb.ToString();
     }
 
     private void ProcessContent(

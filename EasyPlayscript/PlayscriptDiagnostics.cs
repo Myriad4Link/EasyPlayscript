@@ -35,7 +35,7 @@ internal static class PlayscriptDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    internal static readonly DiagnosticDescriptor UndeclaredConsumerCall = new(
+    private static readonly DiagnosticDescriptor UndeclaredConsumerCall = new(
         id: "SCPT005",
         title: "Undeclared consumer call",
         messageFormat: "Consumer call \"{0}\" is not declared in any interface",
@@ -43,7 +43,7 @@ internal static class PlayscriptDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    internal static readonly DiagnosticDescriptor DuplicateInterfaceSignature = new(
+    private static readonly DiagnosticDescriptor DuplicateInterfaceSignature = new(
         id: "SCPT006",
         title: "Duplicate interface signature",
         messageFormat: "Duplicate interface signature \"{0}\"",
@@ -51,7 +51,7 @@ internal static class PlayscriptDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    internal static readonly DiagnosticDescriptor ArgumentTypeMismatch = new(
+    private static readonly DiagnosticDescriptor ArgumentTypeMismatch = new(
         id: "SCPT007",
         title: "Argument type mismatch",
         messageFormat: "Argument {0} of \"{1}\": cannot convert from {2} to {3}",
@@ -59,7 +59,7 @@ internal static class PlayscriptDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    internal static readonly DiagnosticDescriptor ArgumentCountMismatch = new(
+    private static readonly DiagnosticDescriptor ArgumentCountMismatch = new(
         id: "SCPT008",
         title: "Argument count mismatch",
         messageFormat: "\"{0}\" expects {1} argument(s) but got {2}",

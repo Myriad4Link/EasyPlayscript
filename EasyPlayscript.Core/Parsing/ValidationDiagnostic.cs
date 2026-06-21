@@ -1,21 +1,17 @@
 namespace EasyPlayscript.Parsing;
 
-public readonly struct ValidationDiagnostic
+public readonly struct ValidationDiagnostic(
+    string code,
+    string message,
+    string filePath,
+    int line,
+    int col,
+    params object[] messageArgs)
 {
-    public string Code { get; }
-    public string Message { get; }
-    public string FilePath { get; }
-    public int Line { get; }
-    public int Col { get; }
-    public object[] MessageArgs { get; }
-
-    public ValidationDiagnostic(string code, string message, string filePath, int line, int col, params object[] messageArgs)
-    {
-        Code = code;
-        Message = message;
-        FilePath = filePath;
-        Line = line;
-        Col = col;
-        MessageArgs = messageArgs ?? new object[0];
-    }
+    public string Code { get; } = code;
+    public string Message { get; } = message;
+    public string FilePath { get; } = filePath;
+    public int Line { get; } = line;
+    public int Col { get; } = col;
+    public object[] MessageArgs { get; } = messageArgs ?? [];
 }

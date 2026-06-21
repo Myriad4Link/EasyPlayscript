@@ -15,8 +15,6 @@ public class StringArgument : ArgumentValue
     [Key(0)]
     public string Value { get; set; } = null!;
 
-    public StringArgument() { }
-
     public StringArgument(string value)
     {
         Value = value;

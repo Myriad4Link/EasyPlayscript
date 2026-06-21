@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using EasyPlayscript;
 using EasyPlayscript.Parsing;
 using MessagePack;
 using Microsoft.Build.Framework;
@@ -29,87 +27,26 @@ public class PlayscriptBuildTask : Task
         {
             var filePath = file.ItemSpec;
             var content = File.ReadAllText(filePath);
-            var parseResult = PlayscriptStructureHelper.ParseStructure(content);
+            var (structureResult, structureErrors) = PlayscriptStructureHelper.ParseStructureWithErrors(content);
 
-            foreach (var iface in parseResult.Interfaces)
+            var diagnostics = PlayscriptPipeline.ProcessFile(structureResult, data, filePath);
+
+            foreach (var error in structureErrors)
             {
-                iface.FilePath = filePath;
-                data.Interfaces.Add(iface);
+                Log.LogError("Playscript", error.IsLexer ? "SCPT002" : "SCPT003", null,
+                    filePath, error.Line, error.Col, 0, 0, error.Msg);
+                hasErrors = true;
             }
 
-            foreach (var (identifier, name, rawContent, line, col) in parseResult.Results)
+            foreach (var diag in diagnostics)
             {
-                if (rawContent == null) continue;
-
-                var trimmedContent = rawContent.Trim('\r', '\n');
-
-                var (parser, contentErrors) = identifier == BlockType.Script
-                    ? PlayscriptContentHelper.ParseScript(trimmedContent)
-                    : PlayscriptContentHelper.ParseText(trimmedContent);
-
-                var tree = identifier == BlockType.Script
-                    ? (Antlr4.Runtime.Tree.IParseTree)parser.scriptContent()
-                    : parser.textContent();
-
-                if (contentErrors.Count > 0)
-                {
-                    foreach (var error in contentErrors)
-                        Log.LogError("Playscript", "SCPT002", null,
-                            filePath, error.Line, error.Col, 0, 0, error.Msg);
-                    hasErrors = true;
-                    continue;
-                }
-
-                if (tree == null) continue;
-
-                var builder = new PlayscriptCodeBuilder();
-                builder.Build(identifier, tree);
-
-                if (identifier == BlockType.Script)
-                {
-                    var block = builder.ContentResult;
-                    if (block == null) continue;
-
-                    if (data.Scripts.ContainsKey(name))
-                    {
-                        var loc = data.ScriptLocations[name];
-                        Log.LogError("Playscript", "SCPT004", null,
-                            loc.filePath, loc.line, loc.col, 0, 0,
-                            $"Duplicate script name \"{name}\"");
-                        hasErrors = true;
-                    }
-                    else
-                        data.ScriptLocations[name] = (filePath, line, col);
-
-                    data.Scripts[name] = block;
-                }
-                else
-                {
-                    var block = builder.TextResult;
-                    if (block == null) continue;
-
-                    if (data.Texts.ContainsKey(name))
-                    {
-                        var loc = data.TextLocations[name];
-                        Log.LogError("Playscript", "SCPT004", null,
-                            loc.filePath, loc.line, loc.col, 0, 0,
-                            $"Duplicate text name \"{name}\"");
-                        hasErrors = true;
-                    }
-                    else
-                        data.TextLocations[name] = (filePath, line, col);
-
-                    data.Texts[name] = block;
-                }
+                Log.LogError("Playscript", diag.Code, null,
+                    diag.FilePath, diag.Line, diag.Col, 0, 0, diag.Message);
+                hasErrors = true;
             }
         }
 
-        var validationErrors = new List<ValidationDiagnostic>();
-        validationErrors.AddRange(InterfaceValidator.ValidateUndeclaredCalls(data));
-        validationErrors.AddRange(InterfaceValidator.ValidateDuplicateSignatures(data));
-        validationErrors.AddRange(InterfaceValidator.ValidateArgumentTypes(data));
-
-        foreach (var diag in validationErrors)
+        foreach (var diag in PlayscriptPipeline.Validate(data))
         {
             Log.LogError("Playscript", diag.Code, null,
                 diag.FilePath, diag.Line, diag.Col, 0, 0, diag.Message);

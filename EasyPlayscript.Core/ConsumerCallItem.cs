@@ -4,13 +4,13 @@ using MessagePack;
 namespace EasyPlayscript;
 
 [MessagePackObject]
-public class ConsumerCallItem : LineItem
+public class ConsumerCallItem(string identifier, List<ArgumentValue> arguments) : LineItem
 {
     [Key(0)]
-    public string Identifier { get; set; }
+    public string Identifier { get; set; } = identifier;
 
     [Key(1)]
-    public List<ArgumentValue> Arguments { get; set; }
+    public List<ArgumentValue> Arguments { get; set; } = arguments ?? [];
 
     [IgnoreMember]
     public int Line { get; set; }
@@ -18,9 +18,6 @@ public class ConsumerCallItem : LineItem
     [IgnoreMember]
     public int Col { get; set; }
 
-    public ConsumerCallItem(string identifier, List<ArgumentValue> arguments)
-    {
-        Identifier = identifier;
-        Arguments = arguments ?? [];
-    }
+    [IgnoreMember]
+    public object? Result { get; set; }
 }

@@ -29,6 +29,7 @@ public class ScriptRegistryTests
 
         Assert.Contains("public class Script", scriptText);
         Assert.Contains("public ScriptBlock Block { get; set; }", scriptText);
+        Assert.Contains("Dispatch", scriptText);
     }
 
     [Fact]
@@ -41,6 +42,31 @@ public class ScriptRegistryTests
 
         Assert.Contains("public class Text", textText);
         Assert.Contains("public TextBlock Block { get; set; }", textText);
+        Assert.Contains("Dispatch", textText);
+    }
+
+    [Fact]
+    public void GeneratedScript_HasDispatchProperty()
+    {
+        var runResult = RunGenerator();
+
+        var scriptFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Script.g.cs"));
+        var text = scriptFile.GetText().ToString();
+
+        Assert.Contains("Action<ConsumerCallItem>", text);
+        Assert.Contains("Dispatch", text);
+    }
+
+    [Fact]
+    public void GeneratedText_HasDispatchProperty()
+    {
+        var runResult = RunGenerator();
+
+        var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
+        var text = textFile.GetText().ToString();
+
+        Assert.Contains("Action<ConsumerCallItem>", text);
+        Assert.Contains("Dispatch", text);
     }
 
     [Fact]
@@ -90,5 +116,20 @@ public class ScriptRegistryTests
         Assert.Single(item.Arguments);
         Assert.IsType<StringArgument>(item.Arguments[0]);
         Assert.Equal("fade_out", ((StringArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void ConsumerCallItem_Result_DefaultsToNull()
+    {
+        var item = new ConsumerCallItem("test", new System.Collections.Generic.List<ArgumentValue>());
+        Assert.Null(item.Result);
+    }
+
+    [Fact]
+    public void ConsumerCallItem_CanStoreResult()
+    {
+        var item = new ConsumerCallItem("get_name", new System.Collections.Generic.List<ArgumentValue>());
+        item.Result = "Player";
+        Assert.Equal("Player", item.Result);
     }
 }

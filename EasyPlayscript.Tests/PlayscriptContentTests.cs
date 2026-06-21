@@ -347,6 +347,16 @@ public class PlayscriptContentTests
     }
 
     [Fact]
+    public void Builder_StringArgumentWithEscapes_Unescapes()
+    {
+        var block = BuildScriptBlock("@func(\"He said \\\"hello\\\"\")");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0];
+        Assert.Single(item.Arguments);
+        Assert.IsType<StringArgument>(item.Arguments[0]);
+        Assert.Equal("He said \"hello\"", ((StringArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
     public void Builder_IntegerOverflow_ReportsError()
     {
         var (parser, errors) = PlayscriptContentHelper.ParseScript("@func(9999999999)");

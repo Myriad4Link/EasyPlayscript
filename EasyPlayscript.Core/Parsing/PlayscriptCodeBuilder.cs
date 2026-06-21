@@ -140,6 +140,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     case '#': sb.Append('#'); break;
                     case '/': sb.Append('/'); break;
                     case '\\': sb.Append('\\'); break;
+                    case '"': sb.Append('"'); break;
                     case 'n': sb.Append('\n'); break;
                     default:
                         sb.Append('\\');
@@ -204,7 +205,10 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
     private ArgumentValue? ParseArgument(PlayscriptContentParser.ArgumentContext argCtx)
     {
         if (argCtx.STRING_LITERAL() != null)
-            return new StringArgument(argCtx.STRING_LITERAL().GetText().Trim('"'));
+        {
+            var raw = argCtx.STRING_LITERAL().GetText();
+            return new StringArgument(Unescape(raw.Substring(1, raw.Length - 2)));
+        }
 
         if (argCtx.INTEGER_LITERAL() != null)
         {

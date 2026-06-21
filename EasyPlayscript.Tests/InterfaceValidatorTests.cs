@@ -341,4 +341,54 @@ public class InterfaceValidatorTests
         Assert.Single(errors);
         Assert.Equal("SCPT007", errors[0].Code);
     }
+
+    // ─── Overload-aware error messages ────────────────────────────────────────
+
+    [Fact]
+    public void ValidateArgumentTypes_OverloadMatch_ReturnsEmpty()
+    {
+        var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
+        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var block = BuildScriptBlock("@transition(\"fade_out\", 1.0)");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidateArgumentTypes_OverloadTypeMismatch_ShowsAllCandidates()
+    {
+        var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Int));
+        var block = BuildScriptBlock("@transition(\"fade_out\", true)");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
+        Assert.Single(errors);
+        Assert.Equal("SCPT007", errors[0].Code);
+        Assert.Contains("transition(string, decimal):void", errors[0].Message);
+        Assert.Contains("transition(string, int):void", errors[0].Message);
+    }
+
+    [Fact]
+    public void ValidateArgumentTypes_OverloadCountMismatch_ShowsAllCandidates()
+    {
+        var a = MakeInterface("transition", InterfaceType.Void);
+        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var block = BuildScriptBlock("@transition(\"fade_out\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        data.Scripts["foo"] = block;
+        data.ScriptLocations["foo"] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
+        Assert.Single(errors);
+        Assert.Equal("SCPT008", errors[0].Code);
+        Assert.Contains("transition():void", errors[0].Message);
+        Assert.Contains("transition(string, decimal):void", errors[0].Message);
+    }
 }

@@ -54,7 +54,7 @@ internal static class PlayscriptDiagnostics
     private static readonly DiagnosticDescriptor ArgumentTypeMismatch = new(
         id: "SCPT007",
         title: "Argument type mismatch",
-        messageFormat: "Argument {0} of \"{1}\": cannot convert from {2} to {3}",
+        messageFormat: "Argument {0} of \"{1}\": cannot convert from {2} to {3}{4}",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -62,7 +62,7 @@ internal static class PlayscriptDiagnostics
     private static readonly DiagnosticDescriptor ArgumentCountMismatch = new(
         id: "SCPT008",
         title: "Argument count mismatch",
-        messageFormat: "\"{0}\" expects {1} argument(s) but got {2}",
+        messageFormat: "\"{0}\" does not match any overload with {1} argument(s){2}",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

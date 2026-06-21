@@ -125,6 +125,13 @@ public static class InterfaceValidator
         }
     }
 
+    private static string FormatCandidates(List<InterfaceDeclaration> candidates)
+    {
+        var signatures = candidates.Select(c =>
+            $"{c.Name}({string.Join(", ", c.Parameters.Select(p => p.Type.ToString().ToLowerInvariant()))}):{c.ReturnType.ToString().ToLowerInvariant()}");
+        return "\n  Candidates:\n    " + string.Join("\n    ", signatures);
+    }
+
     private static void ValidateConsumerCall(
         ConsumerCallItem call,
         Dictionary<string, List<InterfaceDeclaration>> interfacesByName,
@@ -140,10 +147,10 @@ public static class InterfaceValidator
 
         if (candidates.Count == 0)
         {
-            var expected = overloads.First().Parameters.Count;
+            var candidateSuffix = overloads.Count > 1 ? FormatCandidates(overloads) : "";
             errors.Add(new ValidationDiagnostic("SCPT008",
-                $"\"{call.Identifier}\" expects {expected} argument(s) but got {argCount}",
-                filePath, call.Line, call.Col, call.Identifier, expected, argCount));
+                $"\"{call.Identifier}\" does not match any overload with {argCount} argument(s){candidateSuffix}",
+                filePath, call.Line, call.Col, call.Identifier, argCount, candidateSuffix));
             return;
         }
 
@@ -154,12 +161,14 @@ public static class InterfaceValidator
         if (mismatchIndex < 0) return;
         var actualType = GetArgumentType(call.Arguments[mismatchIndex]);
         var expectedType = candidates[0].Parameters[mismatchIndex].Type;
+        var candidateSuffix2 = candidates.Count > 1 ? FormatCandidates(candidates) : "";
         errors.Add(new ValidationDiagnostic("SCPT007",
-            $"Argument {mismatchIndex + 1} of \"{call.Identifier}\": cannot convert from {actualType?.ToString().ToLowerInvariant() ?? "unknown"} to {expectedType.ToString().ToLowerInvariant()}",
+            $"Argument {mismatchIndex + 1} of \"{call.Identifier}\": cannot convert from {actualType?.ToString().ToLowerInvariant() ?? "unknown"} to {expectedType.ToString().ToLowerInvariant()}{candidateSuffix2}",
             filePath, call.Line, call.Col,
             mismatchIndex + 1, call.Identifier,
             actualType?.ToString().ToLowerInvariant() ?? "unknown",
-            expectedType.ToString().ToLowerInvariant()));
+            expectedType.ToString().ToLowerInvariant(),
+            candidateSuffix2));
     }
 
     private static bool TryMatchOverload(ConsumerCallItem call, InterfaceDeclaration overload)

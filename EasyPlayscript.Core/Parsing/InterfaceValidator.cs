@@ -45,7 +45,8 @@ public static class InterfaceValidator
 
     public static string MakeSignatureKey(InterfaceDeclaration decl)
     {
-        var paramTypes = string.Join(",", decl.Parameters.Select(p => p.Type.ToString().ToLowerInvariant()));
+        var paramTypes = string.Join(",", decl.Parameters.Select(p => 
+            p.Type.ToString().ToLowerInvariant()));
         return $"{decl.Name}({paramTypes}):{decl.ReturnType.ToString().ToLowerInvariant()}";
     }
 
@@ -72,7 +73,8 @@ public static class InterfaceValidator
             if (signatureMap.ContainsKey(key))
             {
                 var sig =
-                    $"{decl.Name}({string.Join(", ", decl.Parameters.Select(p => p.Type.ToString().ToLowerInvariant()))}):{decl.ReturnType.ToString().ToLowerInvariant()}";
+                    $"{decl.Name}({string.Join(", ", decl.Parameters.Select(p =>
+                        p.Type.ToString().ToLowerInvariant()))}):{decl.ReturnType.ToString().ToLowerInvariant()}";
                 errors.Add(new ValidationDiagnostic("SCPT006",
                     $"Duplicate interface signature \"{sig}\"",
                     decl.FilePath, decl.Line, decl.Col, sig));
@@ -93,7 +95,7 @@ public static class InterfaceValidator
         {
             if (!interfacesByName.TryGetValue(decl.Name, out var list))
             {
-                list = new List<InterfaceDeclaration>();
+                list = [];
                 interfacesByName[decl.Name] = list;
             }
 
@@ -114,6 +116,7 @@ public static class InterfaceValidator
             foreach (var call in GetConsumerCalls(kvp.Value))
                 yield return (call, loc.filePath);
         }
+
         foreach (var kvp in data.Texts)
         {
             var loc = data.TextLocations[kvp.Key];
@@ -132,9 +135,10 @@ public static class InterfaceValidator
             return;
 
         var argCount = call.Arguments.Count;
-        var matchingCount = overloads.Where(o => o.Parameters.Count == argCount).ToList();
+        var candidates = overloads.Where(o =>
+            o.Parameters.Count == argCount).ToList();
 
-        if (matchingCount.Count == 0)
+        if (candidates.Count == 0)
         {
             var expected = overloads.First().Parameters.Count;
             errors.Add(new ValidationDiagnostic("SCPT008",
@@ -143,21 +147,19 @@ public static class InterfaceValidator
             return;
         }
 
-        if (matchingCount.Any(o => TryMatchOverload(call, o)))
+        if (candidates.Any(o => TryMatchOverload(call, o)))
             return;
 
-        var mismatchIndex = FindFirstArgMismatch(call, matchingCount[0]);
-        if (mismatchIndex >= 0)
-        {
-            var actualType = GetArgumentType(call.Arguments[mismatchIndex]);
-            var expectedType = matchingCount[0].Parameters[mismatchIndex].Type;
-            errors.Add(new ValidationDiagnostic("SCPT007",
-                $"Argument {mismatchIndex + 1} of \"{call.Identifier}\": cannot convert from {actualType?.ToString().ToLowerInvariant() ?? "unknown"} to {expectedType.ToString().ToLowerInvariant()}",
-                filePath, call.Line, call.Col,
-                mismatchIndex + 1, call.Identifier,
-                actualType?.ToString().ToLowerInvariant() ?? "unknown",
-                expectedType.ToString().ToLowerInvariant()));
-        }
+        var mismatchIndex = FindFirstArgMismatch(call, candidates[0]);
+        if (mismatchIndex < 0) return;
+        var actualType = GetArgumentType(call.Arguments[mismatchIndex]);
+        var expectedType = candidates[0].Parameters[mismatchIndex].Type;
+        errors.Add(new ValidationDiagnostic("SCPT007",
+            $"Argument {mismatchIndex + 1} of \"{call.Identifier}\": cannot convert from {actualType?.ToString().ToLowerInvariant() ?? "unknown"} to {expectedType.ToString().ToLowerInvariant()}",
+            filePath, call.Line, call.Col,
+            mismatchIndex + 1, call.Identifier,
+            actualType?.ToString().ToLowerInvariant() ?? "unknown",
+            expectedType.ToString().ToLowerInvariant()));
     }
 
     private static bool TryMatchOverload(ConsumerCallItem call, InterfaceDeclaration overload)

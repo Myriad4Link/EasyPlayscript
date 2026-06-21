@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using System.Threading;
 using Antlr4.Runtime.Tree;
 
@@ -51,7 +53,11 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
     public void BuildTextFromContent(PlayscriptContentParser.TextContentContext? context)
     {
         var block = new TextBlock();
-        if (context?.textParagraph() == null) { TextResult = block; return; }
+        if (context?.textParagraph() == null)
+        {
+            TextResult = block;
+            return;
+        }
 
         var firstParagraph = true;
         foreach (var paraCtx in context.textParagraph())
@@ -89,6 +95,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     break;
             }
         }
+
         return items;
     }
 
@@ -114,14 +121,15 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     break;
             }
         }
+
         return items;
     }
 
     private static string Unescape(string text)
     {
         if (text.IndexOf('\\') < 0) return text;
-        var sb = new System.Text.StringBuilder(text.Length);
-        for (int i = 0; i < text.Length; i++)
+        var sb = new StringBuilder(text.Length);
+        for (var i = 0; i < text.Length; i++)
         {
             if (text[i] == '\\' && i + 1 < text.Length)
             {
@@ -133,14 +141,16 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     case '/': sb.Append('/'); break;
                     case '\\': sb.Append('\\'); break;
                     case 'n': sb.Append('\n'); break;
-                    default: sb.Append('\\'); sb.Append(text[i]); break;
+                    default:
+                        sb.Append('\\');
+                        sb.Append(text[i]);
+                        break;
                 }
             }
             else
-            {
                 sb.Append(text[i]);
-            }
         }
+
         return sb.ToString();
     }
 
@@ -216,8 +226,8 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         if (argCtx.FLOAT_LITERAL() != null)
         {
             var text = argCtx.FLOAT_LITERAL().GetText();
-            if (double.TryParse(text, System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out var doubleValue)
+            if (double.TryParse(text, NumberStyles.Float,
+                    CultureInfo.InvariantCulture, out var doubleValue)
                 && !double.IsInfinity(doubleValue))
             {
                 return new DoubleArgument(doubleValue);

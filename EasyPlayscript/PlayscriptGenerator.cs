@@ -89,9 +89,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
                             "script", name));
                     }
                     else
+                    {
                         Data.ScriptLocations[name] = (result.FilePath, line, col);
-
-                    Data.Scripts[name] = block;
+                        Data.Scripts[name] = block;
+                    }
                 }
 
                 foreach (var (name, block, line, col) in result.TextBlocks)
@@ -104,9 +105,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
                             "text", name));
                     }
                     else
+                    {
                         Data.TextLocations[name] = (result.FilePath, line, col);
-
-                    Data.Texts[name] = block;
+                        Data.Texts[name] = block;
+                    }
                 }
             }
         }

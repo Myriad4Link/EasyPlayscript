@@ -45,7 +45,7 @@ public static class InterfaceValidator
 
     public static string MakeSignatureKey(InterfaceDeclaration decl)
     {
-        var paramTypes = string.Join(",", decl.Parameters.Select(p => 
+        var paramTypes = string.Join(",", decl.Parameters.Select(p =>
             p.Type.ToString().ToLowerInvariant()));
         return $"{decl.Name}({paramTypes}):{decl.ReturnType.ToString().ToLowerInvariant()}";
     }
@@ -112,14 +112,14 @@ public static class InterfaceValidator
     {
         foreach (var kvp in data.Scripts)
         {
-            var loc = data.ScriptLocations[kvp.Key];
+            if (!data.ScriptLocations.TryGetValue(kvp.Key, out var loc)) continue;
             foreach (var call in GetConsumerCalls(kvp.Value))
                 yield return (call, loc.filePath);
         }
 
         foreach (var kvp in data.Texts)
         {
-            var loc = data.TextLocations[kvp.Key];
+            if (!data.TextLocations.TryGetValue(kvp.Key, out var loc)) continue;
             foreach (var call in GetConsumerCalls(kvp.Value))
                 yield return (call, loc.filePath);
         }
@@ -163,7 +163,9 @@ public static class InterfaceValidator
         var expectedType = candidates[0].Parameters[mismatchIndex].Type;
         var candidateSuffix2 = candidates.Count > 1 ? FormatCandidates(candidates) : "";
         errors.Add(new ValidationDiagnostic("SCPT007",
-            $"Argument {mismatchIndex + 1} of \"{call.Identifier}\": cannot convert from {actualType?.ToString().ToLowerInvariant() ?? "unknown"} to {expectedType.ToString().ToLowerInvariant()}{candidateSuffix2}",
+            $"Argument {mismatchIndex + 1} of \"{call.Identifier}\": cannot" +
+            $" convert from {actualType?.ToString().ToLowerInvariant() ?? "unknown"} to" +
+            $" {expectedType.ToString().ToLowerInvariant()}{candidateSuffix2}",
             filePath, call.Line, call.Col,
             mismatchIndex + 1, call.Identifier,
             actualType?.ToString().ToLowerInvariant() ?? "unknown",
@@ -172,17 +174,7 @@ public static class InterfaceValidator
     }
 
     private static bool TryMatchOverload(ConsumerCallItem call, InterfaceDeclaration overload)
-    {
-        for (var i = 0; i < call.Arguments.Count; i++)
-        {
-            var actualType = GetArgumentType(call.Arguments[i]);
-            var expectedType = overload.Parameters[i].Type;
-            if (actualType == null || !IsAssignableTo(actualType.Value, expectedType))
-                return false;
-        }
-
-        return true;
-    }
+        => FindFirstArgMismatch(call, overload) < 0;
 
     private static int FindFirstArgMismatch(ConsumerCallItem call, InterfaceDeclaration overload)
     {

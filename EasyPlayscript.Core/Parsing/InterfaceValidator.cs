@@ -38,7 +38,7 @@ public static class InterfaceValidator
     public static bool IsAssignableTo(InterfaceType actual, InterfaceType expected) =>
         (actual, expected) switch
         {
-            (var a, var e) when a == e => true,
+            var (a, e) when a == e => true,
             (InterfaceType.Int, InterfaceType.Decimal) => true,
             _ => false,
         };
@@ -53,22 +53,12 @@ public static class InterfaceValidator
     {
         var declaredNames = new HashSet<string>(data.Interfaces.Select(i => i.Name));
 
-        var errors = (from kvp in data.Scripts
-            let loc = data.ScriptLocations[kvp.Key]
-            from call in GetConsumerCalls(kvp.Value)
-            where !declaredNames.Contains(call.Identifier)
-            select new ValidationDiagnostic("SCPT005",
-                $"Consumer call \"{call.Identifier}\" is not declared in any interface", loc.filePath, call.Line,
-                call.Col, call.Identifier)).ToList();
-        errors.AddRange(from kvp in data.Texts
-            let loc = data.TextLocations[kvp.Key]
-            from call in GetConsumerCalls(kvp.Value)
-            where !declaredNames.Contains(call.Identifier)
-            select new ValidationDiagnostic("SCPT005",
-                $"Consumer call \"{call.Identifier}\" is not declared in any interface", loc.filePath, call.Line,
-                call.Col, call.Identifier));
-
-        return errors;
+        return GetAllCalls(data)
+            .Where(x => !declaredNames.Contains(x.call.Identifier))
+            .Select(x => new ValidationDiagnostic("SCPT005",
+                $"Consumer call \"{x.call.Identifier}\" is not declared in any interface",
+                x.filePath, x.call.Line, x.call.Col, x.call.Identifier))
+            .ToList();
     }
 
     public static List<ValidationDiagnostic> ValidateDuplicateSignatures(PlayscriptCompilationData data)
@@ -110,21 +100,26 @@ public static class InterfaceValidator
             list.Add(decl);
         }
 
+        foreach (var (call, filePath) in GetAllCalls(data))
+            ValidateConsumerCall(call, interfacesByName, filePath, errors);
+
+        return errors;
+    }
+
+    private static IEnumerable<(ConsumerCallItem call, string filePath)> GetAllCalls(PlayscriptCompilationData data)
+    {
         foreach (var kvp in data.Scripts)
         {
             var loc = data.ScriptLocations[kvp.Key];
             foreach (var call in GetConsumerCalls(kvp.Value))
-                ValidateConsumerCall(call, interfacesByName, loc.filePath, errors);
+                yield return (call, loc.filePath);
         }
-
         foreach (var kvp in data.Texts)
         {
             var loc = data.TextLocations[kvp.Key];
             foreach (var call in GetConsumerCalls(kvp.Value))
-                ValidateConsumerCall(call, interfacesByName, loc.filePath, errors);
+                yield return (call, loc.filePath);
         }
-
-        return errors;
     }
 
     private static void ValidateConsumerCall(

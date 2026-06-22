@@ -15,7 +15,7 @@ public class PlayscriptBuildTask : Task
     [Required]
     public string OutputPath { get; set; }
 
-    public string AesKey { get; set; }
+    private string AesKey { get; set; }
 
     public override bool Execute()
     {

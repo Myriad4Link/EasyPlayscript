@@ -80,7 +80,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
         public void ReportDiagnostic(Diagnostic diag)
         {
             spc.ReportDiagnostic(diag);
-            Data.HasErrors = true;
+            if (diag.Severity == DiagnosticSeverity.Error)
+                Data.HasErrors = true;
         }
     }
 

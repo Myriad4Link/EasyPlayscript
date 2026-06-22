@@ -7,5 +7,5 @@ namespace EasyPlayscript;
 public class TextBlock
 {
     [Key(0)]
-    public List<Line> Lines { get; set; } = new();
+    public List<Line> Lines { get; set; } = [];
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Antlr4.Runtime.Tree;
 
@@ -30,10 +31,9 @@ public static class PlayscriptPipeline
                 ? parser.scriptContent()
                 : parser.textContent();
 
-            foreach (var error in contentErrors)
-                diagnostics.Add(new ValidationDiagnostic(
-                    error.IsLexer ? "SCPT002" : "SCPT003",
-                    error.Msg, filePath, error.Line, error.Col));
+            diagnostics.AddRange(contentErrors.Select(error =>
+                new ValidationDiagnostic(error.IsLexer ? "SCPT002" : "SCPT003", error.Msg, filePath, error.Line,
+                    error.Col)));
 
             if (contentErrors.Count > 0) continue;
             if (tree == null) continue;
@@ -41,18 +41,14 @@ public static class PlayscriptPipeline
             var builder = new PlayscriptCodeBuilder(cancellationToken);
             builder.Build(identifier, tree);
 
-            foreach (var error in builder.Errors)
-                diagnostics.Add(new ValidationDiagnostic(
-                    error.IsLexer ? "SCPT002" : "SCPT003",
-                    error.Msg, filePath, error.Line, error.Col));
+            diagnostics.AddRange(builder.Errors.Select(error =>
+                new ValidationDiagnostic(error.IsLexer ? "SCPT002" : "SCPT003", error.Msg, filePath, error.Line,
+                    error.Col)));
 
             if (builder.Errors.Count > 0) continue;
 
             if (identifier == BlockType.Script)
             {
-                var block = builder.ContentResult;
-                if (block == null) continue;
-
                 if (data.Scripts.ContainsKey(name))
                 {
                     var loc = data.ScriptLocations[name];
@@ -63,15 +59,11 @@ public static class PlayscriptPipeline
                 else
                 {
                     data.ScriptLocations[name] = (filePath, line, col);
+                    data.Scripts[name] = builder.ContentResult;
                 }
-
-                data.Scripts[name] = block;
             }
             else
             {
-                var block = builder.TextResult;
-                if (block == null) continue;
-
                 if (data.Texts.ContainsKey(name))
                 {
                     var loc = data.TextLocations[name];
@@ -82,9 +74,8 @@ public static class PlayscriptPipeline
                 else
                 {
                     data.TextLocations[name] = (filePath, line, col);
+                    data.Texts[name] = builder.TextResult;
                 }
-
-                data.Texts[name] = block;
             }
         }
 

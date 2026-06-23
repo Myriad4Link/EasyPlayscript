@@ -67,6 +67,38 @@ internal static class PlayscriptDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor MissingImplementation = new(
+        id: "SCPT009",
+        title: "Missing implementation",
+        messageFormat: "Interface \"{0}\" has no [Implementation] method{1}",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor DuplicateImplementation = new(
+        id: "SCPT010",
+        title: "Duplicate implementation",
+        messageFormat: "Duplicate [Implementation] for \"{0}\" with {1} parameter(s) in {2}",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor UnusedImplementation = new(
+        id: "SCPT011",
+        title: "Unused implementation",
+        messageFormat: "[Implementation] method \"{0}.{1}\" is not used by any playscript",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor ImplementationArgCountMismatch = new(
+        id: "SCPT012",
+        title: "Implementation argument count mismatch",
+        messageFormat: "[Implementation] method \"{0}.{1}\" has {2} parameter(s) but interface \"{3}\" expects {4}",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> ByCodeMap = new()
     {
         ["SCPT002"] = UnexpectedToken,
@@ -76,6 +108,10 @@ internal static class PlayscriptDiagnostics
         ["SCPT006"] = DuplicateInterfaceSignature,
         ["SCPT007"] = ArgumentTypeMismatch,
         ["SCPT008"] = ArgumentCountMismatch,
+        ["SCPT009"] = MissingImplementation,
+        ["SCPT010"] = DuplicateImplementation,
+        ["SCPT011"] = UnusedImplementation,
+        ["SCPT012"] = ImplementationArgCountMismatch,
     };
 
     internal static DiagnosticDescriptor GetDescriptor(string code)

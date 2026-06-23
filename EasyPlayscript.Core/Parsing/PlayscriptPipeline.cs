@@ -94,4 +94,14 @@ public static class PlayscriptPipeline
         diagnostics.AddRange(InterfaceValidator.ValidateArgumentTypes(data));
         return diagnostics;
     }
+
+    public static List<ValidationDiagnostic> ValidateImplementations(PlayscriptCompilationData data)
+    {
+        var diagnostics = new List<ValidationDiagnostic>();
+        diagnostics.AddRange(ImplementationValidator.ValidateMissingImplementations(data));
+        diagnostics.AddRange(ImplementationValidator.ValidateDuplicateImplementations(data));
+        diagnostics.AddRange(ImplementationValidator.ValidateImplementationArgCounts(data));
+        diagnostics.AddRange(ImplementationValidator.ValidateUnusedImplementations(data));
+        return diagnostics;
+    }
 }

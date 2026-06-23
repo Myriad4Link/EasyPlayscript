@@ -35,31 +35,34 @@ public class PlayscriptGeneratorTests
 
     private const string TestOutputPath = "test-scripts.bin";
     private const string TestAesKey = "test-key-1234567";
-    private const string DefaultClassName = "PlayscriptBase";
 
-    private static string GenerateCode(params (string name, string content)[] files)
+    private static string GenerateRegistryCode(params (string name, string content)[] files)
     {
-        return GenerateCodeWithKey(TestAesKey, files);
+        return GenerateCodeForKey("PlayscriptRegistry.g.cs", TestOutputPath, TestAesKey, files);
     }
 
-    private static string GenerateCodeWithKey(string aesKey, params (string name, string content)[] files)
+    private static string GenerateContextCode(params (string name, string content)[] files)
     {
-        return GenerateCodeWithConfig(TestOutputPath, aesKey, DefaultClassName, files);
+        return GenerateCodeForKey("PlayscriptContext.g.cs", TestOutputPath, TestAesKey, files);
     }
 
-    private static string GenerateCodeWithClassName(string className, params (string name, string content)[] files)
+    private static string GenerateRegistryCodeWithKey(string aesKey, params (string name, string content)[] files)
     {
-        return GenerateCodeWithConfig(TestOutputPath, TestAesKey, className, files);
+        return GenerateCodeForKey("PlayscriptRegistry.g.cs", TestOutputPath, aesKey, files);
     }
 
-    private static string GenerateCodeWithConfig(
-        string outputPath, string aesKey, string className,
+    private static string GenerateContextCodeWithKey(string aesKey, params (string name, string content)[] files)
+    {
+        return GenerateCodeForKey("PlayscriptContext.g.cs", TestOutputPath, aesKey, files);
+    }
+
+    private static string GenerateCodeForKey(
+        string fileName, string outputPath, string aesKey,
         params (string name, string content)[] files)
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
             ("build_property.PlayscriptOutputPath", outputPath),
-            ("build_property.PlayscriptAesKey", aesKey),
-            ("build_property.PlayscriptBaseClass", className));
+            ("build_property.PlayscriptAesKey", aesKey));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -76,133 +79,7 @@ public class PlayscriptGeneratorTests
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out _);
 
         var generatedFile = newCompilation.SyntaxTrees
-            .Single(t => Path.GetFileName(t.FilePath) == $"{className}.g.cs");
-
-        return generatedFile.GetText().ToString();
-    }
-
-    [Fact]
-    public void ScriptBlock_GeneratesScriptEnum()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("enum ScriptKey", code);
-        Assert.Contains("GetScript(ScriptKey", code);
-    }
-
-    [Fact]
-    public void TextBlock_GeneratesTextEnum()
-    {
-        var code = GenerateCode(("TextExample", TextBlockExample));
-        Assert.Contains("enum TextKey", code);
-        Assert.Contains("GetText(TextKey", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_TextBlock_ReferencesTextBlockType()
-    {
-        var code = GenerateCode(("TextExample", TextBlockExample));
-        Assert.Contains("Dictionary<string, TextBlock>", code);
-        Assert.DoesNotContain("Dictionary<string, ScriptBlock> _texts", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_ContainsAbstractClass()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("public abstract class PlayscriptBase", code);
-        Assert.DoesNotContain("public static class Registry", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_UsesEasyPlayscript()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("using EasyPlayscript;", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_UsesGeneratedNamespace()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("using EasyPlayscript.Generated;", code);
-    }
-
-    [Fact]
-    public void ScriptBlock_ContentIsPopulated()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("PlayscriptLoader", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_ReferencesPlayscriptLoader()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("PlayscriptLoader", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_HasConstructor()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("protected PlayscriptBase()", code);
-        Assert.Contains("LoadScripts", code);
-        Assert.Contains("LoadTexts", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_HasLazyDeclarations()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("_scripts", code);
-        Assert.Contains("_texts", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_EmbedsOutputPath()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains($"PlayscriptLoader.LoadScripts(\"{TestOutputPath}\"", code);
-        Assert.Contains($"PlayscriptLoader.LoadTexts(\"{TestOutputPath}\"", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_EmbedsAesKey()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains($"\"{TestAesKey}\"", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_EmptyAesKey_EmbedsEmptyString()
-    {
-        var code = GenerateCodeWithKey("", ("Example", ScriptBlockExample));
-        Assert.Contains("protected PlayscriptBase()", code);
-        Assert.DoesNotContain("dev-key-change-me", code);
-        Assert.Contains("LoadScripts(\"test-scripts.bin\", \"\")", code);
-    }
-
-    private static string GenerateCodeWithNoConfig(params (string name, string content)[] files)
-    {
-        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
-            ImmutableDictionary<string, string>.Empty);
-
-        var generator = new PlayscriptGenerator();
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            [generator.AsSourceGenerator()],
-            optionsProvider: optionsProvider);
-
-        var additionalFiles = files
-            .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
-            .ToImmutableArray<AdditionalText>();
-
-        driver = driver.AddAdditionalTexts(additionalFiles);
-
-        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests));
-        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out _);
-
-        var generatedFile = newCompilation.SyntaxTrees
-            .Single(t => Path.GetFileName(t.FilePath) == $"{DefaultClassName}.g.cs");
+            .Single(t => Path.GetFileName(t.FilePath) == fileName);
 
         return generatedFile.GetText().ToString();
     }
@@ -216,8 +93,7 @@ public class PlayscriptGeneratorTests
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
             ("build_property.PlayscriptOutputPath", TestOutputPath),
-            ("build_property.PlayscriptAesKey", aesKey),
-            ("build_property.PlayscriptBaseClass", DefaultClassName));
+            ("build_property.PlayscriptAesKey", aesKey));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -235,6 +111,189 @@ public class PlayscriptGeneratorTests
 
         return diagnostics;
     }
+
+    // ─── ScriptKey/TextKey Enums ────────────────────────────────────────────
+
+    [Fact]
+    public void ScriptBlock_GeneratesScriptEnum()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("enum ScriptKey", code);
+        Assert.Contains("GetScript(ScriptKey", code);
+    }
+
+    [Fact]
+    public void TextBlock_GeneratesTextEnum()
+    {
+        var code = GenerateContextCode(("TextExample", TextBlockExample));
+        Assert.Contains("enum TextKey", code);
+        Assert.Contains("GetText(TextKey", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_ContextReferencesTextBlockType()
+    {
+        var code = GenerateContextCode(("TextExample", TextBlockExample));
+        Assert.Contains("Dictionary<string, TextBlock>", code);
+        Assert.DoesNotContain("Dictionary<string, ScriptBlock> _texts", code);
+    }
+
+    // ─── PlayscriptContext Structure ────────────────────────────────────────
+
+    [Fact]
+    public void GeneratedCode_ContainsSealedContext()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("public sealed class PlayscriptContext", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_UsesEasyPlayscript()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("using EasyPlayscript;", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_UsesGeneratedNamespace()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("namespace EasyPlayscript.Generated;", code);
+    }
+
+    [Fact]
+    public void ScriptBlock_ContentIsPopulated()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("PlayscriptLoader", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_ReferencesPlayscriptLoader()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("PlayscriptLoader", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_HasConstructor()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("public PlayscriptContext(PlayscriptRegistry registry)", code);
+        Assert.Contains("LoadScripts", code);
+        Assert.Contains("LoadTexts", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_HasLazyDeclarations()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("_scripts", code);
+        Assert.Contains("_texts", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_EmbedsOutputPath()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains($"PlayscriptLoader.LoadScripts(\"{TestOutputPath}\"", code);
+        Assert.Contains($"PlayscriptLoader.LoadTexts(\"{TestOutputPath}\"", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_EmbedsAesKey()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains($"\"{TestAesKey}\"", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_EmptyAesKey_EmbedsEmptyString()
+    {
+        var code = GenerateContextCodeWithKey("", ("Example", ScriptBlockExample));
+        Assert.Contains("public PlayscriptContext(PlayscriptRegistry", code);
+        Assert.DoesNotContain("dev-key-change-me", code);
+        Assert.Contains("LoadScripts(\"test-scripts.bin\", \"\")", code);
+    }
+
+    [Fact]
+    public void MissingOutputPath_DefaultsToPlayscriptsBin()
+    {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ImmutableDictionary<string, string>.Empty);
+
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            optionsProvider: optionsProvider);
+
+        var additionalFiles = ImmutableArray.Create<AdditionalText>(
+            new TestAdditionalFile("./Example.scpt", ScriptBlockExample));
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
+
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests));
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out _);
+
+        var contextFile = newCompilation.SyntaxTrees
+            .Single(t => Path.GetFileName(t.FilePath) == "PlayscriptContext.g.cs");
+        var code = contextFile.GetText().ToString();
+
+        Assert.Contains("PlayscriptLoader.LoadScripts(\"playscripts.bin\"", code);
+        Assert.Contains("PlayscriptLoader.LoadTexts(\"playscripts.bin\"", code);
+    }
+
+    [Fact]
+    public void MissingAesKey_DefaultsToEmptyString()
+    {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ImmutableDictionary<string, string>.Empty);
+
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            optionsProvider: optionsProvider);
+
+        var additionalFiles = ImmutableArray.Create<AdditionalText>(
+            new TestAdditionalFile("./Example.scpt", ScriptBlockExample));
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
+
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests));
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out _);
+
+        var contextFile = newCompilation.SyntaxTrees
+            .Single(t => Path.GetFileName(t.FilePath) == "PlayscriptContext.g.cs");
+        var code = contextFile.GetText().ToString();
+
+        Assert.DoesNotContain("dev-key-change-me", code);
+        Assert.Contains("LoadScripts(\"playscripts.bin\", \"\")", code);
+    }
+
+    // ─── PlayscriptRegistry Structure ──────────────────────────────────────
+
+    [Fact]
+    public void GeneratedCode_ContainsSealedRegistry()
+    {
+        var code = GenerateRegistryCode(("Example", ScriptBlockExample));
+        Assert.Contains("public sealed class PlayscriptRegistry", code);
+    }
+
+    [Fact]
+    public void GeneratedCode_HasDispatchCall()
+    {
+        var content = """
+            interface transition(type: string) : void
+            script foo[
+            @transition("fade_out")
+            ]
+            """;
+        var code = GenerateRegistryCode(("file", content));
+        Assert.Contains("DispatchCall", code);
+        Assert.Contains("PlayscriptRegistry", code);
+    }
+
+    // ─── Duplicate Detection ───────────────────────────────────────────────
 
     [Fact]
     public void DuplicateScriptName_SameFile_ReportsSCPT004()
@@ -329,7 +388,7 @@ public class PlayscriptGeneratorTests
         Assert.Contains(diagnostics, d => d.Id is "SCPT002" or "SCPT003");
     }
 
-    // ─── Step 4: Interface Collection ─────────────────────────────────────────
+    // ─── Interface Collection ─────────────────────────────────────────────
 
     [Fact]
     public void InterfaceDeclaration_NoConsumerCalls_NoError()
@@ -357,7 +416,7 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
     }
 
-    // ─── Step 6: SCPT005 Undeclared Consumer Call ─────────────────────────────
+    // ─── SCPT005 Undeclared Consumer Call ─────────────────────────────────
 
     [Fact]
     public void UndeclaredConsumerCall_ReportsSCPT005()
@@ -405,10 +464,12 @@ public class PlayscriptGeneratorTests
             @undeclared("x")
             ]
             """;
-        Assert.Throws<InvalidOperationException>(() => GenerateCode(("file", content)));
+        var diagnostics = GenerateDiagnostics(("file", content));
+        Assert.Contains(diagnostics, d => d.Id == "SCPT005");
+        Assert.Contains(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
-    // ─── Step 7: SCPT006 Duplicate Interface Signature ───────────────────────
+    // ─── SCPT006 Duplicate Interface Signature ───────────────────────────
 
     [Fact]
     public void DuplicateInterfaceSignature_SameFile_ReportsSCPT006()
@@ -466,7 +527,7 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT006");
     }
 
-    // ─── Step 8: SCPT007/SCPT008 Argument Type & Count Checking ─────────────
+    // ─── SCPT007/SCPT008 Argument Type & Count Checking ─────────────────
 
     [Fact]
     public void ArgumentTypeMatch_NoError()
@@ -548,7 +609,7 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
     }
 
-    // ─── Phase 7: TextBlock Consumer Call ────────────────────────────────────
+    // ─── TextBlock Consumer Call ────────────────────────────────────────────
 
     [Fact]
     public void Generator_TextBlock_HasConsumerCall()
@@ -563,7 +624,7 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
     }
 
-    // ─── Phase 10: Script Block Verification ────────────────────────────────
+    // ─── Script Block Verification ─────────────────────────────────────────
 
     [Fact]
     public void Generator_ScriptBlock_PreservesConsumerCallStructure()
@@ -574,7 +635,7 @@ public class PlayscriptGeneratorTests
                                Hello @get_name().
                                ]
                                """;
-        var code = GenerateCode(("file", content));
+        var code = GenerateContextCode(("file", content));
         Assert.Contains("enum ScriptKey", code);
         Assert.Contains("GetScript(ScriptKey", code);
     }
@@ -590,68 +651,7 @@ public class PlayscriptGeneratorTests
                                """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
-        var code = GenerateCode(("file", content));
+        var code = GenerateContextCode(("file", content));
         Assert.Contains("enum ScriptKey", code);
-    }
-
-    // ─── Config Fallbacks ───────────────────────────────────────────────────
-
-    [Fact]
-    public void MissingOutputPath_DefaultsToPlayscriptsBin()
-    {
-        var code = GenerateCodeWithNoConfig(("Example", ScriptBlockExample));
-        Assert.Contains("PlayscriptLoader.LoadScripts(\"playscripts.bin\"", code);
-        Assert.Contains("PlayscriptLoader.LoadTexts(\"playscripts.bin\"", code);
-    }
-
-    [Fact]
-    public void MissingAesKey_DefaultsToEmptyString()
-    {
-        var code = GenerateCodeWithNoConfig(("Example", ScriptBlockExample));
-        Assert.DoesNotContain("dev-key-change-me", code);
-        Assert.Contains("LoadScripts(\"playscripts.bin\", \"\")", code);
-    }
-
-    // ─── Phase 4: PlayscriptBase Integration ────────────────────────────────
-
-    [Fact]
-    public void GeneratedCode_InterfaceBecomesAbstractMethod()
-    {
-        var content = """
-            interface transition(type: string) : void
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
-        var code = GenerateCode(("file", content));
-        Assert.Contains("public abstract void transition(string type);", code);
-    }
-
-    [Fact]
-    public void GeneratedCode_HasDispatchCall()
-    {
-        var content = """
-            interface transition(type: string) : void
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
-        var code = GenerateCode(("file", content));
-        Assert.Contains("DispatchCall", code);
-        Assert.Contains("case \"transition\":", code);
-    }
-
-    [Fact]
-    public void CustomClassName_FromConfig()
-    {
-        var code = GenerateCodeWithClassName("GameLoader", ("Example", ScriptBlockExample));
-        Assert.Contains("public abstract class GameLoader", code);
-    }
-
-    [Fact]
-    public void DefaultClassName_IsPlayscriptBase()
-    {
-        var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("public abstract class PlayscriptBase", code);
     }
 }

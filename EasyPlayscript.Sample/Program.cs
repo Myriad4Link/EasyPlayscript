@@ -5,27 +5,34 @@ using EasyPlayscript.Generated;
 
 namespace EasyPlayscript.Sample;
 
-public class GameLoader : PlayscriptBase
+public class AudioSystem
 {
-    public override void transition(string type)
-    {
-        Console.WriteLine($"  [transition] type={type}");
-    }
-
-    public override void play(string sound, double volume)
+    [Implementation]
+    public void play(string sound, double volume)
     {
         Console.WriteLine($"  [play] sound={sound}, volume={volume}");
     }
 
-    public override void on_complete()
+    [Implementation]
+    public void on_complete()
     {
         Console.WriteLine($"  [on_complete] called");
     }
 
-    public override string get_name()
+    [Implementation]
+    public string get_name()
     {
         Console.WriteLine($"  [get_name] returning '旅行者'");
         return "旅行者";
+    }
+}
+
+public class UiSystem
+{
+    [Implementation]
+    public void transition(string type)
+    {
+        Console.WriteLine($"  [transition] type={type}");
     }
 }
 
@@ -34,26 +41,31 @@ public static class Program
     public static void Main()
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        var loader = new GameLoader();
+
+        var registry = new PlayscriptRegistry();
+        registry.Register(new AudioSystem());
+        registry.Register(new UiSystem());
+
+        var context = new PlayscriptContext(registry);
 
         Console.WriteLine("=== Scripts ===");
-        foreach (var key in Enum.GetValues<PlayscriptBase.ScriptKey>())
+        foreach (var key in Enum.GetValues<PlayscriptContext.ScriptKey>())
         {
-            var script = loader.GetScript(key);
+            var script = context.GetScript(key);
             Console.WriteLine($"\n[{key}] ({script.Block.Pages.Count} page(s))");
-            PrintScript(script);
+            PrintScript(script, registry);
         }
 
         Console.WriteLine("\n=== Texts ===");
-        foreach (var key in Enum.GetValues<PlayscriptBase.TextKey>())
+        foreach (var key in Enum.GetValues<PlayscriptContext.TextKey>())
         {
-            var text = loader.GetText(key);
+            var text = context.GetText(key);
             Console.WriteLine($"\n[{key}]");
-            PrintText(text);
+            PrintText(text, registry);
         }
     }
 
-    private static void PrintScript(Script script)
+    private static void PrintScript(Script script, PlayscriptRegistry registry)
     {
         for (var pi = 0; pi < script.Block.Pages.Count; pi++)
         {
@@ -71,7 +83,7 @@ public static class Program
                                 parts.Add(text.Text);
                                 break;
                             case ConsumerCallItem call:
-                                script.Dispatch?.Invoke(call);
+                                registry.DispatchCall(call);
                                 if (call.Result != null)
                                     parts.Add($"[{call.Result}]");
                                 else
@@ -85,7 +97,7 @@ public static class Program
         }
     }
 
-    private static void PrintText(Text text)
+    private static void PrintText(Text text, PlayscriptRegistry registry)
     {
         foreach (var line in text.Block.Lines)
         {
@@ -103,7 +115,7 @@ public static class Program
                         parts.Add(textItem.Text);
                         break;
                     case ConsumerCallItem call:
-                        text.Dispatch?.Invoke(call);
+                        registry.DispatchCall(call);
                         if (call.Result != null)
                             parts.Add($"[{call.Result}]");
                         else

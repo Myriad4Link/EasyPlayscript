@@ -5,14 +5,12 @@ using System.Text;
 using System.Threading;
 using EasyPlayscript.Parsing;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace EasyPlayscript;
 
-/// <summary>
-/// Incremental source generator that reads all <c>.scpt</c> files, parses them via two-pass ANTLR,
-/// and emits a single <c>Registry</c> class with static properties for each script/text.
-/// </summary>
 [Generator]
 public class PlayscriptGenerator : IIncrementalGenerator
 {
@@ -23,13 +21,21 @@ public class PlayscriptGenerator : IIncrementalGenerator
             .Select(static (file, ct) => ParseSingleFile(file.Path,
                 file.GetText(ct)?.ToString() ?? string.Empty, ct));
 
-
         var allFilesProvider = scptProvider.Collect();
-        var combinedProvider = context.AnalyzerConfigOptionsProvider.Combine(allFilesProvider);
+
+        var implProvider = context.SyntaxProvider.CreateSyntaxProvider(
+            predicate: static (node, _) => IsMethodWithImplementationAttribute(node),
+            transform: static (ctx, ct) => ImplementationScanner.Extract(ctx, ct))
+            .Where(static impl => impl is not null)
+            .Collect();
+
+        var combinedProvider = allFilesProvider
+            .Combine(implProvider)
+            .Combine(context.AnalyzerConfigOptionsProvider);
 
         context.RegisterSourceOutput(combinedProvider, static (spc, combined) =>
         {
-            var (configOptions, allResults) = combined;
+            var ((allResults, implementations), configOptions) = combined;
 
             var ctx = new GeneratorContext(spc);
 
@@ -44,6 +50,9 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     ctx.Data.HasErrors = true;
             }
 
+            foreach (var impl in implementations)
+                ctx.Data.Implementations.Add(impl);
+
             foreach (var diag in PlayscriptPipeline.Validate(ctx.Data))
             {
                 spc.CancellationToken.ThrowIfCancellationRequested();
@@ -52,24 +61,34 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
             }
 
+            if (ctx.Data.Implementations.Count > 0)
+            {
+                foreach (var diag in PlayscriptPipeline.ValidateImplementations(ctx.Data))
+                {
+                    spc.CancellationToken.ThrowIfCancellationRequested();
+                    var descriptor = PlayscriptDiagnostics.GetDescriptor(diag.Code);
+                    ctx.ReportDiagnostic(Diagnostic.Create(descriptor,
+                        MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
+                }
+            }
+
             if (ctx.Data.HasErrors)
                 return;
 
             spc.CancellationToken.ThrowIfCancellationRequested();
 
-            configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptBaseClass", out var className);
             configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptOutputPath", out var outputPath);
             configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptAesKey", out var aesKey);
 
-            className = string.IsNullOrEmpty(className) ? "PlayscriptBase" : className;
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
             aesKey ??= string.Empty;
 
-            var code = PlayscriptBaseEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts,
-                ctx.Data.Interfaces, outputPath!, aesKey!, className!);
+            var registryCode = PlayscriptRegistryEmitter.Generate(ctx.Data);
+            spc.AddSource("PlayscriptRegistry.g.cs", SourceText.From(registryCode, Encoding.UTF8));
 
-            spc.CancellationToken.ThrowIfCancellationRequested();
-            spc.AddSource($"{className}.g.cs", SourceText.From(code, Encoding.UTF8));
+            var contextCode = PlayscriptContextEmitter.Generate(
+                ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey!);
+            spc.AddSource("PlayscriptContext.g.cs", SourceText.From(contextCode, Encoding.UTF8));
         });
     }
 
@@ -83,6 +102,16 @@ public class PlayscriptGenerator : IIncrementalGenerator
             if (diag.Severity == DiagnosticSeverity.Error)
                 Data.HasErrors = true;
         }
+    }
+
+    private static bool IsMethodWithImplementationAttribute(SyntaxNode node)
+    {
+        if (node is not MethodDeclarationSyntax method)
+            return false;
+
+        return method.AttributeLists.Any(list =>
+            list.Attributes.Any(attr =>
+                attr.Name.ToString() is "Implementation" or "ImplementationAttribute"));
     }
 
     private static void MergeFileData(PlayscriptCompilationData data, SingleFileResult result)

@@ -12,3 +12,7 @@
 | SCPT006 | Playscript | Error    | PlayscriptDiagnostics |
 | SCPT007 | Playscript | Error    | PlayscriptDiagnostics |
 | SCPT008 | Playscript | Error    | PlayscriptDiagnostics |
+| SCPT009 | Playscript | Error    | PlayscriptDiagnostics |
+| SCPT010 | Playscript | Error    | PlayscriptDiagnostics |
+| SCPT011 | Playscript | Warning  | PlayscriptDiagnostics |
+| SCPT012 | Playscript | Error    | PlayscriptDiagnostics |

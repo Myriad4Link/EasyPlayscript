@@ -29,7 +29,7 @@ public class ScriptRegistryTests
 
         Assert.Contains("public class Script", scriptText);
         Assert.Contains("public ScriptBlock Block { get; set; }", scriptText);
-        Assert.Contains("Dispatch", scriptText);
+        Assert.DoesNotContain("Dispatch =", scriptText);
     }
 
     [Fact]
@@ -42,31 +42,7 @@ public class ScriptRegistryTests
 
         Assert.Contains("public class Text", textText);
         Assert.Contains("public TextBlock Block { get; set; }", textText);
-        Assert.Contains("Dispatch", textText);
-    }
-
-    [Fact]
-    public void GeneratedScript_HasDispatchProperty()
-    {
-        var runResult = RunGenerator();
-
-        var scriptFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Script.g.cs"));
-        var text = scriptFile.GetText().ToString();
-
-        Assert.Contains("Action<ConsumerCallItem>", text);
-        Assert.Contains("Dispatch", text);
-    }
-
-    [Fact]
-    public void GeneratedText_HasDispatchProperty()
-    {
-        var runResult = RunGenerator();
-
-        var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
-        var text = textFile.GetText().ToString();
-
-        Assert.Contains("Action<ConsumerCallItem>", text);
-        Assert.Contains("Dispatch", text);
+        Assert.DoesNotContain("Dispatch =", textText);
     }
 
     [Fact]

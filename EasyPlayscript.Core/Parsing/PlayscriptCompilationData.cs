@@ -13,5 +13,6 @@ public class PlayscriptCompilationData
     public Dictionary<string, (string filePath, int line, int col)> ScriptLocations { get; } = new();
     public Dictionary<string, (string filePath, int line, int col)> TextLocations { get; } = new();
     public List<InterfaceDeclaration> Interfaces { get; } = [];
+    public List<ImplementationInfo> Implementations { get; } = [];
     public bool HasErrors { get; set; }
 }

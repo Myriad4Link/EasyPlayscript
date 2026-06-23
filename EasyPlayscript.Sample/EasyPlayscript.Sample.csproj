@@ -1,15 +1,36 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+        <OutputType>Exe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <RootNamespace>EasyPlayscript.Sample</RootNamespace>
+        <PlayscriptOutputPath>$(OutputPath)playscripts.bin</PlayscriptOutputPath>
+        <PlayscriptAesKey>dev-key-change-me</PlayscriptAesKey>
     </PropertyGroup>
     <ItemGroup>
-        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj"/>
-        <ProjectReference Include="..\EasyPlayscript\EasyPlayscript.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-        <ProjectReference Include="..\EasyPlayscript\EasyPlayscript.csproj"/>
+        <CompilerVisibleProperty Include="PlayscriptOutputPath" />
+        <CompilerVisibleProperty Include="PlayscriptAesKey" />
     </ItemGroup>
     <ItemGroup>
-        <None Remove="DDD.UbiquitousLanguageRegistry.txt"/>
+        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj" />
+        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\EasyPlayscript\EasyPlayscript.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\EasyPlayscript\EasyPlayscript.csproj" />
     </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" GeneratePathProperty="true" />
+        <Analyzer Include="$(PkgAntlr4_Runtime_Standard)\lib\netstandard2.0\Antlr4.Runtime.Standard.dll" />
+    </ItemGroup>
+    <ItemGroup>
+        <ScptFiles Include="scripts\**\*.scpt" />
+        <AdditionalFiles Include="@(ScptFiles)" />
+    </ItemGroup>
+    <UsingTask TaskName="PlayscriptBuildTask"
+               AssemblyFile="$(MSBuildThisFileDirectory)..\EasyPlayscript.BuildTask\bin\$(Configuration)\netstandard2.0\EasyPlayscript.BuildTask.dll" />
+    <Target Name="CompilePlayscripts" BeforeTargets="CoreCompile" Condition="Exists('$(MSBuildThisFileDirectory)..\EasyPlayscript.BuildTask\bin\$(Configuration)\netstandard2.0\EasyPlayscript.BuildTask.dll')">
+        <PlayscriptBuildTask
+            SourceFiles="@(ScptFiles)"
+            OutputPath="$(PlayscriptOutputPath)"
+            AesKey="$(PlayscriptAesKey)" />
+    </Target>
 </Project>

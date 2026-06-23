@@ -3,13 +3,26 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using EasyPlayscript.Parsing;
 
 namespace EasyPlayscript;
 
 public static class PlayscriptBaseEmitter
 {
+    private static readonly HashSet<string> CSharpKeywords =
+    [
+        "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char",
+        "checked", "class", "const", "continue", "decimal", "default", "delegate",
+        "do", "double", "else", "enum", "event", "explicit", "extern", "false",
+        "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit",
+        "in", "int", "interface", "internal", "is", "lock", "long", "namespace",
+        "new", "null", "object", "operator", "out", "override", "params", "private",
+        "protected", "public", "readonly", "ref", "return", "sbyte", "sealed",
+        "short", "sizeof", "stackalloc", "static", "string", "struct", "switch",
+        "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked",
+        "unsafe", "ushort", "using", "virtual", "void", "volatile", "while"
+    ];
+
     public static string Generate(
         Dictionary<string, ScriptBlock> scripts,
         Dictionary<string, TextBlock> texts,
@@ -18,6 +31,7 @@ public static class PlayscriptBaseEmitter
         string aesKey,
         string className)
     {
+        var normalizedPath = outputPath.Replace('\\', '/');
         using var writer = new StringWriter();
         var indented = new IndentedTextWriter(writer);
 
@@ -36,41 +50,80 @@ public static class PlayscriptBaseEmitter
             "private readonly System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>> _texts;");
         indented.WriteLine();
 
-        indented.WriteLine($"protected {className}(string outputPath, string aesKey)");
+        indented.WriteLine($"protected {className}()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("_scripts = new System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>>(");
         indented.Indent++;
-        indented.WriteLine("() => PlayscriptLoader.LoadScripts(outputPath, aesKey));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(\"{normalizedPath}\", \"{aesKey}\"));");
         indented.Indent--;
         indented.WriteLine("_texts = new System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>>(");
         indented.Indent++;
-        indented.WriteLine("() => PlayscriptLoader.LoadTexts(outputPath, aesKey));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(\"{normalizedPath}\", \"{aesKey}\"));");
         indented.Indent--;
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
 
-        var sortedScripts = scripts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal);
-        foreach (var kvp in sortedScripts)
+        var sortedScripts = scripts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
+        if (sortedScripts.Count > 0)
         {
-            var propName = ToScreamingSnakeCase(kvp.Key);
-            indented.WriteLine(
-                $"public Script {propName} => new Script {{ Block = _scripts.Value[\"{kvp.Key}\"], Dispatch = DispatchCall }};");
+            indented.WriteLine("public enum ScriptKey");
+            indented.WriteLine("{");
+            indented.Indent++;
+            for (var i = 0; i < sortedScripts.Count; i++)
+            {
+                var suffix = i < sortedScripts.Count - 1 ? "," : "";
+                indented.WriteLine($"{EscapeKeyword(sortedScripts[i].Key)}{suffix}");
+            }
+
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+            indented.WriteLine("public Script GetScript(ScriptKey key) => new Script { Block = _scripts.Value[ScriptKeyToString(key)], Dispatch = DispatchCall };");
+            indented.WriteLine();
+            indented.WriteLine("private static string ScriptKeyToString(ScriptKey key) => key switch");
+            indented.WriteLine("{");
+            indented.Indent++;
+            foreach (var kvp in sortedScripts)
+                indented.WriteLine($"ScriptKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
+            indented.WriteLine("_ => throw new System.ArgumentOutOfRangeException(nameof(key), key, null)");
+            indented.Indent--;
+            indented.WriteLine("};");
         }
 
-        var sortedTexts = texts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal);
-        foreach (var kvp in sortedTexts)
+        var sortedTexts = texts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
+        if (sortedTexts.Count > 0)
         {
-            var propName = ToScreamingSnakeCase(kvp.Key);
-            indented.WriteLine(
-                $"public Text {propName} => new Text {{ Block = _texts.Value[\"{kvp.Key}\"], Dispatch = DispatchCall }};");
+            indented.WriteLine("public enum TextKey");
+            indented.WriteLine("{");
+            indented.Indent++;
+            for (var i = 0; i < sortedTexts.Count; i++)
+            {
+                var suffix = i < sortedTexts.Count - 1 ? "," : "";
+                indented.WriteLine($"{EscapeKeyword(sortedTexts[i].Key)}{suffix}");
+            }
+
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+            indented.WriteLine("public Text GetText(TextKey key) => new Text { Block = _texts.Value[TextKeyToString(key)], Dispatch = DispatchCall };");
+            indented.WriteLine();
+            indented.WriteLine("private static string TextKeyToString(TextKey key) => key switch");
+            indented.WriteLine("{");
+            indented.Indent++;
+            foreach (var kvp in sortedTexts)
+                indented.WriteLine($"TextKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
+            indented.WriteLine("_ => throw new System.ArgumentOutOfRangeException(nameof(key), key, null)");
+            indented.Indent--;
+            indented.WriteLine("};");
         }
 
         if (scripts.Count > 0 || texts.Count > 0)
             indented.WriteLine();
 
-        var sortedInterfaces = interfaces.OrderBy(i => i.Name, StringComparer.Ordinal);
+        var sortedInterfaces = interfaces
+            .OrderBy(i => i.Name, StringComparer.Ordinal).ToList();
         foreach (var iface in sortedInterfaces)
         {
             var returnTypeName = MapReturnType(iface.ReturnType);
@@ -103,9 +156,7 @@ public static class PlayscriptBaseEmitter
                 indented.WriteLine($"{iface.Name}({argList});");
             }
             else
-            {
                 indented.WriteLine($"call.Result = {iface.Name}({argList});");
-            }
 
             indented.WriteLine("break;");
             indented.Indent--;
@@ -124,17 +175,19 @@ public static class PlayscriptBaseEmitter
         return writer.ToString();
     }
 
+    private static string EscapeKeyword(string name) => CSharpKeywords.Contains(name) ? $"@{name}" : name;
+
     private static string MapReturnType(InterfaceType type)
     {
-        switch (type)
+        return type switch
         {
-            case InterfaceType.String: return "string";
-            case InterfaceType.Int: return "int";
-            case InterfaceType.Decimal: return "double";
-            case InterfaceType.Bool: return "bool";
-            case InterfaceType.Void: return "void";
-            default: return "object";
-        }
+            InterfaceType.String => "string",
+            InterfaceType.Int => "int",
+            InterfaceType.Decimal => "double",
+            InterfaceType.Bool => "bool",
+            InterfaceType.Void => "void",
+            _ => "object"
+        };
     }
 
     private static string MapParameterType(InterfaceType type)
@@ -152,16 +205,5 @@ public static class PlayscriptBaseEmitter
             InterfaceType.Bool => "BoolArgument",
             _ => "ArgumentValue"
         };
-    }
-
-    private static string ToScreamingSnakeCase(string name)
-    {
-        var sb = new StringBuilder();
-        foreach (var c in name)
-        {
-            sb.Append(c is ' ' or '-' ? '_' : char.ToUpperInvariant(c));
-        }
-
-        return sb.ToString();
     }
 }

@@ -39,7 +39,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("public class Script");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("public ScriptBlock Block { get; set; }");
+        indented.WriteLine("public ScriptBlock Block { get; set; } = default!;");
         indented.WriteLine("internal Action<ConsumerCallItem>? Dispatch { get; set; }");
         indented.Indent--;
         indented.WriteLine("}");
@@ -64,7 +64,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("public class Text");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("public TextBlock Block { get; set; }");
+        indented.WriteLine("public TextBlock Block { get; set; } = default!;");
         indented.WriteLine("internal Action<ConsumerCallItem>? Dispatch { get; set; }");
         indented.Indent--;
         indented.WriteLine("}");

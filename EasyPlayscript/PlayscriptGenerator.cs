@@ -57,13 +57,13 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
             spc.CancellationToken.ThrowIfCancellationRequested();
 
+            configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptBaseClass", out var className);
             configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptOutputPath", out var outputPath);
             configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptAesKey", out var aesKey);
-            configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptBaseClass", out var className);
 
+            className = string.IsNullOrEmpty(className) ? "PlayscriptBase" : className;
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
             aesKey ??= string.Empty;
-            className = string.IsNullOrEmpty(className) ? "PlayscriptBase" : className;
 
             var code = PlayscriptBaseEmitter.Generate(ctx.Data.Scripts, ctx.Data.Texts,
                 ctx.Data.Interfaces, outputPath!, aesKey!, className!);

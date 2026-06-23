@@ -82,17 +82,19 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
-    public void ScriptBlock_GeneratesStaticProperty()
+    public void ScriptBlock_GeneratesScriptEnum()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("public Script LOAD_TOOLTIP", code);
+        Assert.Contains("enum ScriptKey", code);
+        Assert.Contains("GetScript(ScriptKey", code);
     }
 
     [Fact]
-    public void TextBlock_GeneratesStaticProperty()
+    public void TextBlock_GeneratesTextEnum()
     {
         var code = GenerateCode(("TextExample", TextBlockExample));
-        Assert.Contains("public Text INTRO_TEXT", code);
+        Assert.Contains("enum TextKey", code);
+        Assert.Contains("GetText(TextKey", code);
     }
 
     [Fact]
@@ -143,7 +145,7 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_HasConstructor()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("protected PlayscriptBase(string outputPath, string aesKey)", code);
+        Assert.Contains("protected PlayscriptBase()", code);
         Assert.Contains("LoadScripts", code);
         Assert.Contains("LoadTexts", code);
     }
@@ -160,23 +162,24 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_EmbedsOutputPath()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("PlayscriptLoader.LoadScripts", code);
-        Assert.Contains("PlayscriptLoader.LoadTexts", code);
+        Assert.Contains($"PlayscriptLoader.LoadScripts(\"{TestOutputPath}\"", code);
+        Assert.Contains($"PlayscriptLoader.LoadTexts(\"{TestOutputPath}\"", code);
     }
 
     [Fact]
     public void GeneratedCode_EmbedsAesKey()
     {
         var code = GenerateCode(("Example", ScriptBlockExample));
-        Assert.Contains("protected PlayscriptBase(string outputPath, string aesKey)", code);
+        Assert.Contains($"\"{TestAesKey}\"", code);
     }
 
     [Fact]
     public void GeneratedCode_EmptyAesKey_EmbedsEmptyString()
     {
         var code = GenerateCodeWithKey("", ("Example", ScriptBlockExample));
-        Assert.Contains("protected PlayscriptBase(string outputPath, string aesKey)", code);
+        Assert.Contains("protected PlayscriptBase()", code);
         Assert.DoesNotContain("dev-key-change-me", code);
+        Assert.Contains("LoadScripts(\"test-scripts.bin\", \"\")", code);
     }
 
     private static string GenerateCodeWithNoConfig(params (string name, string content)[] files)
@@ -572,8 +575,8 @@ public class PlayscriptGeneratorTests
                                ]
                                """;
         var code = GenerateCode(("file", content));
-        Assert.Contains("public Script LOAD_TOOLTIP", code);
-        Assert.Contains("LoadScripts", code);
+        Assert.Contains("enum ScriptKey", code);
+        Assert.Contains("GetScript(ScriptKey", code);
     }
 
     [Fact]
@@ -588,7 +591,7 @@ public class PlayscriptGeneratorTests
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
         var code = GenerateCode(("file", content));
-        Assert.Contains("public Script LOAD_TOOLTIP", code);
+        Assert.Contains("enum ScriptKey", code);
     }
 
     // ─── Config Fallbacks ───────────────────────────────────────────────────
@@ -597,8 +600,8 @@ public class PlayscriptGeneratorTests
     public void MissingOutputPath_DefaultsToPlayscriptsBin()
     {
         var code = GenerateCodeWithNoConfig(("Example", ScriptBlockExample));
-        Assert.Contains("PlayscriptLoader.LoadScripts", code);
-        Assert.Contains("PlayscriptLoader.LoadTexts", code);
+        Assert.Contains("PlayscriptLoader.LoadScripts(\"playscripts.bin\"", code);
+        Assert.Contains("PlayscriptLoader.LoadTexts(\"playscripts.bin\"", code);
     }
 
     [Fact]
@@ -606,6 +609,7 @@ public class PlayscriptGeneratorTests
     {
         var code = GenerateCodeWithNoConfig(("Example", ScriptBlockExample));
         Assert.DoesNotContain("dev-key-change-me", code);
+        Assert.Contains("LoadScripts(\"playscripts.bin\", \"\")", code);
     }
 
     // ─── Phase 4: PlayscriptBase Integration ────────────────────────────────

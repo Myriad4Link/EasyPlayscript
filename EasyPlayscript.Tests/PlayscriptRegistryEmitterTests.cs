@@ -88,8 +88,9 @@ public class PlayscriptRegistryEmitterTests
             InterfaceType.Void, 1, 0));
 
         var code = PlayscriptRegistryEmitter.Generate(data);
-        Assert.Contains("_system?.do_thing()", code);
+        Assert.Contains("_system.do_thing()", code);
         Assert.DoesNotContain("call.Result", code);
+        Assert.Contains("NullReferenceException", code);
     }
 
     [Fact]
@@ -108,7 +109,8 @@ public class PlayscriptRegistryEmitterTests
             InterfaceType.String, 1, 0));
 
         var code = PlayscriptRegistryEmitter.Generate(data);
-        Assert.Contains("call.Result = _system?.get_name()", code);
+        Assert.Contains("call.Result = _system.get_name()", code);
+        Assert.Contains("NullReferenceException", code);
     }
 
     [Fact]

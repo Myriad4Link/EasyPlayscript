@@ -102,13 +102,17 @@ public static class PlayscriptRegistryEmitter
                     iface.Parameters.Select((p, i) =>
                         $"(({MapArgumentType(p.Type)})call.Arguments[{i}]).Value"));
 
+                var shortName = impl.ClassName.Split(new[] { "::", "." }, StringSplitOptions.RemoveEmptyEntries).Last();
+
                 if (iface.ReturnType == InterfaceType.Void)
                 {
-                    indented.WriteLine($"{classFieldName}?.{impl.MethodName}({argList});");
+                    indented.WriteLine($"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
+                    indented.WriteLine($"{classFieldName}.{impl.MethodName}({argList});");
                 }
                 else
                 {
-                    indented.WriteLine($"call.Result = {classFieldName}?.{impl.MethodName}({argList});");
+                    indented.WriteLine($"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
+                    indented.WriteLine($"call.Result = {classFieldName}.{impl.MethodName}({argList});");
                 }
 
                 indented.WriteLine("break;");

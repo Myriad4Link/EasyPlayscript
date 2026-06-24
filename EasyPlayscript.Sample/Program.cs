@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using EasyPlayscript;
 using EasyPlayscript.Generated;
+using EasyPlayscript.Parsing;
 
 namespace EasyPlayscript.Sample;
 

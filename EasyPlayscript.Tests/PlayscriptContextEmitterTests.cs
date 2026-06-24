@@ -38,8 +38,8 @@ public class PlayscriptContextEmitterTests
     public void Generate_EmbedsOutputPath()
     {
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, EmptyTexts, "custom/path.bin", DefaultAesKey);
-        Assert.Contains("PlayscriptLoader.LoadScripts(\"custom/path.bin\"", code);
-        Assert.Contains("PlayscriptLoader.LoadTexts(\"custom/path.bin\"", code);
+        Assert.Contains("ResolvePath(\"custom/path.bin\"", code);
+        Assert.Contains("ResolvePath(\"custom/path.bin\"", code);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class PlayscriptContextEmitterTests
     public void Generate_BackslashPath_NormalizedToForwardSlash()
     {
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, EmptyTexts, "bin\\Debug\\net8.0\\playscripts.bin", DefaultAesKey);
-        Assert.Contains("PlayscriptLoader.LoadScripts(\"bin/Debug/net8.0/playscripts.bin\"", code);
+        Assert.Contains("ResolvePath(\"bin/Debug/net8.0/playscripts.bin\"", code);
     }
 
     [Fact]
@@ -190,6 +190,7 @@ public class PlayscriptContextEmitterTests
     public void Generate_EmptyAesKey_EmbedsEmptyString()
     {
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, "");
-        Assert.Contains("LoadScripts(\"playscripts.bin\", \"\")", code);
+        Assert.Contains("ResolvePath(\"playscripts.bin\")", code);
+        Assert.Contains("LoadScripts(ResolvePath(\"playscripts.bin\"), \"\")", code);
     }
 }

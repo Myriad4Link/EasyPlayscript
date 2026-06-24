@@ -4,7 +4,6 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <RootNamespace>EasyPlayscript.Sample</RootNamespace>
-        <PlayscriptOutputPath>$(OutputPath)playscripts.bin</PlayscriptOutputPath>
         <PlayscriptAesKey>dev-key-change-me</PlayscriptAesKey>
     </PropertyGroup>
     <ItemGroup>
@@ -28,6 +27,9 @@
     <UsingTask TaskName="PlayscriptBuildTask"
                AssemblyFile="$(MSBuildThisFileDirectory)..\EasyPlayscript.BuildTask\bin\$(Configuration)\netstandard2.0\EasyPlayscript.BuildTask.dll" />
     <Target Name="CompilePlayscripts" BeforeTargets="CoreCompile" Condition="Exists('$(MSBuildThisFileDirectory)..\EasyPlayscript.BuildTask\bin\$(Configuration)\netstandard2.0\EasyPlayscript.BuildTask.dll')">
+        <PropertyGroup>
+            <PlayscriptOutputPath Condition="'$(PlayscriptOutputPath)' == ''">$(OutputPath)playscripts.bin</PlayscriptOutputPath>
+        </PropertyGroup>
         <PlayscriptBuildTask
             SourceFiles="@(ScptFiles)"
             OutputPath="$(PlayscriptOutputPath)"

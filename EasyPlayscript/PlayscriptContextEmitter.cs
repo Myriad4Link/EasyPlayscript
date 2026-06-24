@@ -58,11 +58,11 @@ public static class PlayscriptContextEmitter
         indented.WriteLine("_registry = registry ?? throw new ArgumentNullException(nameof(registry));");
         indented.WriteLine("_scripts = new System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>>(");
         indented.Indent++;
-        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(\"{normalizedPath}\", \"{aesKey}\"));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
         indented.Indent--;
         indented.WriteLine("_texts = new System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>>(");
         indented.Indent++;
-        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(\"{normalizedPath}\", \"{aesKey}\"));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
         indented.Indent--;
         indented.Indent--;
         indented.WriteLine("}");
@@ -131,6 +131,12 @@ public static class PlayscriptContextEmitter
             indented.Indent--;
             indented.WriteLine("};");
         }
+
+        indented.WriteLine();
+        indented.WriteLine("private static string ResolvePath(string path) =>");
+        indented.Indent++;
+        indented.WriteLine("System.IO.Path.IsPathRooted(path) ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);");
+        indented.Indent--;
 
         indented.Indent--;
         indented.WriteLine("}");

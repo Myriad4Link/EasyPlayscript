@@ -196,8 +196,8 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_EmbedsOutputPath()
     {
         var code = GenerateContextCode(("Example", ScriptBlockExample));
-        Assert.Contains($"PlayscriptLoader.LoadScripts(\"{TestOutputPath}\"", code);
-        Assert.Contains($"PlayscriptLoader.LoadTexts(\"{TestOutputPath}\"", code);
+        Assert.Contains($"ResolvePath(\"{TestOutputPath}\"", code);
+        Assert.Contains($"ResolvePath(\"{TestOutputPath}\"", code);
     }
 
     [Fact]
@@ -213,7 +213,8 @@ public class PlayscriptGeneratorTests
         var code = GenerateContextCodeWithKey("", ("Example", ScriptBlockExample));
         Assert.Contains("public PlayscriptContext(PlayscriptRegistry", code);
         Assert.DoesNotContain("dev-key-change-me", code);
-        Assert.Contains("LoadScripts(\"test-scripts.bin\", \"\")", code);
+        Assert.Contains("ResolvePath(\"test-scripts.bin\")", code);
+        Assert.Contains("LoadScripts(ResolvePath(\"test-scripts.bin\"), \"\")", code);
     }
 
     [Fact]
@@ -239,8 +240,8 @@ public class PlayscriptGeneratorTests
             .Single(t => Path.GetFileName(t.FilePath) == "PlayscriptContext.g.cs");
         var code = contextFile.GetText().ToString();
 
-        Assert.Contains("PlayscriptLoader.LoadScripts(\"playscripts.bin\"", code);
-        Assert.Contains("PlayscriptLoader.LoadTexts(\"playscripts.bin\"", code);
+        Assert.Contains("ResolvePath(\"playscripts.bin\"", code);
+        Assert.Contains("ResolvePath(\"playscripts.bin\"", code);
     }
 
     [Fact]
@@ -267,7 +268,8 @@ public class PlayscriptGeneratorTests
         var code = contextFile.GetText().ToString();
 
         Assert.DoesNotContain("dev-key-change-me", code);
-        Assert.Contains("LoadScripts(\"playscripts.bin\", \"\")", code);
+        Assert.Contains("ResolvePath(\"playscripts.bin\")", code);
+        Assert.Contains("LoadScripts(ResolvePath(\"playscripts.bin\"), \"\")", code);
     }
 
     // ─── PlayscriptRegistry Structure ──────────────────────────────────────

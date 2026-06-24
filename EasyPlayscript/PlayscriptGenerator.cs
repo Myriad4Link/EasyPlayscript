@@ -1,11 +1,9 @@
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using EasyPlayscript.Parsing;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -24,8 +22,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
         var allFilesProvider = scptProvider.Collect();
 
         var implProvider = context.SyntaxProvider.CreateSyntaxProvider(
-            predicate: static (node, _) => IsMethodWithImplementationAttribute(node),
-            transform: static (ctx, ct) => ImplementationScanner.Extract(ctx, ct))
+            static (node, _) => IsMethodWithImplementationAttribute(node),
+            static (ctx, ct) => ImplementationScanner.Extract(ctx, ct))
             .Where(static impl => impl is not null)
             .Collect();
 
@@ -50,8 +48,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     ctx.Data.HasErrors = true;
             }
 
-            foreach (var impl in implementations)
+            foreach (var impl in Enumerable.OfType<ImplementationInfo>(implementations))
+            {
                 ctx.Data.Implementations.Add(impl);
+            }
 
             foreach (var diag in PlayscriptPipeline.Validate(ctx.Data))
             {
@@ -87,7 +87,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             spc.AddSource("PlayscriptRegistry.g.cs", SourceText.From(registryCode, Encoding.UTF8));
 
             var contextCode = PlayscriptContextEmitter.Generate(
-                ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey!);
+                ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey);
             spc.AddSource("PlayscriptContext.g.cs", SourceText.From(contextCode, Encoding.UTF8));
         });
     }

@@ -12,6 +12,12 @@ namespace EasyPlayscript;
 [Generator]
 public class PlayscriptGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// Registers the incremental generator pipeline:
+    /// 1. Parse each .scpt file into scripts, texts, and interfaces (Pass 1 + Pass 2).
+    /// 2. Discover [Implementation]-decorated methods via ForAttributeWithMetadataName.
+    /// 3. Merge per-file data, run cross-file validation, emit PlayscriptRegistry + PlayscriptContext.
+    /// </summary>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var scptProvider = context.AdditionalTextsProvider
@@ -97,6 +103,11 @@ public class PlayscriptGenerator : IIncrementalGenerator
         });
     }
 
+    /// <summary>
+    /// Parses a single .scpt file through the two-pass pipeline (structure → content).
+    /// Populates a <see cref="SingleFileResult"/> with parsed data and any diagnostics
+    /// from structure parsing, content parsing, or the processing pipeline.
+    /// </summary>
     private static SingleFileResult ParseSingleFile(string filePath, string content, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -119,12 +130,19 @@ public class PlayscriptGenerator : IIncrementalGenerator
         return result;
     }
 
+    /// <summary>
+    /// Creates a Roslyn <see cref="Location"/> from 1-based line/col (as reported by ANTLR).
+    /// </summary>
     private static Location MakeLocation(string filePath, int line, int col)
     {
         var linePosition = new LinePosition(line - 1, col);
         return Location.Create(filePath, default, new LinePositionSpan(linePosition, linePosition));
     }
 
+    /// <summary>
+    /// Converts ANTLR parse errors (<see cref="PlayscriptError"/>) into Roslyn diagnostics
+    /// and appends them to the target list. Maps lexer errors to SCPT002, parser errors to SCPT003.
+    /// </summary>
     private static void AppendContentDiagnostics(
         List<Diagnostic> to,
         List<PlayscriptError> errors,
@@ -141,6 +159,11 @@ public class PlayscriptGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Mutable accumulator for the generator output phase. Tracks compilation data and
+    /// error state; reports diagnostics to the Roslyn <see cref="SourceProductionContext"/>
+    /// and sets <see cref="PlayscriptCompilationData.HasErrors"/> on any error-level diagnostic.
+    /// </summary>
     private sealed class GeneratorContext(SourceProductionContext spc)
     {
         public PlayscriptCompilationData Data { get; } = new();
@@ -153,6 +176,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Per-file result from <see cref="ParseSingleFile"/>. Contains the parsed data
+    /// (scripts, texts, interfaces) and any diagnostics produced during parsing.
+    /// </summary>
     private sealed class SingleFileResult
     {
         public PlayscriptCompilationData Data { get; } = new();

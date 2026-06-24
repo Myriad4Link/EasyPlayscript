@@ -8,6 +8,12 @@ namespace EasyPlayscript;
 
 internal static class ImplementationScanner
 {
+    /// <summary>
+    /// Extracts an <see cref="ImplementationInfo"/> from a method decorated with
+    /// [Implementation]. Called by <c>ForAttributeWithMetadataName</c> in the generator;
+    /// the <see cref="GeneratorAttributeSyntaxContext"/> guarantees the target is a
+    /// <see cref="MethodDeclarationSyntax"/> with the attribute present.
+    /// </summary>
     public static ImplementationInfo Extract(
         GeneratorAttributeSyntaxContext ctx,
         CancellationToken ct)

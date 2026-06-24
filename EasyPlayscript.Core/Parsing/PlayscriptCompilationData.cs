@@ -16,6 +16,11 @@ public class PlayscriptCompilationData
     public List<ImplementationInfo> Implementations { get; } = [];
     public bool HasErrors { get; set; }
 
+    /// <summary>
+    /// Merges scripts, texts, and interfaces from another <see cref="PlayscriptCompilationData"/>
+    /// (typically a per-file result) into this instance. Duplicate script/text names are reported
+    /// as SCPT004 diagnostics without merging the duplicate entry.
+    /// </summary>
     public List<ValidationDiagnostic> MergeFrom(PlayscriptCompilationData source)
     {
         var diagnostics = new List<ValidationDiagnostic>();

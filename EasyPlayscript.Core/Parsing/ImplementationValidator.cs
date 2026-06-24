@@ -56,37 +56,6 @@ public static class ImplementationValidator
         return errors;
     }
 
-    public static List<ValidationDiagnostic> ValidateImplementationArgCounts(PlayscriptCompilationData data)
-    {
-        var errors = new List<ValidationDiagnostic>();
-
-        var implLookup = new Dictionary<string, ImplementationInfo>();
-        foreach (var impl in data.Implementations)
-        {
-            var key = $"{impl.EffectiveName}:{impl.ParameterTypeNames.Count}";
-            if (!implLookup.ContainsKey(key))
-                implLookup[key] = impl;
-        }
-
-        foreach (var iface in data.Interfaces)
-        {
-            var key = $"{iface.Name}:{iface.Parameters.Count}";
-            if (implLookup.TryGetValue(key, out var impl))
-            {
-                if (impl.ParameterTypeNames.Count != iface.Parameters.Count)
-                {
-                    errors.Add(new ValidationDiagnostic("SCPT012",
-                        $"[Implementation] method \"{impl.ClassName}.{impl.MethodName}\" has {impl.ParameterTypeNames.Count} parameter(s) but interface \"{iface.Name}\" expects {iface.Parameters.Count}",
-                        impl.FilePath, impl.Line, 0,
-                        impl.ClassName, impl.MethodName, impl.ParameterTypeNames.Count,
-                        iface.Name, iface.Parameters.Count));
-                }
-            }
-        }
-
-        return errors;
-    }
-
     public static List<ValidationDiagnostic> ValidateUnusedImplementations(PlayscriptCompilationData data)
     {
         var warnings = new List<ValidationDiagnostic>();

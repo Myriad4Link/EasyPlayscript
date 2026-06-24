@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using EasyPlayscript.Parsing;
@@ -9,31 +8,20 @@ namespace EasyPlayscript;
 
 internal static class ImplementationScanner
 {
-    public static ImplementationInfo? Extract(
-        GeneratorSyntaxContext ctx,
+    public static ImplementationInfo Extract(
+        GeneratorAttributeSyntaxContext ctx,
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
-        if (ctx.Node is not MethodDeclarationSyntax methodDecl)
-            return null;
-
-        var model = ctx.SemanticModel;
-        var symbol = model.GetDeclaredSymbol(methodDecl, ct);
-        if (symbol is not IMethodSymbol methodSymbol)
-            return null;
-
-        var attr = methodSymbol.GetAttributes().FirstOrDefault(
-            a => a.AttributeClass?.Name == "ImplementationAttribute" &&
-                 a.AttributeClass.ContainingNamespace.ToDisplayString() == "EasyPlayscript");
-
-        if (attr == null)
-            return null;
+        var methodDecl = (MethodDeclarationSyntax)ctx.TargetNode;
+        var methodSymbol = (IMethodSymbol)ctx.TargetSymbol;
+        var attr = ctx.Attributes[0];
 
         var containingType = methodSymbol.ContainingType;
 
         string? alias = null;
-        if (attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string s && s.Length > 0)
+        if (attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string { Length: > 0 } s)
             alias = s;
 
         var paramTypes = methodSymbol.Parameters

@@ -106,12 +106,14 @@ public static class PlayscriptRegistryEmitter
 
                 if (iface.ReturnType == InterfaceType.Void)
                 {
-                    indented.WriteLine($"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
+                    indented.WriteLine(
+                        $"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
                     indented.WriteLine($"{classFieldName}.{impl.MethodName}({argList});");
                 }
                 else
                 {
-                    indented.WriteLine($"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
+                    indented.WriteLine(
+                        $"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
                     indented.WriteLine($"call.Result = {classFieldName}.{impl.MethodName}({argList});");
                 }
 

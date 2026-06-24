@@ -135,7 +135,8 @@ public static class PlayscriptContextEmitter
         indented.WriteLine();
         indented.WriteLine("private static string ResolvePath(string path) =>");
         indented.Indent++;
-        indented.WriteLine("System.IO.Path.IsPathRooted(path) ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);");
+        indented.WriteLine(
+            "System.IO.Path.IsPathRooted(path) ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);");
         indented.Indent--;
 
         indented.Indent--;
@@ -145,5 +146,8 @@ public static class PlayscriptContextEmitter
         return writer.ToString();
     }
 
-    private static string EscapeKeyword(string name) => CSharpKeywords.Contains(name) ? $"@{name}" : name;
+    private static string EscapeKeyword(string name)
+    {
+        return CSharpKeywords.Contains(name) ? $"@{name}" : name;
+    }
 }

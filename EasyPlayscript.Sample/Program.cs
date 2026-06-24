@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using EasyPlayscript;
+using System.Text;
 using EasyPlayscript.Generated;
-using EasyPlayscript.Parsing;
 
 namespace EasyPlayscript.Sample;
 
@@ -17,13 +16,13 @@ public class AudioSystem
     [Implementation]
     public void on_complete()
     {
-        Console.WriteLine($"  [on_complete] called");
+        Console.WriteLine("  [on_complete] called");
     }
 
     [Implementation]
     public string get_name()
     {
-        Console.WriteLine($"  [get_name] returning '旅行者'");
+        Console.WriteLine("  [get_name] returning '旅行者'");
         return "旅行者";
     }
 }
@@ -41,7 +40,7 @@ public static class Program
 {
     public static void Main()
     {
-        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        Console.OutputEncoding = Encoding.UTF8;
 
         var registry = new PlayscriptRegistry();
         registry.Register(new AudioSystem());
@@ -72,28 +71,25 @@ public static class Program
         {
             Console.WriteLine($"  Page {pi + 1}:");
             foreach (var paragraph in script.Block.Pages[pi].Paragraphs)
+            foreach (var line in paragraph.Lines)
             {
-                foreach (var line in paragraph.Lines)
-                {
-                    var parts = new List<string>();
-                    foreach (var item in line.Items)
+                var parts = new List<string>();
+                foreach (var item in line.Items)
+                    switch (item)
                     {
-                        switch (item)
-                        {
-                            case TextItem text:
-                                parts.Add(text.Text);
-                                break;
-                            case ConsumerCallItem call:
-                                registry.DispatchCall(call);
-                                if (call.Result != null)
-                                    parts.Add($"[{call.Result}]");
-                                else
-                                    parts.Add($"[@{call.Identifier}]");
-                                break;
-                        }
+                        case TextItem text:
+                            parts.Add(text.Text);
+                            break;
+                        case ConsumerCallItem call:
+                            registry.DispatchCall(call);
+                            if (call.Result != null)
+                                parts.Add($"[{call.Result}]");
+                            else
+                                parts.Add($"[@{call.Identifier}]");
+                            break;
                     }
-                    Console.WriteLine($"    {string.Join("", parts)}");
-                }
+
+                Console.WriteLine($"    {string.Join("", parts)}");
             }
         }
     }
@@ -107,9 +103,9 @@ public static class Program
                 Console.WriteLine("    (blank)");
                 continue;
             }
+
             var parts = new List<string>();
             foreach (var item in line.Items)
-            {
                 switch (item)
                 {
                     case TextItem textItem:
@@ -123,7 +119,7 @@ public static class Program
                             parts.Add($"[@{call.Identifier}]");
                         break;
                 }
-            }
+
             Console.WriteLine($"    {string.Join("", parts)}");
         }
     }

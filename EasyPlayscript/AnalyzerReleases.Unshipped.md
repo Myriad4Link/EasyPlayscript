@@ -15,4 +15,3 @@
 | SCPT009 | Playscript | Error    | PlayscriptDiagnostics |
 | SCPT010 | Playscript | Error    | PlayscriptDiagnostics |
 | SCPT011 | Playscript | Warning  | PlayscriptDiagnostics |
-| SCPT012 | Playscript | Error    | PlayscriptDiagnostics |

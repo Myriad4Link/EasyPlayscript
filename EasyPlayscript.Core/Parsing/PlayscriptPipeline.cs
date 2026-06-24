@@ -100,7 +100,6 @@ public static class PlayscriptPipeline
         var diagnostics = new List<ValidationDiagnostic>();
         diagnostics.AddRange(ImplementationValidator.ValidateMissingImplementations(data));
         diagnostics.AddRange(ImplementationValidator.ValidateDuplicateImplementations(data));
-        diagnostics.AddRange(ImplementationValidator.ValidateImplementationArgCounts(data));
         diagnostics.AddRange(ImplementationValidator.ValidateUnusedImplementations(data));
         return diagnostics;
     }

@@ -21,9 +21,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
 
         var allFilesProvider = scptProvider.Collect();
 
-        var implProvider = context.SyntaxProvider.CreateSyntaxProvider(
-            static (node, _) => IsMethodWithImplementationAttribute(node),
-            static (ctx, ct) => ImplementationScanner.Extract(ctx, ct))
+        var implProvider = context.SyntaxProvider
+            .ForAttributeWithMetadataName("EasyPlayscript.ImplementationAttribute",
+                static (node, _) => node is MethodDeclarationSyntax,
+                static (ctx, ct) => ImplementationScanner.Extract(ctx, ct))
             .Where(static impl => impl is not null)
             .Collect();
 
@@ -49,9 +50,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
             }
 
             foreach (var impl in Enumerable.OfType<ImplementationInfo>(implementations))
-            {
                 ctx.Data.Implementations.Add(impl);
-            }
 
             foreach (var diag in PlayscriptPipeline.Validate(ctx.Data))
             {
@@ -62,7 +61,6 @@ public class PlayscriptGenerator : IIncrementalGenerator
             }
 
             if (ctx.Data.Implementations.Count > 0)
-            {
                 foreach (var diag in PlayscriptPipeline.ValidateImplementations(ctx.Data))
                 {
                     spc.CancellationToken.ThrowIfCancellationRequested();
@@ -70,7 +68,6 @@ public class PlayscriptGenerator : IIncrementalGenerator
                     ctx.ReportDiagnostic(Diagnostic.Create(descriptor,
                         MakeLocation(diag.FilePath, diag.Line, diag.Col), diag.MessageArgs));
                 }
-            }
 
             if (ctx.Data.HasErrors)
                 return;
@@ -92,32 +89,9 @@ public class PlayscriptGenerator : IIncrementalGenerator
         });
     }
 
-    private sealed class GeneratorContext(SourceProductionContext spc)
-    {
-        public PlayscriptCompilationData Data { get; } = new();
-
-        public void ReportDiagnostic(Diagnostic diag)
-        {
-            spc.ReportDiagnostic(diag);
-            if (diag.Severity == DiagnosticSeverity.Error)
-                Data.HasErrors = true;
-        }
-    }
-
-    private static bool IsMethodWithImplementationAttribute(SyntaxNode node)
-    {
-        if (node is not MethodDeclarationSyntax method)
-            return false;
-
-        return method.AttributeLists.Any(list =>
-            list.Attributes.Any(attr =>
-                attr.Name.ToString() is "Implementation" or "ImplementationAttribute"));
-    }
-
     private static void MergeFileData(PlayscriptCompilationData data, SingleFileResult result)
     {
         foreach (var kvp in result.Data.Scripts)
-        {
             if (data.Scripts.ContainsKey(kvp.Key))
             {
                 var loc = data.ScriptLocations[kvp.Key];
@@ -131,10 +105,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 data.ScriptLocations[kvp.Key] = result.Data.ScriptLocations[kvp.Key];
                 data.Scripts[kvp.Key] = kvp.Value;
             }
-        }
 
         foreach (var kvp in result.Data.Texts)
-        {
             if (data.Texts.ContainsKey(kvp.Key))
             {
                 var loc = data.TextLocations[kvp.Key];
@@ -148,16 +120,8 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 data.TextLocations[kvp.Key] = result.Data.TextLocations[kvp.Key];
                 data.Texts[kvp.Key] = kvp.Value;
             }
-        }
 
         data.Interfaces.AddRange(result.Data.Interfaces);
-    }
-
-    private sealed class SingleFileResult
-    {
-        public PlayscriptCompilationData Data { get; } = new();
-        public List<Diagnostic> Diagnostics { get; } = [];
-        public string FilePath { get; set; } = string.Empty;
     }
 
     private static SingleFileResult ParseSingleFile(string filePath, string content, CancellationToken ct)
@@ -202,5 +166,24 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 : PlayscriptDiagnostics.MismatchedInput;
             to.Add(Diagnostic.Create(descriptor, MakeLocation(filePath, error.Line, error.Col), error.Msg));
         }
+    }
+
+    private sealed class GeneratorContext(SourceProductionContext spc)
+    {
+        public PlayscriptCompilationData Data { get; } = new();
+
+        public void ReportDiagnostic(Diagnostic diag)
+        {
+            spc.ReportDiagnostic(diag);
+            if (diag.Severity == DiagnosticSeverity.Error)
+                Data.HasErrors = true;
+        }
+    }
+
+    private sealed class SingleFileResult
+    {
+        public PlayscriptCompilationData Data { get; } = new();
+        public List<Diagnostic> Diagnostics { get; } = [];
+        public string FilePath { get; set; } = string.Empty;
     }
 }

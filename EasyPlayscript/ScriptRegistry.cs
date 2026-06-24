@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis.Text;
 namespace EasyPlayscript;
 
 /// <summary>
-/// Source generator that emits data classes (<c>Script</c>, <c>Text</c>)
-/// via <see cref="IncrementalGeneratorInitializationContext.RegisterPostInitializationOutput"/> into the
-/// <c>EasyPlayscript.Generated</c> namespace.
+///     Source generator that emits data classes (<c>Script</c>, <c>Text</c>)
+///     via <see cref="IncrementalGeneratorInitializationContext.RegisterPostInitializationOutput" /> into the
+///     <c>EasyPlayscript.Generated</c> namespace.
 /// </summary>
 [Generator]
 public class ScriptRegistry : IIncrementalGenerator

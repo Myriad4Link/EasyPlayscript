@@ -14,6 +14,17 @@ internal static class ImplementationScanner
     /// the <see cref="GeneratorAttributeSyntaxContext"/> guarantees the target is a
     /// <see cref="MethodDeclarationSyntax"/> with the attribute present.
     /// </summary>
+    /// <param name="ctx">
+    /// The syntax context provided by <c>ForAttributeWithMetadataName</c>.
+    /// <see cref="GeneratorAttributeSyntaxContext.TargetNode"/> is a <see cref="MethodDeclarationSyntax"/>,
+    /// <see cref="GeneratorAttributeSyntaxContext.TargetSymbol"/> is an <see cref="IMethodSymbol"/>,
+    /// and <see cref="GeneratorAttributeSyntaxContext.Attributes"/> contains the matched attribute.
+    /// </param>
+    /// <param name="ct">Cancellation token for the generator transform phase.</param>
+    /// <returns>
+    /// An <see cref="ImplementationInfo"/> populated with the method's containing type, name,
+    /// alias (from the attribute constructor argument), parameter types, return type, and source location.
+    /// </returns>
     public static ImplementationInfo Extract(
         GeneratorAttributeSyntaxContext ctx,
         CancellationToken ct)

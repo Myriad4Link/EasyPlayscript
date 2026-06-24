@@ -21,6 +21,14 @@ public class PlayscriptCompilationData
     /// (typically a per-file result) into this instance. Duplicate script/text names are reported
     /// as SCPT004 diagnostics without merging the duplicate entry.
     /// </summary>
+    /// <param name="source">
+    /// The compilation data to merge from. Read-only from this method's perspective;
+    /// only <paramref name="source"/>'s dictionaries are iterated, not modified.
+    /// </param>
+    /// <returns>
+    /// A list of <see cref="ValidationDiagnostic"/> for any duplicate script/text names
+    /// found during the merge. Empty if no duplicates were detected.
+    /// </returns>
     public List<ValidationDiagnostic> MergeFrom(PlayscriptCompilationData source)
     {
         var diagnostics = new List<ValidationDiagnostic>();

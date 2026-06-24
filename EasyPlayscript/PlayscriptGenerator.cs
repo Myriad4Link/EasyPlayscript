@@ -108,6 +108,14 @@ public class PlayscriptGenerator : IIncrementalGenerator
     /// Populates a <see cref="SingleFileResult"/> with parsed data and any diagnostics
     /// from structure parsing, content parsing, or the processing pipeline.
     /// </summary>
+    /// <param name="filePath">The source path of the .scpt file, used for diagnostic locations.</param>
+    /// <param name="content">The raw text content of the .scpt file.</param>
+    /// <param name="ct">Cancellation token, checked between pipeline stages.</param>
+    /// <returns>
+    /// A <see cref="SingleFileResult"/> containing the parsed scripts, texts, and interfaces,
+    /// along with any diagnostics produced during parsing.
+    /// </returns>
+    /// <exception cref="OperationCanceledException">Thrown if <paramref name="ct"/> is cancelled.</exception>
     private static SingleFileResult ParseSingleFile(string filePath, string content, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -133,6 +141,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
     /// <summary>
     /// Creates a Roslyn <see cref="Location"/> from 1-based line/col (as reported by ANTLR).
     /// </summary>
+    /// <param name="filePath">The source file path.</param>
+    /// <param name="line">1-based line number.</param>
+    /// <param name="col">0-based column offset.</param>
+    /// <returns>A zero-width <see cref="Location"/> at the specified position.</returns>
     private static Location MakeLocation(string filePath, int line, int col)
     {
         var linePosition = new LinePosition(line - 1, col);
@@ -143,6 +155,11 @@ public class PlayscriptGenerator : IIncrementalGenerator
     /// Converts ANTLR parse errors (<see cref="PlayscriptError"/>) into Roslyn diagnostics
     /// and appends them to the target list. Maps lexer errors to SCPT002, parser errors to SCPT003.
     /// </summary>
+    /// <param name="to">The accumulator list to append Roslyn diagnostics to.</param>
+    /// <param name="errors">ANTLR parse errors from the content parser.</param>
+    /// <param name="filePath">Source file path, used to construct <see cref="Location"/> for each error.</param>
+    /// <param name="ct">Cancellation token, checked before each error conversion.</param>
+    /// <exception cref="OperationCanceledException">Thrown if <paramref name="ct"/> is cancelled.</exception>
     private static void AppendContentDiagnostics(
         List<Diagnostic> to,
         List<PlayscriptError> errors,
@@ -168,6 +185,11 @@ public class PlayscriptGenerator : IIncrementalGenerator
     {
         public PlayscriptCompilationData Data { get; } = new();
 
+        /// <summary>
+        /// Reports a diagnostic to the Roslyn output context and sets <see cref="Data"/>.<see cref="PlayscriptCompilationData.HasErrors"/>
+        /// if the diagnostic severity is <see cref="DiagnosticSeverity.Error"/>.
+        /// </summary>
+        /// <param name="diag">The Roslyn diagnostic to report.</param>
         public void ReportDiagnostic(Diagnostic diag)
         {
             spc.ReportDiagnostic(diag);

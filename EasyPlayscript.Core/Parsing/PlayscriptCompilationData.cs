@@ -19,41 +19,34 @@ public class PlayscriptCompilationData
     public List<ValidationDiagnostic> MergeFrom(PlayscriptCompilationData source)
     {
         var diagnostics = new List<ValidationDiagnostic>();
-
-        foreach (var kvp in source.Scripts)
-        {
-            if (Scripts.ContainsKey(kvp.Key))
-            {
-                var loc = ScriptLocations[kvp.Key];
-                diagnostics.Add(new ValidationDiagnostic("SCPT004",
-                    $"Duplicate script name \"{kvp.Key}\"",
-                    loc.filePath, loc.line, loc.col, "script", kvp.Key));
-            }
-            else
-            {
-                ScriptLocations[kvp.Key] = source.ScriptLocations[kvp.Key];
-                Scripts[kvp.Key] = kvp.Value;
-            }
-        }
-
-        foreach (var kvp in source.Texts)
-        {
-            if (Texts.ContainsKey(kvp.Key))
-            {
-                var loc = TextLocations[kvp.Key];
-                diagnostics.Add(new ValidationDiagnostic("SCPT004",
-                    $"Duplicate text name \"{kvp.Key}\"",
-                    loc.filePath, loc.line, loc.col, "text", kvp.Key));
-            }
-            else
-            {
-                TextLocations[kvp.Key] = source.TextLocations[kvp.Key];
-                Texts[kvp.Key] = kvp.Value;
-            }
-        }
-
+        MergeBlocks(diagnostics, source.Scripts, Scripts, source.ScriptLocations, ScriptLocations, "script");
+        MergeBlocks(diagnostics, source.Texts, Texts, source.TextLocations, TextLocations, "text");
         Interfaces.AddRange(source.Interfaces);
-
         return diagnostics;
+    }
+
+    private static void MergeBlocks<T>(
+        List<ValidationDiagnostic> diagnostics,
+        Dictionary<string, T> sourceBlocks,
+        Dictionary<string, T> targetBlocks,
+        Dictionary<string, (string filePath, int line, int col)> sourceLocations,
+        Dictionary<string, (string filePath, int line, int col)> targetLocations,
+        string label)
+    {
+        foreach (var kvp in sourceBlocks)
+        {
+            if (targetBlocks.ContainsKey(kvp.Key))
+            {
+                var loc = targetLocations[kvp.Key];
+                diagnostics.Add(new ValidationDiagnostic("SCPT004",
+                    $"Duplicate {label} name \"{kvp.Key}\"",
+                    loc.filePath, loc.line, loc.col, label, kvp.Key));
+            }
+            else
+            {
+                targetLocations[kvp.Key] = sourceLocations[kvp.Key];
+                targetBlocks[kvp.Key] = kvp.Value;
+            }
+        }
     }
 }

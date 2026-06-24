@@ -36,6 +36,18 @@ public class PlayscriptGeneratorTests
     private const string TestOutputPath = "test-scripts.bin";
     private const string TestAesKey = "test-key-1234567";
 
+    private const string ImplementationAttributeSource = """
+        namespace EasyPlayscript
+        {
+            [System.AttributeUsage(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+            public sealed class ImplementationAttribute : System.Attribute
+            {
+                public string? Alias { get; }
+                public ImplementationAttribute(string? alias = null) => Alias = alias;
+            }
+        }
+        """;
+
     private static string GenerateRegistryCode(params (string name, string content)[] files)
     {
         return GenerateCodeForKey("PlayscriptRegistry.g.cs", TestOutputPath, TestAesKey, files);
@@ -80,6 +92,47 @@ public class PlayscriptGeneratorTests
 
         var generatedFile = newCompilation.SyntaxTrees
             .Single(t => Path.GetFileName(t.FilePath) == fileName);
+
+        return generatedFile.GetText().ToString();
+    }
+
+    private static string GenerateRegistryCodeWithSource(
+        string sourceCode,
+        params (string name, string content)[] files)
+    {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ("build_property.PlayscriptOutputPath", TestOutputPath),
+            ("build_property.PlayscriptAesKey", TestAesKey));
+
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            optionsProvider: optionsProvider);
+
+        var additionalFiles = files
+            .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
+            .ToImmutableArray<AdditionalText>();
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
+
+        var tree = CSharpSyntaxTree.ParseText(sourceCode);
+        var references = new[]
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
+        };
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests), [tree], references);
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out var diagnostics);
+
+        var generatedFile = newCompilation.SyntaxTrees
+            .SingleOrDefault(t => Path.GetFileName(t.FilePath) == "PlayscriptRegistry.g.cs");
+
+        if (generatedFile == null)
+        {
+            var diagMessages = string.Join("\n", diagnostics.Select(d => $"{d.Id}: {d.GetMessage()}"));
+            throw new InvalidOperationException(
+                $"PlayscriptRegistry.g.cs was not generated. Diagnostics:\n{diagMessages}");
+        }
 
         return generatedFile.GetText().ToString();
     }
@@ -655,5 +708,139 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
         var code = GenerateContextCode(("file", content));
         Assert.Contains("enum ScriptKey", code);
+    }
+
+    // ─── ImplementationScanner: Extract ────────────────────────────────────
+
+    [Fact]
+    public void ImplementationScanner_BasicVoidMethod_GeneratesRegisterAndDispatch()
+    {
+        var source = ImplementationAttributeSource + """
+            namespace TestNs
+            {
+                public class Effects
+                {
+                    [EasyPlayscript.Implementation]
+                    public void fade() { }
+                }
+            }
+            """;
+        var code = GenerateRegistryCodeWithSource(source,
+            ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
+        Assert.Contains("Register(global::TestNs.Effects instance)", code);
+        Assert.Contains("case \"fade\":", code);
+    }
+
+    [Fact]
+    public void ImplementationScanner_StringParam_TypeMapped()
+    {
+        var source = ImplementationAttributeSource + """
+            namespace TestNs
+            {
+                public class Effects
+                {
+                    [EasyPlayscript.Implementation]
+                    public void fade(string type) { }
+                }
+            }
+            """;
+        var code = GenerateRegistryCodeWithSource(source,
+            ("fade", "interface fade(type: string) : void\nscript s[\n@fade(\"out\")\n]"));
+        Assert.Contains("((StringArgument)call.Arguments[0]).Value", code);
+    }
+
+    [Fact]
+    public void ImplementationScanner_AllPrimitiveParams_TypeMapped()
+    {
+        var source = ImplementationAttributeSource + """
+            namespace TestNs
+            {
+                public class Effects
+                {
+                    [EasyPlayscript.Implementation]
+                    public void config(string name, int count, double volume, bool enabled) { }
+                }
+            }
+            """;
+        var code = GenerateRegistryCodeWithSource(source,
+            ("cfg", "interface config(name: string, count: int, volume: decimal, enabled: bool) : void\nscript s[\n@config(\"x\", 1, 1.0, true)\n]"));
+        Assert.Contains("((StringArgument)call.Arguments[0]).Value", code);
+        Assert.Contains("((IntArgument)call.Arguments[1]).Value", code);
+        Assert.Contains("((DoubleArgument)call.Arguments[2]).Value", code);
+        Assert.Contains("((BoolArgument)call.Arguments[3]).Value", code);
+    }
+
+    [Fact]
+    public void ImplementationScanner_NonVoidReturn_StoresResult()
+    {
+        var source = ImplementationAttributeSource + """
+            namespace TestNs
+            {
+                public class Effects
+                {
+                    [EasyPlayscript.Implementation]
+                    public string get_name() => "test";
+                }
+            }
+            """;
+        var code = GenerateRegistryCodeWithSource(source,
+            ("gn", "interface get_name() : string\nscript s[\n@get_name()\n]"));
+        Assert.Contains("call.Result = ", code);
+    }
+
+    [Fact]
+    public void ImplementationScanner_Alias_UsesAliasForCase()
+    {
+        var source = ImplementationAttributeSource + """
+            namespace TestNs
+            {
+                public class Effects
+                {
+                    [EasyPlayscript.Implementation("fade")]
+                    public void DoFade() { }
+                }
+            }
+            """;
+        var code = GenerateRegistryCodeWithSource(source,
+            ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
+        Assert.Contains("case \"fade\":", code);
+        Assert.Contains("DoFade(", code);
+    }
+
+    [Fact]
+    public void ImplementationScanner_NestedClass_FullyQualified()
+    {
+        var source = ImplementationAttributeSource + """
+            namespace TestNs
+            {
+                public class Outer
+                {
+                    public class Inner
+                    {
+                        [EasyPlayscript.Implementation]
+                        public void fade() { }
+                    }
+                }
+            }
+            """;
+        var code = GenerateRegistryCodeWithSource(source,
+            ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
+        Assert.Contains("Register(global::TestNs.Inner instance)", code);
+    }
+
+    [Fact]
+    public void ImplementationScanner_GlobalNamespace_NoPrefix()
+    {
+        var source = ImplementationAttributeSource + """
+            public class GlobalEffects
+            {
+                [EasyPlayscript.Implementation]
+                public void fade() { }
+            }
+            """;
+        var code = GenerateRegistryCodeWithSource(source,
+            ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
+        Assert.Contains("Register(GlobalEffects instance)", code);
+        Assert.DoesNotContain("global::", code);
     }
 }

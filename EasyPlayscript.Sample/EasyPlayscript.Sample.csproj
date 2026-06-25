@@ -5,34 +5,21 @@
         <Nullable>enable</Nullable>
         <RootNamespace>EasyPlayscript.Sample</RootNamespace>
         <PlayscriptAesKey>dev-key-change-me</PlayscriptAesKey>
+
+<!--        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>-->
+<!--        <CompilerGeneratedFilesOutputPath>obj\Generated</CompilerGeneratedFilesOutputPath>-->
     </PropertyGroup>
     <ItemGroup>
         <CompilerVisibleProperty Include="PlayscriptOutputPath" />
         <CompilerVisibleProperty Include="PlayscriptAesKey" />
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj" />
-        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-        <ProjectReference Include="..\EasyPlayscript.Generator\EasyPlayscript.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-        <ProjectReference Include="..\EasyPlayscript.Generator\EasyPlayscript.Generator.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" GeneratePathProperty="true" />
-        <Analyzer Include="$(PkgAntlr4_Runtime_Standard)\lib\netstandard2.0\Antlr4.Runtime.Standard.dll" />
+        <PackageReference Include="EasyPlayscript.Core" Version="1.0.0" />
+        <PackageReference Include="EasyPlayscript.Generator" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <PackageReference Include="EasyPlayscript.BuildTask" Version="1.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ScptFiles Include="scripts\**\*.scpt" />
         <AdditionalFiles Include="@(ScptFiles)" />
     </ItemGroup>
-    <UsingTask TaskName="PlayscriptBuildTask"
-               AssemblyFile="$(MSBuildThisFileDirectory)..\EasyPlayscript.BuildTask\bin\$(Configuration)\netstandard2.0\EasyPlayscript.BuildTask.dll" />
-    <Target Name="CompilePlayscripts" BeforeTargets="CoreCompile" Condition="Exists('$(MSBuildThisFileDirectory)..\EasyPlayscript.BuildTask\bin\$(Configuration)\netstandard2.0\EasyPlayscript.BuildTask.dll')">
-        <PropertyGroup>
-            <PlayscriptOutputPath Condition="'$(PlayscriptOutputPath)' == ''">$(OutputPath)playscripts.bin</PlayscriptOutputPath>
-        </PropertyGroup>
-        <PlayscriptBuildTask
-            SourceFiles="@(ScptFiles)"
-            OutputPath="$(PlayscriptOutputPath)"
-            AesKey="$(PlayscriptAesKey)" />
-    </Target>
 </Project>

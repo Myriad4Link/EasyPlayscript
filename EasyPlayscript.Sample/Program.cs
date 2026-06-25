@@ -113,10 +113,7 @@ public static class Program
                         break;
                     case ConsumerCallItem call:
                         registry.DispatchCall(call);
-                        if (call.Result != null)
-                            parts.Add($"[{call.Result}]");
-                        else
-                            parts.Add($"[@{call.Identifier}]");
+                        parts.Add(call.Result != null ? $"[{call.Result}]" : $"[@{call.Identifier}]");
                         break;
                 }
 

@@ -71,6 +71,9 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+# Local NuGet feed
+nuget-local/
+
 # Editor-based Rest Client
 .idea/httpRequests
 

@@ -1,0 +1,13 @@
+<Project>
+    <UsingTask TaskName="PlayscriptBuildTask"
+               AssemblyFile="$(MSBuildThisFileDirectory)..\tools\netstandard2.0\EasyPlayscript.BuildTask.dll" />
+    <Target Name="CompilePlayscripts" BeforeTargets="CoreCompile">
+        <PropertyGroup>
+            <PlayscriptOutputPath Condition="'$(PlayscriptOutputPath)' == ''">$(OutputPath)playscripts.bin</PlayscriptOutputPath>
+        </PropertyGroup>
+        <PlayscriptBuildTask
+            SourceFiles="@(ScptFiles)"
+            OutputPath="$(PlayscriptOutputPath)"
+            AesKey="$(PlayscriptAesKey)" />
+    </Target>
+</Project>

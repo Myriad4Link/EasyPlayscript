@@ -1,22 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <IsPackable>false</IsPackable>
+        <IsPackable>true</IsPackable>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
         <RootNamespace>EasyPlayscript.Generator</RootNamespace>
         <PackageId>EasyPlayscript.Generator</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>EasyPlayscript</Authors>
+        <Description>Roslyn source generator for EasyPlayscript scripting language</Description>
+        <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.3.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.3.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" />
     </ItemGroup>
     <ItemGroup>
         <AdditionalFiles Include="AnalyzerReleases.Shipped.md"/>
@@ -25,4 +30,18 @@
     <ItemGroup>
         <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj"/>
     </ItemGroup>
+    <ItemGroup>
+        <None Include="$(OutputPath)\EasyPlayscript.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
+        <None Include="$(OutputPath)\EasyPlayscript.Core.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
+        <None Include="$(OutputPath)\Antlr4.Runtime.Standard.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
+        <None Include="$(OutputPath)\MessagePack.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
+        <None Include="$(OutputPath)\MessagePack.Annotations.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
+    </ItemGroup>
+    <Target Name="GetDependencyTargetPaths" DependsOnTargets="ResolveAssemblyReferences">
+        <ItemGroup>
+            <_ResolvedDepPaths Include="@(_ResolvedProjectReferencePaths)" />
+            <_ResolvedDepPaths Remove="@(_ResolvedDepPaths)" Condition="'%(Extension)' == '.pdb'" />
+            <TargetPathWithTargetPlatformMoniker Include="@(_ResolvedDepPaths)" />
+        </ItemGroup>
+    </Target>
 </Project>

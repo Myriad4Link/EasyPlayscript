@@ -6,11 +6,15 @@
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
 
+        <PackageId>EasyPlayscript.Core</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>EasyPlayscript</Authors>
+        <Description>Core library for EasyPlayscript scripting language</Description>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
-        <PackageReference Include="MessagePack" Version="3.1.6" />
+        <PackageReference Include="MessagePack" Version="3.1.7" />
     </ItemGroup>
 
 </Project>

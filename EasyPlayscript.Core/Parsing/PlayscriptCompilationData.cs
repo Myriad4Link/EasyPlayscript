@@ -51,8 +51,8 @@ public class PlayscriptCompilationData
             if (targetBlocks.ContainsKey(kvp.Key))
             {
                 var loc = targetLocations[kvp.Key];
-                diagnostics.Add(new ValidationDiagnostic("SCPT004",
-                    $"Duplicate {label} name \"{kvp.Key}\"",
+                diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                    DiagnosticCodes.DuplicateScriptNameFormat,
                     loc.filePath, loc.line, loc.col, label, kvp.Key));
             }
             else

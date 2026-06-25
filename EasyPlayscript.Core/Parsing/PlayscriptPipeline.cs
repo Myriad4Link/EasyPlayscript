@@ -32,7 +32,7 @@ public static class PlayscriptPipeline
                 : parser.textContent();
 
             diagnostics.AddRange(contentErrors.Select(error =>
-                new ValidationDiagnostic(error.IsLexer ? "SCPT002" : "SCPT003", error.Msg, filePath, error.Line,
+                ValidationDiagnostic.CreateRaw(error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg, filePath, error.Line,
                     error.Col)));
 
             if (contentErrors.Count > 0) continue;
@@ -42,7 +42,7 @@ public static class PlayscriptPipeline
             builder.Build(identifier, tree);
 
             diagnostics.AddRange(builder.Errors.Select(error =>
-                new ValidationDiagnostic(error.IsLexer ? "SCPT002" : "SCPT003", error.Msg, filePath, error.Line,
+                ValidationDiagnostic.CreateRaw(error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg, filePath, error.Line,
                     error.Col)));
 
             if (builder.Errors.Count > 0) continue;
@@ -52,8 +52,8 @@ public static class PlayscriptPipeline
                 if (data.Scripts.ContainsKey(name))
                 {
                     var loc = data.ScriptLocations[name];
-                    diagnostics.Add(new ValidationDiagnostic("SCPT004",
-                        $"Duplicate script name \"{name}\"",
+                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                        DiagnosticCodes.DuplicateScriptNameFormat,
                         loc.filePath, loc.line, loc.col, "script", name));
                 }
                 else
@@ -67,8 +67,8 @@ public static class PlayscriptPipeline
                 if (data.Texts.ContainsKey(name))
                 {
                     var loc = data.TextLocations[name];
-                    diagnostics.Add(new ValidationDiagnostic("SCPT004",
-                        $"Duplicate text name \"{name}\"",
+                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                        DiagnosticCodes.DuplicateScriptNameFormat,
                         loc.filePath, loc.line, loc.col, "text", name));
                 }
                 else

@@ -65,7 +65,7 @@ public class ImplementationValidatorTests
         data.Interfaces.Add(MakeInterface("fade", InterfaceType.Void, ("type", InterfaceType.String)));
         var errors = ImplementationValidator.ValidateMissingImplementations(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT009", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.MissingImplementation, errors[0].Code);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class ImplementationValidatorTests
         data.Implementations.Add(MakeImplementation("Effects", "fade", null, "string", "string"));
         var errors = ImplementationValidator.ValidateMissingImplementations(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT009", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.MissingImplementation, errors[0].Code);
     }
 
     // ─── ValidateDuplicateImplementations ──────────────────────────────────
@@ -120,7 +120,7 @@ public class ImplementationValidatorTests
         data.Implementations.Add(MakeImplementation("EffectsB", "fade", null, "string"));
         var errors = ImplementationValidator.ValidateDuplicateImplementations(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT010", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.DuplicateImplementation, errors[0].Code);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class ImplementationValidatorTests
         data.Implementations.Add(MakeImplementation("EffectsB", "DoFade", "fade"));
         var errors = ImplementationValidator.ValidateDuplicateImplementations(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT010", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.DuplicateImplementation, errors[0].Code);
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public class ImplementationValidatorTests
         data.ScriptLocations["s"] = ("test.scpt", 1, 0);
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Single(warnings);
-        Assert.Equal("SCPT011", warnings[0].Code);
+        Assert.Equal(DiagnosticCodes.UnusedImplementation, warnings[0].Code);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public class ImplementationValidatorTests
         data.ScriptLocations["s"] = ("test.scpt", 1, 0);
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Single(warnings);
-        Assert.Equal("SCPT011", warnings[0].Code);
+        Assert.Equal(DiagnosticCodes.UnusedImplementation, warnings[0].Code);
     }
 
     [Fact]
@@ -220,6 +220,6 @@ public class ImplementationValidatorTests
         data.Implementations.Add(MakeImplementation("Effects", "fade"));
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Single(warnings);
-        Assert.Equal("SCPT011", warnings[0].Code);
+        Assert.Equal(DiagnosticCodes.UnusedImplementation, warnings[0].Code);
     }
 }

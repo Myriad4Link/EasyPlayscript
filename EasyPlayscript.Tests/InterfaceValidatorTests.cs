@@ -129,7 +129,7 @@ public class InterfaceValidatorTests
         data.ScriptLocations["foo"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT005", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, errors[0].Code);
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public class InterfaceValidatorTests
         data.Interfaces.AddRange(new[] { a, b });
         var errors = InterfaceValidator.ValidateDuplicateSignatures(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT006", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.DuplicateInterfaceSignature, errors[0].Code);
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public class InterfaceValidatorTests
         data.ScriptLocations["foo"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT008", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.ArgumentCountMismatch, errors[0].Code);
     }
 
     [Fact]
@@ -197,7 +197,7 @@ public class InterfaceValidatorTests
         data.ScriptLocations["foo"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT007", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
     }
 
     [Fact]
@@ -257,7 +257,7 @@ public class InterfaceValidatorTests
         data.TextLocations["intro"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT005", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, errors[0].Code);
     }
 
     [Fact]
@@ -286,7 +286,7 @@ public class InterfaceValidatorTests
         data.TextLocations["intro"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT007", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
     }
 
     // ─── Phase 10: GetConsumerCalls (ScriptBlock verification) ──────────────
@@ -325,7 +325,7 @@ public class InterfaceValidatorTests
         data.TextLocations["t"] = ("file", 2, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Equal(2, errors.Count);
-        Assert.All(errors, e => Assert.Equal("SCPT005", e.Code));
+        Assert.All(errors, e => Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, e.Code));
     }
 
     [Fact]
@@ -339,7 +339,7 @@ public class InterfaceValidatorTests
         data.ScriptLocations["foo"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT007", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
     }
 
     // ─── Overload-aware error messages ────────────────────────────────────────
@@ -370,7 +370,7 @@ public class InterfaceValidatorTests
         data.ScriptLocations["foo"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT007", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
         Assert.Contains("transition(string, decimal):void", errors[0].Message);
         Assert.Contains("transition(string, int):void", errors[0].Message);
     }
@@ -387,7 +387,7 @@ public class InterfaceValidatorTests
         data.ScriptLocations["foo"] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
-        Assert.Equal("SCPT008", errors[0].Code);
+        Assert.Equal(DiagnosticCodes.ArgumentCountMismatch, errors[0].Code);
         Assert.Contains("transition():void", errors[0].Message);
         Assert.Contains("transition(string, decimal):void", errors[0].Message);
     }

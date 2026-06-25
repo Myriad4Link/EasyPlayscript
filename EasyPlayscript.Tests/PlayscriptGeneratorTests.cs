@@ -363,7 +363,7 @@ public class PlayscriptGeneratorTests
                                ]
                                """;
         var diagnostics = GenerateDiagnostics(("dup", content));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
     }
 
     [Fact]
@@ -378,7 +378,7 @@ public class PlayscriptGeneratorTests
                                ]
                                """;
         var diagnostics = GenerateDiagnostics(("dup", content));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
     }
 
     [Fact]
@@ -395,7 +395,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
     }
 
     [Fact]
@@ -412,7 +412,7 @@ public class PlayscriptGeneratorTests
                              ]
                              """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT004");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
     }
 
     [Fact]
@@ -429,7 +429,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT004");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
     }
 
     [Fact]
@@ -441,7 +441,7 @@ public class PlayscriptGeneratorTests
                                ]
                                """;
         var diagnostics = GenerateDiagnostics(("bad", content));
-        Assert.Contains(diagnostics, d => d.Id is "SCPT002" or "SCPT003");
+        Assert.Contains(diagnostics, d => d.Id is DiagnosticCodes.UnexpectedToken or DiagnosticCodes.MismatchedInput);
     }
 
     // ─── Interface Collection ─────────────────────────────────────────────
@@ -469,7 +469,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
 
     // ─── SCPT005 Undeclared Consumer Call ─────────────────────────────────
@@ -483,7 +483,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT005");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
 
     [Fact]
@@ -496,7 +496,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
 
     [Fact]
@@ -509,7 +509,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
 
     [Fact]
@@ -521,7 +521,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT005");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
         Assert.Contains(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
@@ -538,7 +538,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT006");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
 
     [Fact]
@@ -552,7 +552,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT006");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
 
     [Fact]
@@ -566,7 +566,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT006");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
 
     [Fact]
@@ -580,7 +580,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT006");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
 
     // ─── SCPT007/SCPT008 Argument Type & Count Checking ─────────────────
@@ -595,7 +595,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     [Fact]
@@ -608,7 +608,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT008");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.ArgumentCountMismatch);
     }
 
     [Fact]
@@ -621,7 +621,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.Contains(diagnostics, d => d.Id == "SCPT007");
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.ArgumentTypeMismatch);
     }
 
     [Fact]
@@ -634,7 +634,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     [Fact]
@@ -647,7 +647,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     [Fact]
@@ -662,7 +662,7 @@ public class PlayscriptGeneratorTests
             ]
             """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is "SCPT007" or "SCPT008");
+        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     // ─── TextBlock Consumer Call ────────────────────────────────────────────
@@ -677,7 +677,7 @@ public class PlayscriptGeneratorTests
                                ]
                                """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
 
     // ─── Script Block Verification ─────────────────────────────────────────
@@ -706,7 +706,7 @@ public class PlayscriptGeneratorTests
                                ]
                                """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id == "SCPT005");
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
         var code = GenerateContextCode(("file", content));
         Assert.Contains("enum ScriptKey", code);
     }

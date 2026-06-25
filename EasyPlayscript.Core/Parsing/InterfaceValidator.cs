@@ -56,8 +56,8 @@ public static class InterfaceValidator
 
         return GetAllCalls(data)
             .Where(x => !declaredNames.Contains(x.call.Identifier))
-            .Select(x => new ValidationDiagnostic("SCPT005",
-                $"Consumer call \"{x.call.Identifier}\" is not declared in any interface",
+            .Select(x => new ValidationDiagnostic(DiagnosticCodes.UndeclaredConsumerCall,
+                DiagnosticCodes.UndeclaredConsumerCallFormat,
                 x.filePath, x.call.Line, x.call.Col, x.call.Identifier))
             .ToList();
     }
@@ -75,8 +75,8 @@ public static class InterfaceValidator
                 var sig =
                     $"{decl.Name}({string.Join(", ", decl.Parameters.Select(p =>
                         p.Type.ToString().ToLowerInvariant()))}):{decl.ReturnType.ToString().ToLowerInvariant()}";
-                errors.Add(new ValidationDiagnostic("SCPT006",
-                    $"Duplicate interface signature \"{sig}\"",
+                errors.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateInterfaceSignature,
+                    DiagnosticCodes.DuplicateInterfaceSignatureFormat,
                     decl.FilePath, decl.Line, decl.Col, sig));
             }
             else
@@ -148,8 +148,8 @@ public static class InterfaceValidator
         if (candidates.Count == 0)
         {
             var candidateSuffix = overloads.Count > 1 ? FormatCandidates(overloads) : "";
-            errors.Add(new ValidationDiagnostic("SCPT008",
-                $"\"{call.Identifier}\" does not match any overload with {argCount} argument(s){candidateSuffix}",
+            errors.Add(new ValidationDiagnostic(DiagnosticCodes.ArgumentCountMismatch,
+                DiagnosticCodes.ArgumentCountMismatchFormat,
                 filePath, call.Line, call.Col, call.Identifier, argCount, candidateSuffix));
             return;
         }
@@ -162,10 +162,8 @@ public static class InterfaceValidator
         var actualType = GetArgumentType(call.Arguments[mismatchIndex]);
         var expectedType = candidates[0].Parameters[mismatchIndex].Type;
         var candidateSuffix2 = candidates.Count > 1 ? FormatCandidates(candidates) : "";
-        errors.Add(new ValidationDiagnostic("SCPT007",
-            $"Argument {mismatchIndex + 1} of \"{call.Identifier}\": cannot" +
-            $" convert from {actualType?.ToString().ToLowerInvariant() ?? "unknown"} to" +
-            $" {expectedType.ToString().ToLowerInvariant()}{candidateSuffix2}",
+        errors.Add(new ValidationDiagnostic(DiagnosticCodes.ArgumentTypeMismatch,
+            DiagnosticCodes.ArgumentTypeMismatchFormat,
             filePath, call.Line, call.Col,
             mismatchIndex + 1, call.Identifier,
             actualType?.ToString().ToLowerInvariant() ?? "unknown",

@@ -33,7 +33,7 @@ public class PlayscriptBuildTask : Task
 
             foreach (var error in structureErrors)
             {
-                Log.LogError("Playscript", error.IsLexer ? "SCPT002" : "SCPT003", null,
+                Log.LogError("Playscript", error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, null,
                     filePath, error.Line, error.Col, 0, 0, error.Msg);
                 hasErrors = true;
             }

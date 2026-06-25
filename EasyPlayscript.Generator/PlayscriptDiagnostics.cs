@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EasyPlayscript.Parsing;
 using Microsoft.CodeAnalysis;
 
 namespace EasyPlayscript.Generator;
@@ -12,97 +13,97 @@ internal static class PlayscriptDiagnostics
     private const string Category = "Playscript";
 
     internal static readonly DiagnosticDescriptor UnexpectedToken = new(
-        "SCPT002",
+        DiagnosticCodes.UnexpectedToken,
         "Unexpected token",
-        "{0}",
+        DiagnosticCodes.UnexpectedTokenFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     internal static readonly DiagnosticDescriptor MismatchedInput = new(
-        "SCPT003",
+        DiagnosticCodes.MismatchedInput,
         "Mismatched input",
-        "{0}",
+        DiagnosticCodes.MismatchedInputFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     internal static readonly DiagnosticDescriptor DuplicateScriptName = new(
-        "SCPT004",
+        DiagnosticCodes.DuplicateScriptName,
         "Duplicate script/text name",
-        "Duplicate {0} name \"{1}\"",
+        DiagnosticCodes.DuplicateScriptNameFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     private static readonly DiagnosticDescriptor UndeclaredConsumerCall = new(
-        "SCPT005",
+        DiagnosticCodes.UndeclaredConsumerCall,
         "Undeclared consumer call",
-        "Consumer call \"{0}\" is not declared in any interface",
+        DiagnosticCodes.UndeclaredConsumerCallFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     private static readonly DiagnosticDescriptor DuplicateInterfaceSignature = new(
-        "SCPT006",
+        DiagnosticCodes.DuplicateInterfaceSignature,
         "Duplicate interface signature",
-        "Duplicate interface signature \"{0}\"",
+        DiagnosticCodes.DuplicateInterfaceSignatureFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     private static readonly DiagnosticDescriptor ArgumentTypeMismatch = new(
-        "SCPT007",
+        DiagnosticCodes.ArgumentTypeMismatch,
         "Argument type mismatch",
-        "Argument {0} of \"{1}\": cannot convert from {2} to {3}{4}",
+        DiagnosticCodes.ArgumentTypeMismatchFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     private static readonly DiagnosticDescriptor ArgumentCountMismatch = new(
-        "SCPT008",
+        DiagnosticCodes.ArgumentCountMismatch,
         "Argument count mismatch",
-        "\"{0}\" does not match any overload with {1} argument(s){2}",
+        DiagnosticCodes.ArgumentCountMismatchFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     private static readonly DiagnosticDescriptor MissingImplementation = new(
-        "SCPT009",
+        DiagnosticCodes.MissingImplementation,
         "Missing implementation",
-        "Interface \"{0}\" has no [Implementation] method{1}",
+        DiagnosticCodes.MissingImplementationFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     private static readonly DiagnosticDescriptor DuplicateImplementation = new(
-        "SCPT010",
+        DiagnosticCodes.DuplicateImplementation,
         "Duplicate implementation",
-        "Duplicate [Implementation] for \"{0}\" with {1} parameter(s) in {2}",
+        DiagnosticCodes.DuplicateImplementationFormat,
         Category,
         DiagnosticSeverity.Error,
         true);
 
     private static readonly DiagnosticDescriptor UnusedImplementation = new(
-        "SCPT011",
+        DiagnosticCodes.UnusedImplementation,
         "Unused implementation",
-        "[Implementation] method \"{0}.{1}\" is not used by any playscript",
+        DiagnosticCodes.UnusedImplementationFormat,
         Category,
         DiagnosticSeverity.Warning,
         true);
 
     private static readonly Dictionary<string, DiagnosticDescriptor> ByCodeMap = new()
     {
-        ["SCPT002"] = UnexpectedToken,
-        ["SCPT003"] = MismatchedInput,
-        ["SCPT004"] = DuplicateScriptName,
-        ["SCPT005"] = UndeclaredConsumerCall,
-        ["SCPT006"] = DuplicateInterfaceSignature,
-        ["SCPT007"] = ArgumentTypeMismatch,
-        ["SCPT008"] = ArgumentCountMismatch,
-        ["SCPT009"] = MissingImplementation,
-        ["SCPT010"] = DuplicateImplementation,
-        ["SCPT011"] = UnusedImplementation
+        [DiagnosticCodes.UnexpectedToken] = UnexpectedToken,
+        [DiagnosticCodes.MismatchedInput] = MismatchedInput,
+        [DiagnosticCodes.DuplicateScriptName] = DuplicateScriptName,
+        [DiagnosticCodes.UndeclaredConsumerCall] = UndeclaredConsumerCall,
+        [DiagnosticCodes.DuplicateInterfaceSignature] = DuplicateInterfaceSignature,
+        [DiagnosticCodes.ArgumentTypeMismatch] = ArgumentTypeMismatch,
+        [DiagnosticCodes.ArgumentCountMismatch] = ArgumentCountMismatch,
+        [DiagnosticCodes.MissingImplementation] = MissingImplementation,
+        [DiagnosticCodes.DuplicateImplementation] = DuplicateImplementation,
+        [DiagnosticCodes.UnusedImplementation] = UnusedImplementation
     };
 
     internal static DiagnosticDescriptor GetDescriptor(string code)

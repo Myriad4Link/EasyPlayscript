@@ -17,9 +17,9 @@ public static class ImplementationValidator
             var key = $"{iface.Name}:{iface.Parameters.Count}";
             if (!implLookup.Contains(key))
             {
-                errors.Add(new ValidationDiagnostic("SCPT009",
-                    $"Interface \"{iface.Name}\" has no [Implementation] method",
-                    iface.FilePath, iface.Line, iface.Col, iface.Name, ""));
+                errors.Add(new ValidationDiagnostic(DiagnosticCodes.MissingImplementation,
+                    DiagnosticCodes.MissingImplementationFormat,
+                    iface.FilePath, iface.Line, iface.Col, iface.Name));
             }
         }
 
@@ -46,8 +46,8 @@ public static class ImplementationValidator
 
                 foreach (var impl in group.Skip(1))
                 {
-                    errors.Add(new ValidationDiagnostic("SCPT010",
-                        $"Duplicate [Implementation] for \"{name}\" with {paramCount} parameter(s) in {impl.ClassName}",
+                    errors.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateImplementation,
+                        DiagnosticCodes.DuplicateImplementationFormat,
                         impl.FilePath, impl.Line, 0, name, paramCount, impl.ClassName));
                 }
             }
@@ -79,8 +79,8 @@ public static class ImplementationValidator
         {
             if (!usedNames.Contains(impl.EffectiveName))
             {
-                warnings.Add(new ValidationDiagnostic("SCPT011",
-                    $"[Implementation] method \"{impl.ClassName}.{impl.MethodName}\" is not used by any playscript",
+                warnings.Add(new ValidationDiagnostic(DiagnosticCodes.UnusedImplementation,
+                    DiagnosticCodes.UnusedImplementationFormat,
                     impl.FilePath, impl.Line, 0, impl.ClassName, impl.MethodName));
             }
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using EasyPlayscript.Generator;
 using EasyPlayscript.Parsing;
 using EasyPlayscript.Tests.Utils;
 using Microsoft.CodeAnalysis;

@@ -4,7 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Generator;
 
 /// <summary>
 ///     Source generator that emits data classes (<c>Script</c>, <c>Text</c>)

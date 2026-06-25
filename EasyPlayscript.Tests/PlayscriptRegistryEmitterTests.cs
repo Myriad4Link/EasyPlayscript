@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EasyPlayscript.Generator;
 using EasyPlayscript.Parsing;
 using Xunit;
 

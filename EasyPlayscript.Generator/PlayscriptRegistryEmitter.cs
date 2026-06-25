@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using EasyPlayscript.Parsing;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Generator;
 
 public static class PlayscriptRegistryEmitter
 {

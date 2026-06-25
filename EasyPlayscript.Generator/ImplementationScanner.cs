@@ -4,7 +4,7 @@ using EasyPlayscript.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Generator;
 
 internal static class ImplementationScanner
 {

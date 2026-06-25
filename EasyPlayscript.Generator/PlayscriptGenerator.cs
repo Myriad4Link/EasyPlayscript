@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Generator;
 
 [Generator]
 public class PlayscriptGenerator : IIncrementalGenerator

@@ -1,4 +1,5 @@
 using System.Linq;
+using EasyPlayscript.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;

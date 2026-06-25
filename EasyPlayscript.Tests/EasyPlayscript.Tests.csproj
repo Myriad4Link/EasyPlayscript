@@ -21,6 +21,6 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj" />
-        <ProjectReference Include="..\EasyPlayscript\EasyPlayscript.csproj" />
+        <ProjectReference Include="..\EasyPlayscript.Generator\EasyPlayscript.Generator.csproj" />
     </ItemGroup>
 </Project>

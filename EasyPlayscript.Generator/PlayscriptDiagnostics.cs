@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Generator;
 
 /// <summary>
 ///     Diagnostic descriptors for playscript parsing.

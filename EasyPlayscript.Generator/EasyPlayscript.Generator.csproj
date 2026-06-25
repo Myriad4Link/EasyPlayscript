@@ -6,8 +6,8 @@
         <LangVersion>latest</LangVersion>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
-        <RootNamespace>EasyPlayscript</RootNamespace>
-        <PackageId>EasyPlayscript</PackageId>
+        <RootNamespace>EasyPlayscript.Generator</RootNamespace>
+        <PackageId>EasyPlayscript.Generator</PackageId>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1"/>

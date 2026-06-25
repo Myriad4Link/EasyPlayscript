@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Generator;
 
 public static class PlayscriptContextEmitter
 {

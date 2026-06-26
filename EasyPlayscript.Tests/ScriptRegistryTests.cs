@@ -109,4 +109,24 @@ public class ScriptRegistryTests
         item.Result = "Player";
         Assert.Equal("Player", item.Result);
     }
+
+    [Fact]
+    public void GeneratesText_WithRenderRegistryMethod()
+    {
+        var runResult = RunGenerator();
+        var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
+        var textText = textFile.GetText().ToString();
+
+        Assert.Contains("public string Render(PlayscriptRegistry registry)", textText);
+    }
+
+    [Fact]
+    public void GeneratesText_WithRenderContextMethod()
+    {
+        var runResult = RunGenerator();
+        var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
+        var textText = textFile.GetText().ToString();
+
+        Assert.Contains("public string Render(PlayscriptContext context)", textText);
+    }
 }

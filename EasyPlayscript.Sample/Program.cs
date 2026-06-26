@@ -82,10 +82,7 @@ public static class Program
                             break;
                         case ConsumerCallItem call:
                             registry.DispatchCall(call);
-                            if (call.Result != null)
-                                parts.Add($"[{call.Result}]");
-                            else
-                                parts.Add($"[@{call.Identifier}]");
+                            parts.Add(call.Result != null ? $"[{call.Result}]" : $"[@{call.Identifier}]");
                             break;
                     }
 
@@ -96,28 +93,6 @@ public static class Program
 
     private static void PrintText(Text text, PlayscriptRegistry registry)
     {
-        foreach (var line in text.Block.Lines)
-        {
-            if (line.Items.Count == 0)
-            {
-                Console.WriteLine("    (blank)");
-                continue;
-            }
-
-            var parts = new List<string>();
-            foreach (var item in line.Items)
-                switch (item)
-                {
-                    case TextItem textItem:
-                        parts.Add(textItem.Text);
-                        break;
-                    case ConsumerCallItem call:
-                        registry.DispatchCall(call);
-                        parts.Add(call.Result != null ? $"[{call.Result}]" : $"[@{call.Identifier}]");
-                        break;
-                }
-
-            Console.WriteLine($"    {string.Join("", parts)}");
-        }
+        Console.WriteLine(text.Render(registry));
     }
 }

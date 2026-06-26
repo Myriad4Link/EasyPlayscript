@@ -49,13 +49,13 @@ public static class PlayscriptContextEmitter
             "private readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts;");
         indented.WriteLine(
             "private readonly System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>> _texts;");
-        indented.WriteLine("private readonly PlayscriptRegistry _registry;");
+        indented.WriteLine("public PlayscriptRegistry Registry { get; }");
         indented.WriteLine();
 
         indented.WriteLine("public PlayscriptContext(PlayscriptRegistry registry)");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("_registry = registry ?? throw new ArgumentNullException(nameof(registry));");
+        indented.WriteLine("Registry = registry ?? throw new ArgumentNullException(nameof(registry));");
         indented.WriteLine("_scripts = new System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");

@@ -247,6 +247,13 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
+    public void GeneratedCode_HasRegistryProperty()
+    {
+        var code = GenerateContextCode(("Example", ScriptBlockExample));
+        Assert.Contains("public PlayscriptRegistry Registry", code);
+    }
+
+    [Fact]
     public void GeneratedCode_EmbedsOutputPath()
     {
         var code = GenerateContextCode(("Example", ScriptBlockExample));

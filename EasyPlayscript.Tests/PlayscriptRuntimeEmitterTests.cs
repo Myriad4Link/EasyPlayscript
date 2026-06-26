@@ -57,7 +57,7 @@ public class PlayscriptRuntimeEmitterTests
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
         Assert.Contains("public override PlayscriptRuntimeSession CreateChild()", code);
-        Assert.Contains("child.SetParent(this)", code);
+        Assert.Contains("return new PlayscriptRuntimeSession(Registry, this)", code);
     }
 
     // ── Fields ──

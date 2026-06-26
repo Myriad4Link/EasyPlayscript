@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 
 namespace EasyPlayscript;
 
+// ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class PlayscriptSessionScope
 {
     private readonly ConcurrentDictionary<Type, object> _services = new();
@@ -13,6 +14,7 @@ public class PlayscriptSessionScope
     {
     }
 
+    // ReSharper disable once MemberCanBePrivate.Global
     internal PlayscriptSessionScope(PlayscriptSessionScope? parent)
     {
         Parent = parent;
@@ -36,6 +38,5 @@ public class PlayscriptSessionScope
         return Parent?.Get<T>();
     }
 
-    public virtual PlayscriptSessionScope CreateChild()
-        => new PlayscriptSessionScope(this);
+    public virtual PlayscriptSessionScope CreateChild() => new(this);
 }

@@ -48,10 +48,9 @@ public static class PlayscriptRegistryEmitter
                 if (impl == null) continue;
 
                 indented.Indent++;
-                if (hasMultipleOverloads)
-                    indented.WriteLine($"case \"{iface.Name}\" when call.Arguments.Count == {iface.Parameters.Count}:");
-                else
-                    indented.WriteLine($"case \"{iface.Name}\":");
+                indented.WriteLine(hasMultipleOverloads
+                    ? $"case \"{iface.Name}\" when call.Arguments.Count == {iface.Parameters.Count}:"
+                    : $"case \"{iface.Name}\":");
                 indented.WriteLine("{");
                 indented.Indent++;
 
@@ -65,10 +64,9 @@ public static class PlayscriptRegistryEmitter
                 indented.WriteLine($"var {localName} = session.Get<{impl.ClassName}>();");
                 indented.WriteLine(
                     $"if ({localName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} was not registered before script execution.\");");
-                if (iface.ReturnType == InterfaceType.Void)
-                    indented.WriteLine($"{localName}.{impl.MethodName}({argList});");
-                else
-                    indented.WriteLine($"call.Result = {localName}.{impl.MethodName}({argList});");
+                indented.WriteLine(iface.ReturnType == InterfaceType.Void
+                    ? $"{localName}.{impl.MethodName}({argList});"
+                    : $"call.Result = {localName}.{impl.MethodName}({argList});");
 
                 indented.WriteLine("break;");
                 indented.Indent--;
@@ -107,7 +105,7 @@ public static class PlayscriptRegistryEmitter
 
     private static string CamelCase(string qualifiedName)
     {
-        var parts = qualifiedName.Split(new[] { "::", "." }, StringSplitOptions.RemoveEmptyEntries);
+        var parts = qualifiedName.Split(["::", "."], StringSplitOptions.RemoveEmptyEntries);
         var name = parts.Last();
         if (name.Length == 0) return name;
         return char.ToLowerInvariant(name[0]) + name.Substring(1);

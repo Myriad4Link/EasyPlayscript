@@ -3,7 +3,6 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using EasyPlayscript.Parsing;
 
 namespace EasyPlayscript.Generator;
 
@@ -70,14 +69,27 @@ public static class PlayscriptRuntimeEmitter
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
+        indented.WriteLine("private PlayscriptRuntimeSession(PlayscriptRegistry registry, PlayscriptSessionScope parent) : base(parent)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("Registry = registry;");
+        indented.WriteLine("_scripts = new System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>>(");
+        indented.Indent++;
+        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
+        indented.Indent--;
+        indented.WriteLine("_texts = new System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>>(");
+        indented.Indent++;
+        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
+        indented.Indent--;
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
 
         // ── CreateChild override ──
         indented.WriteLine("public override PlayscriptRuntimeSession CreateChild()");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("var child = new PlayscriptRuntimeSession(Registry);");
-        indented.WriteLine("child.SetParent(this);");
-        indented.WriteLine("return child;");
+        indented.WriteLine("return new PlayscriptRuntimeSession(Registry, this);");
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();

@@ -16,11 +16,9 @@ public static class ImplementationValidator
         {
             var key = $"{iface.Name}:{iface.Parameters.Count}";
             if (!implLookup.Contains(key))
-            {
                 errors.Add(new ValidationDiagnostic(DiagnosticCodes.MissingImplementation,
                     DiagnosticCodes.MissingImplementationFormat,
                     iface.FilePath, iface.Line, iface.Col, iface.Name));
-            }
         }
 
         return errors;
@@ -45,11 +43,9 @@ public static class ImplementationValidator
                 var classList = string.Join(", ", classNames);
 
                 foreach (var impl in group.Skip(1))
-                {
                     errors.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateImplementation,
                         DiagnosticCodes.DuplicateImplementationFormat,
                         impl.FilePath, impl.Line, 0, name, paramCount, impl.ClassName));
-                }
             }
         }
 
@@ -76,14 +72,10 @@ public static class ImplementationValidator
         }
 
         foreach (var impl in data.Implementations)
-        {
             if (!usedNames.Contains(impl.EffectiveName))
-            {
                 warnings.Add(new ValidationDiagnostic(DiagnosticCodes.UnusedImplementation,
                     DiagnosticCodes.UnusedImplementationFormat,
                     impl.FilePath, impl.Line, 0, impl.ClassName, impl.MethodName));
-            }
-        }
 
         return warnings;
     }

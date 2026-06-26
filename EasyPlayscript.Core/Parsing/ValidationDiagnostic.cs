@@ -1,5 +1,3 @@
-using System;
-
 namespace EasyPlayscript.Parsing;
 
 public readonly struct ValidationDiagnostic(
@@ -23,6 +21,8 @@ public readonly struct ValidationDiagnostic(
             : Format;
 
     public static ValidationDiagnostic CreateRaw(
-        string code, string message, string filePath, int line, int col) =>
-        new(code, message, filePath, line, col);
+        string code, string message, string filePath, int line, int col)
+    {
+        return new ValidationDiagnostic(code, message, filePath, line, col);
+    }
 }

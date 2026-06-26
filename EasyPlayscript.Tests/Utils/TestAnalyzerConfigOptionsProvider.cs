@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -22,10 +21,14 @@ public class TestAnalyzerConfigOptionsProvider : AnalyzerConfigOptionsProvider
     public override AnalyzerConfigOptions GlobalOptions => new TestAnalyzerConfigOptions(_globalOptions);
 
     public override AnalyzerConfigOptions GetOptions(AdditionalText textFile)
-        => new TestAnalyzerConfigOptions(ImmutableDictionary<string, string>.Empty);
+    {
+        return new TestAnalyzerConfigOptions(ImmutableDictionary<string, string>.Empty);
+    }
 
     public override AnalyzerConfigOptions GetOptions(SyntaxTree tree)
-        => new TestAnalyzerConfigOptions(ImmutableDictionary<string, string>.Empty);
+    {
+        return new TestAnalyzerConfigOptions(ImmutableDictionary<string, string>.Empty);
+    }
 
     private class TestAnalyzerConfigOptions : AnalyzerConfigOptions
     {

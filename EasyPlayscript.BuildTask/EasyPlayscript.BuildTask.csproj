@@ -15,20 +15,21 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj" />
+        <ProjectReference Include="..\EasyPlayscript.Core\EasyPlayscript.Core.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.7.1" PrivateAssets="all" />
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0"/>
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.7.1" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="build\*.targets" Pack="true" PackagePath="build\" />
-        <None Include="build\*.targets" Pack="true" PackagePath="buildTransitive\" />
-        <None Include="$(OutputPath)\EasyPlayscript.Core.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false" />
-        <None Include="$(OutputPath)\Antlr4.Runtime.Standard.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false" />
-        <None Include="$(OutputPath)\MessagePack.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false" />
-        <None Include="$(OutputPath)\MessagePack.Annotations.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false" />
+        <None Include="build\*.targets" Pack="true" PackagePath="build\"/>
+        <None Include="build\*.targets" Pack="true" PackagePath="buildTransitive\"/>
+        <None Include="$(OutputPath)\EasyPlayscript.Core.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false"/>
+        <None Include="$(OutputPath)\Antlr4.Runtime.Standard.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false"/>
+        <None Include="$(OutputPath)\MessagePack.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false"/>
+        <None Include="$(OutputPath)\MessagePack.Annotations.dll" Pack="true" PackagePath="tools/netstandard2.0/" Visible="false"/>
     </ItemGroup>
 
 </Project>

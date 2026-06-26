@@ -20,7 +20,7 @@ public class PlayscriptRegistryEmitterTests
     public void Generate_Empty_HasDispatchCall()
     {
         var code = PlayscriptRegistryEmitter.Generate(EmptyData);
-        Assert.Contains("internal void DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)", code);
+        Assert.Contains("internal void DispatchCall(ConsumerCallItem call, TransientNodeContext context)", code);
     }
 
     [Fact]
@@ -62,8 +62,8 @@ public class PlayscriptRegistryEmitterTests
         data.Interfaces.Add(new InterfaceDeclaration("play",
             new List<InterfaceParameter>
             {
-                new InterfaceParameter("sound", InterfaceType.String),
-                new InterfaceParameter("volume", InterfaceType.Decimal)
+                new("sound", InterfaceType.String),
+                new("volume", InterfaceType.Decimal)
             },
             InterfaceType.Void, 1, 0));
 
@@ -135,14 +135,14 @@ public class PlayscriptRegistryEmitterTests
         data.Interfaces.Add(new InterfaceDeclaration("play",
             new List<InterfaceParameter>
             {
-                new InterfaceParameter("sound", InterfaceType.String)
+                new("sound", InterfaceType.String)
             },
             InterfaceType.Void, 1, 0));
         data.Interfaces.Add(new InterfaceDeclaration("play",
             new List<InterfaceParameter>
             {
-                new InterfaceParameter("sound", InterfaceType.String),
-                new InterfaceParameter("volume", InterfaceType.Decimal)
+                new("sound", InterfaceType.String),
+                new("volume", InterfaceType.Decimal)
             },
             InterfaceType.Void, 2, 0));
 
@@ -190,7 +190,7 @@ public class PlayscriptRegistryEmitterTests
         data.Interfaces.Add(new InterfaceDeclaration("play",
             new List<InterfaceParameter>
             {
-                new InterfaceParameter("sound", InterfaceType.String)
+                new("sound", InterfaceType.String)
             },
             InterfaceType.Void, 1, 0));
 
@@ -213,8 +213,8 @@ public class PlayscriptRegistryEmitterTests
         data.Interfaces.Add(new InterfaceDeclaration("set",
             new List<InterfaceParameter>
             {
-                new InterfaceParameter("enabled", InterfaceType.Bool),
-                new InterfaceParameter("count", InterfaceType.Int)
+                new("enabled", InterfaceType.Bool),
+                new("count", InterfaceType.Int)
             },
             InterfaceType.Void, 1, 0));
 
@@ -297,7 +297,7 @@ public class PlayscriptRegistryEmitterTests
     public void DispatchCall_HasContextParameter()
     {
         var code = PlayscriptRegistryEmitter.Generate(EmptyData);
-        Assert.Contains("DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)", code);
+        Assert.Contains("DispatchCall(ConsumerCallItem call, TransientNodeContext context)", code);
     }
 
     [Fact]

@@ -6,6 +6,5 @@ namespace EasyPlayscript;
 [MessagePackObject]
 public class Paragraph
 {
-    [Key(0)]
-    public List<Line> Lines { get; set; } = [];
+    [Key(0)] public List<Line> Lines { get; set; } = [];
 }

@@ -6,20 +6,20 @@
         <RootNamespace>EasyPlayscript.Sample</RootNamespace>
         <PlayscriptAesKey>dev-key-change-me</PlayscriptAesKey>
 
-<!--        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>-->
-<!--        <CompilerGeneratedFilesOutputPath>obj\Generated</CompilerGeneratedFilesOutputPath>-->
+        <!--        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>-->
+        <!--        <CompilerGeneratedFilesOutputPath>obj\Generated</CompilerGeneratedFilesOutputPath>-->
     </PropertyGroup>
     <ItemGroup>
-        <CompilerVisibleProperty Include="PlayscriptOutputPath" />
-        <CompilerVisibleProperty Include="PlayscriptAesKey" />
+        <CompilerVisibleProperty Include="PlayscriptOutputPath"/>
+        <CompilerVisibleProperty Include="PlayscriptAesKey"/>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="EasyPlayscript.Core" Version="1.0.0" />
-        <PackageReference Include="EasyPlayscript.Generator" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-        <PackageReference Include="EasyPlayscript.BuildTask" Version="1.0.0" />
+        <PackageReference Include="EasyPlayscript.Core" Version="1.0.0"/>
+        <PackageReference Include="EasyPlayscript.Generator" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <PackageReference Include="EasyPlayscript.BuildTask" Version="1.0.0"/>
     </ItemGroup>
     <ItemGroup>
-        <ScptFiles Include="scripts\**\*.scpt" />
-        <AdditionalFiles Include="@(ScptFiles)" />
+        <ScptFiles Include="scripts\**\*.scpt"/>
+        <AdditionalFiles Include="@(ScptFiles)"/>
     </ItemGroup>
 </Project>

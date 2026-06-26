@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
@@ -15,46 +14,46 @@ namespace EasyPlayscript.Tests;
 public class PlayscriptGeneratorTests
 {
     private const string ScriptBlockExample = """
-        interface transition(type: string) : void
-        script load_tooltip[
-        你好。
-        这里是……？
+                                              interface transition(type: string) : void
+                                              script load_tooltip[
+                                              你好。
+                                              这里是……？
 
-        啊、您好！
+                                              啊、您好！
 
-        请问你是？
+                                              请问你是？
 
-        @transition("fade_out")
-        ]
-        """;
+                                              @transition("fade_out")
+                                              ]
+                                              """;
 
     private const string TextBlockExample = """
-        text intro_text[
-        你好，欢迎来到这个世界。
-        ]
-        """;
+                                            text intro_text[
+                                            你好，欢迎来到这个世界。
+                                            ]
+                                            """;
 
     private const string TestOutputPath = "test-scripts.bin";
     private const string TestAesKey = "test-key-1234567";
 
     private const string ImplementationAttributeSource = """
-        namespace EasyPlayscript
-        {
-            public enum ActionScope
-            {
-                GlobalService,
-                TransientNode
-            }
+                                                         namespace EasyPlayscript
+                                                         {
+                                                             public enum ActionScope
+                                                             {
+                                                                 GlobalService,
+                                                                 TransientNode
+                                                             }
 
-            [System.AttributeUsage(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-            public sealed class ImplementationAttribute : System.Attribute
-            {
-                public string? Alias { get; }
-                public ActionScope Scope { get; set; } = ActionScope.GlobalService;
-                public ImplementationAttribute(string? alias = null) => Alias = alias;
-            }
-        }
-        """;
+                                                             [System.AttributeUsage(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+                                                             public sealed class ImplementationAttribute : System.Attribute
+                                                             {
+                                                                 public string? Alias { get; }
+                                                                 public ActionScope Scope { get; set; } = ActionScope.GlobalService;
+                                                                 public ImplementationAttribute(string? alias = null) => Alias = alias;
+                                                             }
+                                                         }
+                                                         """;
 
     private static string GenerateRegistryCode(params (string name, string content)[] files)
     {
@@ -127,7 +126,7 @@ public class PlayscriptGeneratorTests
         var references = new[]
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location)
         };
         var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests), [tree], references);
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out var diagnostics);
@@ -150,7 +149,8 @@ public class PlayscriptGeneratorTests
         return GenerateDiagnosticsWithKey(TestAesKey, files);
     }
 
-    private static ImmutableArray<Diagnostic> GenerateDiagnosticsWithKey(string aesKey, params (string name, string content)[] files)
+    private static ImmutableArray<Diagnostic> GenerateDiagnosticsWithKey(string aesKey,
+        params (string name, string content)[] files)
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
             ("build_property.PlayscriptOutputPath", TestOutputPath),
@@ -353,11 +353,11 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_HasDispatchCall()
     {
         var content = """
-            interface transition(type: string) : void
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
+                      interface transition(type: string) : void
+                      script foo[
+                      @transition("fade_out")
+                      ]
+                      """;
         var code = GenerateRegistryCode(("file", content));
         Assert.Contains("DispatchCall", code);
         Assert.Contains("PlayscriptRegistry", code);
@@ -399,15 +399,15 @@ public class PlayscriptGeneratorTests
     public void DuplicateScriptName_CrossFile_ReportsSCPT004()
     {
         var fileA = """
-            script shared[
-            From file A
-            ]
-            """;
+                    script shared[
+                    From file A
+                    ]
+                    """;
         var fileB = """
-            script shared[
-            From file B
-            ]
-            """;
+                    script shared[
+                    From file B
+                    ]
+                    """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
         Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
     }
@@ -433,15 +433,15 @@ public class PlayscriptGeneratorTests
     public void NoDuplicate_NoSCPT004()
     {
         var fileA = """
-            script alpha[
-            Alpha
-            ]
-            """;
+                    script alpha[
+                    Alpha
+                    ]
+                    """;
         var fileB = """
-            script beta[
-            Beta
-            ]
-            """;
+                    script beta[
+                    Beta
+                    ]
+                    """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
         Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
     }
@@ -464,11 +464,11 @@ public class PlayscriptGeneratorTests
     public void InterfaceDeclaration_NoConsumerCalls_NoError()
     {
         var content = """
-            interface transition(type: string) : void
-            script foo[
-            Hello world
-            ]
-            """;
+                      interface transition(type: string) : void
+                      script foo[
+                      Hello world
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
@@ -478,10 +478,10 @@ public class PlayscriptGeneratorTests
     {
         var fileA = "interface transition(type: string) : void";
         var fileB = """
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
+                    script foo[
+                    @transition("fade_out")
+                    ]
+                    """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
         Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
@@ -492,10 +492,10 @@ public class PlayscriptGeneratorTests
     public void UndeclaredConsumerCall_ReportsSCPT005()
     {
         var content = """
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
+                      script foo[
+                      @transition("fade_out")
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
@@ -504,11 +504,11 @@ public class PlayscriptGeneratorTests
     public void DeclaredConsumerCall_NoSCPT005()
     {
         var content = """
-            interface transition(type: string) : void
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
+                      interface transition(type: string) : void
+                      script foo[
+                      @transition("fade_out")
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
@@ -518,10 +518,10 @@ public class PlayscriptGeneratorTests
     {
         var fileA = "interface transition(type: string) : void";
         var fileB = """
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
+                    script foo[
+                    @transition("fade_out")
+                    ]
+                    """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
         Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
     }
@@ -530,10 +530,10 @@ public class PlayscriptGeneratorTests
     public void UndeclaredConsumerCall_PreventsCodeEmission()
     {
         var content = """
-            script foo[
-            @undeclared("x")
-            ]
-            """;
+                      script foo[
+                      @undeclared("x")
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall);
         Assert.Contains(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
@@ -545,12 +545,12 @@ public class PlayscriptGeneratorTests
     public void DuplicateInterfaceSignature_SameFile_ReportsSCPT006()
     {
         var content = """
-            interface transition(type: string) : void
-            interface transition(type: string) : void
-            script foo[
-            @transition("x")
-            ]
-            """;
+                      interface transition(type: string) : void
+                      interface transition(type: string) : void
+                      script foo[
+                      @transition("x")
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
@@ -560,11 +560,11 @@ public class PlayscriptGeneratorTests
     {
         var fileA = "interface transition(type: string) : void";
         var fileB = """
-            interface transition(type: string) : void
-            script foo[
-            @transition("x")
-            ]
-            """;
+                    interface transition(type: string) : void
+                    script foo[
+                    @transition("x")
+                    ]
+                    """;
         var diagnostics = GenerateDiagnostics(("fileA", fileA), ("fileB", fileB));
         Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
@@ -573,12 +573,12 @@ public class PlayscriptGeneratorTests
     public void SameNameDifferentSignature_NoSCPT006()
     {
         var content = """
-            interface transition(type: string) : void
-            interface transition(type: string, duration: decimal) : void
-            script foo[
-            @transition("x")
-            ]
-            """;
+                      interface transition(type: string) : void
+                      interface transition(type: string, duration: decimal) : void
+                      script foo[
+                      @transition("x")
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
@@ -587,12 +587,12 @@ public class PlayscriptGeneratorTests
     public void SameNameDifferentReturnType_IsDifferentSignature()
     {
         var content = """
-            interface f() : void
-            interface f() : string
-            script foo[
-            @f()
-            ]
-            """;
+                      interface f() : void
+                      interface f() : string
+                      script foo[
+                      @f()
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.DuplicateInterfaceSignature);
     }
@@ -603,24 +603,25 @@ public class PlayscriptGeneratorTests
     public void ArgumentTypeMatch_NoError()
     {
         var content = """
-            interface transition(type: string, duration: decimal) : void
-            script foo[
-            @transition("fade_out", 1.0)
-            ]
-            """;
+                      interface transition(type: string, duration: decimal) : void
+                      script foo[
+                      @transition("fade_out", 1.0)
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
+        Assert.DoesNotContain(diagnostics,
+            d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     [Fact]
     public void ArgumentCountMismatch_ReportsSCPT008()
     {
         var content = """
-            interface transition(type: string, duration: decimal) : void
-            script foo[
-            @transition("fade_out")
-            ]
-            """;
+                      interface transition(type: string, duration: decimal) : void
+                      script foo[
+                      @transition("fade_out")
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.ArgumentCountMismatch);
     }
@@ -629,11 +630,11 @@ public class PlayscriptGeneratorTests
     public void ArgumentTypeMismatch_ReportsSCPT007()
     {
         var content = """
-            interface transition(type: string, duration: decimal) : void
-            script foo[
-            @transition("fade_out", "not_a_number")
-            ]
-            """;
+                      interface transition(type: string, duration: decimal) : void
+                      script foo[
+                      @transition("fade_out", "not_a_number")
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
         Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.ArgumentTypeMismatch);
     }
@@ -642,41 +643,44 @@ public class PlayscriptGeneratorTests
     public void IntToDecimalCoercion_NoError()
     {
         var content = """
-            interface transition(type: string, duration: decimal) : void
-            script foo[
-            @transition("fade_out", 1)
-            ]
-            """;
+                      interface transition(type: string, duration: decimal) : void
+                      script foo[
+                      @transition("fade_out", 1)
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
+        Assert.DoesNotContain(diagnostics,
+            d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     [Fact]
     public void ZeroArgumentCall_MatchesZeroParamInterface()
     {
         var content = """
-            interface on_complete() : void
-            script foo[
-            @on_complete()
-            ]
-            """;
+                      interface on_complete() : void
+                      script foo[
+                      @on_complete()
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
+        Assert.DoesNotContain(diagnostics,
+            d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     [Fact]
     public void OverloadedInterface_ResolvesCorrectly()
     {
         var content = """
-            interface play(sound: string) : void
-            interface play(sound: string, volume: decimal) : void
-            script foo[
-            @play("bgm")
-            @play("sfx", 0.5)
-            ]
-            """;
+                      interface play(sound: string) : void
+                      interface play(sound: string, volume: decimal) : void
+                      script foo[
+                      @play("bgm")
+                      @play("sfx", 0.5)
+                      ]
+                      """;
         var diagnostics = GenerateDiagnostics(("file", content));
-        Assert.DoesNotContain(diagnostics, d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
+        Assert.DoesNotContain(diagnostics,
+            d => d.Id is DiagnosticCodes.ArgumentTypeMismatch or DiagnosticCodes.ArgumentCountMismatch);
     }
 
     // ─── TextBlock Consumer Call ────────────────────────────────────────────
@@ -731,15 +735,15 @@ public class PlayscriptGeneratorTests
     public void ImplementationScanner_BasicVoidMethod_GeneratesRegisterAndDispatch()
     {
         var source = ImplementationAttributeSource + """
-            namespace TestNs
-            {
-                public class Effects
-                {
-                    [EasyPlayscript.Implementation]
-                    public void fade() { }
-                }
-            }
-            """;
+                                                     namespace TestNs
+                                                     {
+                                                         public class Effects
+                                                         {
+                                                             [EasyPlayscript.Implementation]
+                                                             public void fade() { }
+                                                         }
+                                                     }
+                                                     """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
         Assert.Contains("Register(global::TestNs.Effects instance)", code);
@@ -750,15 +754,15 @@ public class PlayscriptGeneratorTests
     public void ImplementationScanner_StringParam_TypeMapped()
     {
         var source = ImplementationAttributeSource + """
-            namespace TestNs
-            {
-                public class Effects
-                {
-                    [EasyPlayscript.Implementation]
-                    public void fade(string type) { }
-                }
-            }
-            """;
+                                                     namespace TestNs
+                                                     {
+                                                         public class Effects
+                                                         {
+                                                             [EasyPlayscript.Implementation]
+                                                             public void fade(string type) { }
+                                                         }
+                                                     }
+                                                     """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade(type: string) : void\nscript s[\n@fade(\"out\")\n]"));
         Assert.Contains("((StringArgument)call.Arguments[0]).Value", code);
@@ -768,17 +772,18 @@ public class PlayscriptGeneratorTests
     public void ImplementationScanner_AllPrimitiveParams_TypeMapped()
     {
         var source = ImplementationAttributeSource + """
-            namespace TestNs
-            {
-                public class Effects
-                {
-                    [EasyPlayscript.Implementation]
-                    public void config(string name, int count, double volume, bool enabled) { }
-                }
-            }
-            """;
+                                                     namespace TestNs
+                                                     {
+                                                         public class Effects
+                                                         {
+                                                             [EasyPlayscript.Implementation]
+                                                             public void config(string name, int count, double volume, bool enabled) { }
+                                                         }
+                                                     }
+                                                     """;
         var code = GenerateRegistryCodeWithSource(source,
-            ("cfg", "interface config(name: string, count: int, volume: decimal, enabled: bool) : void\nscript s[\n@config(\"x\", 1, 1.0, true)\n]"));
+            ("cfg",
+                "interface config(name: string, count: int, volume: decimal, enabled: bool) : void\nscript s[\n@config(\"x\", 1, 1.0, true)\n]"));
         Assert.Contains("((StringArgument)call.Arguments[0]).Value", code);
         Assert.Contains("((IntArgument)call.Arguments[1]).Value", code);
         Assert.Contains("((DoubleArgument)call.Arguments[2]).Value", code);
@@ -789,15 +794,15 @@ public class PlayscriptGeneratorTests
     public void ImplementationScanner_NonVoidReturn_StoresResult()
     {
         var source = ImplementationAttributeSource + """
-            namespace TestNs
-            {
-                public class Effects
-                {
-                    [EasyPlayscript.Implementation]
-                    public string get_name() => "test";
-                }
-            }
-            """;
+                                                     namespace TestNs
+                                                     {
+                                                         public class Effects
+                                                         {
+                                                             [EasyPlayscript.Implementation]
+                                                             public string get_name() => "test";
+                                                         }
+                                                     }
+                                                     """;
         var code = GenerateRegistryCodeWithSource(source,
             ("gn", "interface get_name() : string\nscript s[\n@get_name()\n]"));
         Assert.Contains("call.Result = ", code);
@@ -807,15 +812,15 @@ public class PlayscriptGeneratorTests
     public void ImplementationScanner_Alias_UsesAliasForCase()
     {
         var source = ImplementationAttributeSource + """
-            namespace TestNs
-            {
-                public class Effects
-                {
-                    [EasyPlayscript.Implementation("fade")]
-                    public void DoFade() { }
-                }
-            }
-            """;
+                                                     namespace TestNs
+                                                     {
+                                                         public class Effects
+                                                         {
+                                                             [EasyPlayscript.Implementation("fade")]
+                                                             public void DoFade() { }
+                                                         }
+                                                     }
+                                                     """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
         Assert.Contains("case \"fade\":", code);
@@ -826,18 +831,18 @@ public class PlayscriptGeneratorTests
     public void ImplementationScanner_NestedClass_FullyQualified()
     {
         var source = ImplementationAttributeSource + """
-            namespace TestNs
-            {
-                public class Outer
-                {
-                    public class Inner
-                    {
-                        [EasyPlayscript.Implementation]
-                        public void fade() { }
-                    }
-                }
-            }
-            """;
+                                                     namespace TestNs
+                                                     {
+                                                         public class Outer
+                                                         {
+                                                             public class Inner
+                                                             {
+                                                                 [EasyPlayscript.Implementation]
+                                                                 public void fade() { }
+                                                             }
+                                                         }
+                                                     }
+                                                     """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
         Assert.Contains("Register(global::TestNs.Inner instance)", code);
@@ -847,12 +852,12 @@ public class PlayscriptGeneratorTests
     public void ImplementationScanner_GlobalNamespace_NoPrefix()
     {
         var source = ImplementationAttributeSource + """
-            public class GlobalEffects
-            {
-                [EasyPlayscript.Implementation]
-                public void fade() { }
-            }
-            """;
+                                                     public class GlobalEffects
+                                                     {
+                                                         [EasyPlayscript.Implementation]
+                                                         public void fade() { }
+                                                     }
+                                                     """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
         Assert.Contains("Register(GlobalEffects instance)", code);
@@ -865,22 +870,22 @@ public class PlayscriptGeneratorTests
     public void Generator_TransientImplementation_ContextDispatch()
     {
         var scpt = """
-            interface transition(type: string) : void
-            script test_script[
-            @transition("fade")
-            ]
-            """;
+                   interface transition(type: string) : void
+                   script test_script[
+                   @transition("fade")
+                   ]
+                   """;
 
         var source = ImplementationAttributeSource + """
-            namespace Game
-            {
-                public class Transitioner
-                {
-                    [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
-                    public void transition(string type) { }
-                }
-            }
-            """;
+                                                     namespace Game
+                                                     {
+                                                         public class Transitioner
+                                                         {
+                                                             [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
+                                                             public void transition(string type) { }
+                                                         }
+                                                     }
+                                                     """;
 
         var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
 
@@ -892,29 +897,29 @@ public class PlayscriptGeneratorTests
     public void Generator_MixedScopes_CorrectRouting()
     {
         var scpt = """
-            interface play(sound: string, volume: decimal) : void
-            interface transition(type: string) : void
-            script test_script[
-            @play("bgm", 0.8)
-            @transition("fade")
-            ]
-            """;
+                   interface play(sound: string, volume: decimal) : void
+                   interface transition(type: string) : void
+                   script test_script[
+                   @play("bgm", 0.8)
+                   @transition("fade")
+                   ]
+                   """;
 
         var source = ImplementationAttributeSource + """
-            namespace Game
-            {
-                public class AudioSystem
-                {
-                    [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.GlobalService)]
-                    public void play(string sound, double volume) { }
-                }
-                public class Transitioner
-                {
-                    [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
-                    public void transition(string type) { }
-                }
-            }
-            """;
+                                                     namespace Game
+                                                     {
+                                                         public class AudioSystem
+                                                         {
+                                                             [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.GlobalService)]
+                                                             public void play(string sound, double volume) { }
+                                                         }
+                                                         public class Transitioner
+                                                         {
+                                                             [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
+                                                             public void transition(string type) { }
+                                                         }
+                                                     }
+                                                     """;
 
         var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
 

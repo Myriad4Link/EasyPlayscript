@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using System.IO;
 using EasyPlayscript.Parsing;
+using JetBrains.Annotations;
 using MessagePack;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -9,12 +9,11 @@ namespace EasyPlayscript.BuildTask;
 
 public class PlayscriptBuildTask : Task
 {
-    [Required]
-    public ITaskItem[] SourceFiles { get; set; }
+    [Required] public ITaskItem[] SourceFiles { get; [UsedImplicitly] set; }
 
-    [Required]
-    public string OutputPath { get; set; }
+    [Required] public string OutputPath { get; [UsedImplicitly] set; }
 
+    // ReSharper disable once MemberCanBePrivate.Global
     public string AesKey { get; set; }
 
     public override bool Execute()
@@ -33,7 +32,8 @@ public class PlayscriptBuildTask : Task
 
             foreach (var error in structureErrors)
             {
-                Log.LogError("Playscript", error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, null,
+                Log.LogError("Playscript",
+                    error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, null,
                     filePath, error.Line, error.Col, 0, 0, error.Msg);
                 hasErrors = true;
             }

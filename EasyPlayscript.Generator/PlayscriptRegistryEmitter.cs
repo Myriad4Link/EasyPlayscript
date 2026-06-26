@@ -69,7 +69,7 @@ public static class PlayscriptRegistryEmitter
             indented.WriteLine();
         }
 
-        indented.WriteLine("internal void DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)");
+        indented.WriteLine("internal void DispatchCall(ConsumerCallItem call, TransientNodeContext context)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("switch (call.Identifier)");

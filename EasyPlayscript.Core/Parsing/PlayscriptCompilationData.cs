@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace EasyPlayscript.Parsing;
 
 /// <summary>
-/// Container for parsed playscript data collected across multiple .scpt files.
-/// Holds scripts, texts, their source locations, and interface declarations.
+///     Container for parsed playscript data collected across multiple .scpt files.
+///     Holds scripts, texts, their source locations, and interface declarations.
 /// </summary>
 public class PlayscriptCompilationData
 {
@@ -17,17 +17,17 @@ public class PlayscriptCompilationData
     public bool HasErrors { get; set; }
 
     /// <summary>
-    /// Merges scripts, texts, and interfaces from another <see cref="PlayscriptCompilationData"/>
-    /// (typically a per-file result) into this instance. Duplicate script/text names are reported
-    /// as SCPT004 diagnostics without merging the duplicate entry.
+    ///     Merges scripts, texts, and interfaces from another <see cref="PlayscriptCompilationData" />
+    ///     (typically a per-file result) into this instance. Duplicate script/text names are reported
+    ///     as SCPT004 diagnostics without merging the duplicate entry.
     /// </summary>
     /// <param name="source">
-    /// The compilation data to merge from. Read-only from this method's perspective;
-    /// only <paramref name="source"/>'s dictionaries are iterated, not modified.
+    ///     The compilation data to merge from. Read-only from this method's perspective;
+    ///     only <paramref name="source" />'s dictionaries are iterated, not modified.
     /// </param>
     /// <returns>
-    /// A list of <see cref="ValidationDiagnostic"/> for any duplicate script/text names
-    /// found during the merge. Empty if no duplicates were detected.
+    ///     A list of <see cref="ValidationDiagnostic" /> for any duplicate script/text names
+    ///     found during the merge. Empty if no duplicates were detected.
     /// </returns>
     public List<ValidationDiagnostic> MergeFrom(PlayscriptCompilationData source)
     {
@@ -47,7 +47,6 @@ public class PlayscriptCompilationData
         string label)
     {
         foreach (var kvp in sourceBlocks)
-        {
             if (targetBlocks.ContainsKey(kvp.Key))
             {
                 var loc = targetLocations[kvp.Key];
@@ -60,6 +59,5 @@ public class PlayscriptCompilationData
                 targetLocations[kvp.Key] = sourceLocations[kvp.Key];
                 targetBlocks[kvp.Key] = kvp.Value;
             }
-        }
     }
 }

@@ -4,18 +4,18 @@ namespace EasyPlayscript.Parsing;
 
 public class StructureParseResult
 {
-    public List<StructureResult> Results { get; }
-    public List<InterfaceDeclaration> Interfaces { get; }
-
     public StructureParseResult(List<StructureResult> results, List<InterfaceDeclaration> interfaces)
     {
         Results = results;
         Interfaces = interfaces;
     }
+
+    public List<StructureResult> Results { get; }
+    public List<InterfaceDeclaration> Interfaces { get; }
 }
 
 /// <summary>
-/// Represents a parsed structure result from Pass 1, containing compiler call info and optional raw block content.
+///     Represents a parsed structure result from Pass 1, containing compiler call info and optional raw block content.
 /// </summary>
 public readonly struct StructureResult(BlockType identifier, string name, string? rawContent, int line, int col)
 {
@@ -25,7 +25,8 @@ public readonly struct StructureResult(BlockType identifier, string name, string
     public int Line { get; } = line;
     public int Col { get; } = col;
 
-    public void Deconstruct(out BlockType identifier, out string name, out string? rawContent, out int line, out int col)
+    public void Deconstruct(out BlockType identifier, out string name, out string? rawContent, out int line,
+        out int col)
     {
         identifier = Identifier;
         name = Name;

@@ -44,15 +44,15 @@ ANTLR grammars in `EasyPlayscript.Core/core/playscript/definition/`:
 `[Implementation]` has a `Scope` property (`ActionScope.GlobalService` by default, or `ActionScope.TransientNode`).
 
 - **GlobalService**: The generated registry stores a field and `Register()` method for the class. Dispatch calls the field directly.
-- **TransientNode**: No field or `Register()` method is generated. Dispatch fetches the instance from `PlayscriptExecutionContext.Get<T>()` at runtime.
+- **TransientNode**: No field or `Register()` method is generated. Dispatch fetches the instance from `TransientNodeContext.Get<T>()` at runtime.
 
 A single class can have mixed scopes — the registry will have a field for it (if any method is GlobalService), and transient methods route through the context.
 
-`PlayscriptExecutionContext` (`EasyPlayscript.Core/PlayscriptExecutionContext.cs`) is a type-keyed dictionary:
+`TransientNodeContext` (`EasyPlayscript.Core/TransientNodeContext.cs`) is a type-keyed dictionary:
 - `Bind<T>(instance)` — register a transient node
 - `Get<T>()` — retrieve it (returns null if unbound)
 
-`DispatchCall` signature is `DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)`. All callers must pass context.
+`DispatchCall` signature is `DispatchCall(ConsumerCallItem call, TransientNodeContext context)`. All callers must pass context.
 
 ## Diagnostic Codes
 
@@ -89,7 +89,7 @@ Emitter tests (`PlayscriptRegistryEmitterTests`) call `PlayscriptRegistryEmitter
 - `EasyPlayscript.Generator/PlayscriptGenerator.cs` — main generator entry point
 - `EasyPlayscript.Generator/PlayscriptRegistryEmitter.cs` — generates `PlayscriptRegistry.g.cs` with scope-aware dispatch
 - `EasyPlayscript.Generator/ScriptRegistry.cs` — generates `Script` and `Text` data classes
-- `EasyPlayscript.Core/PlayscriptExecutionContext.cs` — transient node type-map for scene-scoped components
+- `EasyPlayscript.Core/TransientNodeContext.cs` — transient node type-map for scene-scoped components
 - `EasyPlayscript.Sample/scripts/*.scpt` — example `.scpt` files
 - `LSP-PLAN.md` — in-progress plan for an LSP server (not yet implemented)
 
@@ -101,4 +101,3 @@ Emitter tests (`PlayscriptRegistryEmitterTests`) call `PlayscriptRegistryEmitter
 - `nuget-local/` is the local NuGet feed; `pack-local.ps1` rebuilds packages there and clears global cache
 - `NuGet.Config` clears default sources and adds only `nuget.org` + `./nuget-local`
 - No CI workflows exist — this is a local development repo
-- `Text.Render(PlayscriptRegistry registry)` creates an empty `PlayscriptExecutionContext` internally — transient-only classes won't be resolved through this overload

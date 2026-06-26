@@ -32,7 +32,9 @@ public static class PlayscriptPipeline
                 : parser.textContent();
 
             diagnostics.AddRange(contentErrors.Select(error =>
-                ValidationDiagnostic.CreateRaw(error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg, filePath, error.Line,
+                ValidationDiagnostic.CreateRaw(
+                    error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg,
+                    filePath, error.Line,
                     error.Col)));
 
             if (contentErrors.Count > 0) continue;
@@ -42,7 +44,9 @@ public static class PlayscriptPipeline
             builder.Build(identifier, tree);
 
             diagnostics.AddRange(builder.Errors.Select(error =>
-                ValidationDiagnostic.CreateRaw(error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg, filePath, error.Line,
+                ValidationDiagnostic.CreateRaw(
+                    error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg,
+                    filePath, error.Line,
                     error.Col)));
 
             if (builder.Errors.Count > 0) continue;

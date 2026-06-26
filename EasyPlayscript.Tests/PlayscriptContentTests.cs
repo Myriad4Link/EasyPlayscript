@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 using EasyPlayscript.Parsing;
 using Xunit;
 
@@ -364,7 +364,7 @@ public class PlayscriptContentTests
         var builder = new PlayscriptCodeBuilder();
         builder.BuildScriptFromContent(parser.scriptContent());
         Assert.NotEmpty(builder.Errors);
-        Assert.Contains("out of range", builder.Errors[0].Msg, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("out of range", builder.Errors[0].Msg, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -375,7 +375,7 @@ public class PlayscriptContentTests
         var builder = new PlayscriptCodeBuilder();
         builder.BuildScriptFromContent(parser.scriptContent());
         Assert.NotEmpty(builder.Errors);
-        Assert.Contains("out of range", builder.Errors[0].Msg, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("out of range", builder.Errors[0].Msg, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -500,7 +500,8 @@ public class PlayscriptContentTests
     [Fact]
     public void TextContent_ThreeParagraphs_MixedContent()
     {
-        const string input = "Hi!\n\nHow's your day, @get_name()?\nLook at this wonderful slash:\n/\nIt's great, isn't it?";
+        const string input =
+            "Hi!\n\nHow's your day, @get_name()?\nLook at this wonderful slash:\n/\nIt's great, isn't it?";
         var (parser, errors) = PlayscriptContentHelper.ParseText(input);
         var tree = parser.textContent();
 
@@ -740,7 +741,8 @@ public class PlayscriptContentTests
     [Fact]
     public void Builder_TextBlock_ThreeParagraphs_MixedContent()
     {
-        var block = BuildTextBlock("Hi!\n\nHow's your day, @get_name()?\nLook at this wonderful slash:\n/\nIt's great, isn't it?");
+        var block = BuildTextBlock(
+            "Hi!\n\nHow's your day, @get_name()?\nLook at this wonderful slash:\n/\nIt's great, isn't it?");
         Assert.Equal(6, block.Lines.Count);
         Assert.Equal("Hi!", ((TextItem)block.Lines[0].Items[0]).Text);
         Assert.Empty(block.Lines[1].Items);

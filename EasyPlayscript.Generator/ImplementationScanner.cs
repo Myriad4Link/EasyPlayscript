@@ -9,21 +9,21 @@ namespace EasyPlayscript.Generator;
 internal static class ImplementationScanner
 {
     /// <summary>
-    /// Extracts an <see cref="ImplementationInfo"/> from a method decorated with
-    /// [Implementation]. Called by <c>ForAttributeWithMetadataName</c> in the generator;
-    /// the <see cref="GeneratorAttributeSyntaxContext"/> guarantees the target is a
-    /// <see cref="MethodDeclarationSyntax"/> with the attribute present.
+    ///     Extracts an <see cref="ImplementationInfo" /> from a method decorated with
+    ///     [Implementation]. Called by <c>ForAttributeWithMetadataName</c> in the generator;
+    ///     the <see cref="GeneratorAttributeSyntaxContext" /> guarantees the target is a
+    ///     <see cref="MethodDeclarationSyntax" /> with the attribute present.
     /// </summary>
     /// <param name="ctx">
-    /// The syntax context provided by <c>ForAttributeWithMetadataName</c>.
-    /// <see cref="GeneratorAttributeSyntaxContext.TargetNode"/> is a <see cref="MethodDeclarationSyntax"/>,
-    /// <see cref="GeneratorAttributeSyntaxContext.TargetSymbol"/> is an <see cref="IMethodSymbol"/>,
-    /// and <see cref="GeneratorAttributeSyntaxContext.Attributes"/> contains the matched attribute.
+    ///     The syntax context provided by <c>ForAttributeWithMetadataName</c>.
+    ///     <see cref="GeneratorAttributeSyntaxContext.TargetNode" /> is a <see cref="MethodDeclarationSyntax" />,
+    ///     <see cref="GeneratorAttributeSyntaxContext.TargetSymbol" /> is an <see cref="IMethodSymbol" />,
+    ///     and <see cref="GeneratorAttributeSyntaxContext.Attributes" /> contains the matched attribute.
     /// </param>
     /// <param name="ct">Cancellation token for the generator transform phase.</param>
     /// <returns>
-    /// An <see cref="ImplementationInfo"/> populated with the method's containing type, name,
-    /// alias (from the attribute constructor argument), parameter types, return type, and source location.
+    ///     An <see cref="ImplementationInfo" /> populated with the method's containing type, name,
+    ///     alias (from the attribute constructor argument), parameter types, return type, and source location.
     /// </returns>
     public static ImplementationInfo Extract(
         GeneratorAttributeSyntaxContext ctx,
@@ -37,19 +37,18 @@ internal static class ImplementationScanner
 
         var containingType = methodSymbol.ContainingType;
 
-        var alias = attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string { Length: > 0 } s
+        var alias = attr.ConstructorArguments.Length > 0 &&
+                    attr.ConstructorArguments[0].Value is string { Length: > 0 } s
             ? s
-            : (string?)null;
+            : null;
 
         var scope = ActionScope.GlobalService;
         foreach (var namedArg in attr.NamedArguments)
-        {
             if (namedArg.Key == "Scope" && namedArg.Value.Value is int scopeValue)
             {
                 scope = (ActionScope)scopeValue;
                 break;
             }
-        }
 
         var paramTypes = methodSymbol.Parameters
             .Select(p => MapToCSharpTypeName(p.Type))

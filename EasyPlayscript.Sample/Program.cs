@@ -46,7 +46,7 @@ public static class Program
         registry.Register(new AudioSystem());
 
         var context = new PlayscriptContext(registry);
-        var sceneContext = new PlayscriptExecutionContext();
+        var sceneContext = new TransientNodeContext();
         sceneContext.Bind(new UiSystem());
 
         Console.WriteLine("=== Scripts ===");
@@ -66,7 +66,7 @@ public static class Program
         }
     }
 
-    private static void PrintScript(Script script, PlayscriptRegistry registry, PlayscriptExecutionContext sceneContext)
+    private static void PrintScript(Script script, PlayscriptRegistry registry, TransientNodeContext sceneContext)
     {
         for (var pi = 0; pi < script.Block.Pages.Count; pi++)
         {
@@ -92,7 +92,7 @@ public static class Program
         }
     }
 
-    private static void PrintText(Text text, PlayscriptRegistry registry, PlayscriptExecutionContext sceneContext)
+    private static void PrintText(Text text, PlayscriptRegistry registry, TransientNodeContext sceneContext)
     {
         Console.WriteLine(text.Render(registry, sceneContext));
     }

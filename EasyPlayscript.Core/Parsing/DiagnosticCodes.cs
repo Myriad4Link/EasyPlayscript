@@ -21,6 +21,10 @@ public static class DiagnosticCodes
     public const string ArgumentTypeMismatchFormat = "Argument {0} of \"{1}\": cannot convert from {2} to {3}{4}";
     public const string ArgumentCountMismatchFormat = "\"{0}\" does not match any overload with {1} argument(s){2}";
     public const string MissingImplementationFormat = "Interface \"{0}\" has no [Implementation] method";
-    public const string DuplicateImplementationFormat = "Duplicate [Implementation] for \"{0}\" with {1} parameter(s) in {2}";
-    public const string UnusedImplementationFormat = "[Implementation] method \"{0}.{1}\" is not used by any playscript";
+
+    public const string DuplicateImplementationFormat =
+        "Duplicate [Implementation] for \"{0}\" with {1} parameter(s) in {2}";
+
+    public const string UnusedImplementationFormat =
+        "[Implementation] method \"{0}.{1}\" is not used by any playscript";
 }

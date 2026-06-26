@@ -8,8 +8,8 @@ using Antlr4.Runtime.Tree;
 namespace EasyPlayscript.Parsing;
 
 /// <summary>
-/// ANTLR visitor that walks the Pass 2 content AST and builds a <see cref="ScriptBlock"/>
-/// with proper page/paragraph/line structure.
+///     ANTLR visitor that walks the Pass 2 content AST and builds a <see cref="ScriptBlock" />
+///     with proper page/paragraph/line structure.
 /// </summary>
 public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default)
     : PlayscriptContentParserBaseVisitor<string>
@@ -33,19 +33,19 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         Paragraph? paragraph = null;
 
         ProcessContent(context,
-            onPage: _ =>
+            _ =>
             {
                 page = new Page();
                 block.Pages.Add(page);
             },
-            onParagraph: _ =>
+            _ =>
             {
                 paragraph = new Paragraph();
                 // `paragraph` is always evaluated after `page` gets evaluated.
                 // So `page` here is guaranteed non-null. 
                 page!.Paragraphs.Add(paragraph);
             },
-            onLine: lineCtx => paragraph!.Lines.Add(new Line { Items = ParseLineItems(lineCtx) }));
+            lineCtx => paragraph!.Lines.Add(new Line { Items = ParseLineItems(lineCtx) }));
 
         ContentResult = block;
     }
@@ -82,7 +82,6 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         if (lineCtx?.children == null) return items;
 
         foreach (var child in lineCtx.children)
-        {
             switch (child)
             {
                 case PlayscriptContentParser.ConsumerCallContext callCtx:
@@ -94,7 +93,6 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     items.Add(new TextItem(Unescape(terminal.GetText())));
                     break;
             }
-        }
 
         return items;
     }
@@ -105,7 +103,6 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         if (lineCtx?.children == null) return items;
 
         foreach (var child in lineCtx.children)
-        {
             switch (child)
             {
                 case PlayscriptContentParser.ConsumerCallContext callCtx:
@@ -120,7 +117,6 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     items.Add(new TextItem(terminal.GetText()));
                     break;
             }
-        }
 
         return items;
     }
@@ -130,7 +126,6 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         if (text.IndexOf('\\') < 0) return text;
         var sb = new StringBuilder(text.Length);
         for (var i = 0; i < text.Length; i++)
-        {
             if (text[i] == '\\' && i + 1 < text.Length)
             {
                 i++;
@@ -149,8 +144,9 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                 }
             }
             else
+            {
                 sb.Append(text[i]);
-        }
+            }
 
         return sb.ToString();
     }
@@ -213,17 +209,14 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         if (argCtx.INTEGER_LITERAL() != null)
         {
             var text = argCtx.INTEGER_LITERAL().GetText();
-            if (int.TryParse(text, out var intValue))
-            {
-                return new IntArgument(intValue);
-            }
+            if (int.TryParse(text, out var intValue)) return new IntArgument(intValue);
 
             var symbol = argCtx.INTEGER_LITERAL().Symbol;
             Errors.Add(new PlayscriptError(
                 symbol.Line,
                 symbol.Column,
                 $"Integer literal '{text}' is out of range for System.Int32 (expected value between -2147483648 and 2147483647).",
-                isLexer: false));
+                false));
             return null;
         }
 
@@ -233,16 +226,14 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
             if (double.TryParse(text, NumberStyles.Float,
                     CultureInfo.InvariantCulture, out var doubleValue)
                 && !double.IsInfinity(doubleValue))
-            {
                 return new DoubleArgument(doubleValue);
-            }
 
             var symbol = argCtx.FLOAT_LITERAL().Symbol;
             Errors.Add(new PlayscriptError(
                 symbol.Line,
                 symbol.Column,
                 $"Float literal '{text}' is out of range for System.Double (expected value between ±1.7976931348623157E+308).",
-                isLexer: false));
+                false));
             return null;
         }
 

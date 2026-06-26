@@ -63,7 +63,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("public TextBlock Block { get; set; } = default!;");
         indented.WriteLine();
-        indented.WriteLine("public string Render(PlayscriptRegistry registry, PlayscriptExecutionContext context)");
+        indented.WriteLine("public string Render(PlayscriptRegistry registry, TransientNodeContext context)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("var sb = new System.Text.StringBuilder();");
@@ -98,9 +98,8 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
-        indented.WriteLine("public string Render(PlayscriptRegistry registry) => Render(registry, new PlayscriptExecutionContext());");
-        indented.WriteLine();
-        indented.WriteLine("public string Render(PlayscriptContext context, PlayscriptExecutionContext? sceneContext = null) => Render(context.Registry, sceneContext ?? new PlayscriptExecutionContext());");
+        indented.WriteLine(
+            "public string Render(PlayscriptContext context, TransientNodeContext? sceneContext = null) => Render(context.Registry, sceneContext ?? new TransientNodeContext());");
         indented.Indent--;
         indented.WriteLine("}");
 

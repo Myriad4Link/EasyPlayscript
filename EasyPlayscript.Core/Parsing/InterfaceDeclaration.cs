@@ -2,7 +2,14 @@ using System.Collections.Generic;
 
 namespace EasyPlayscript.Parsing;
 
-public enum InterfaceType { String, Int, Decimal, Bool, Void }
+public enum InterfaceType
+{
+    String,
+    Int,
+    Decimal,
+    Bool,
+    Void
+}
 
 public readonly struct InterfaceParameter
 {
@@ -18,13 +25,6 @@ public readonly struct InterfaceParameter
 
 public class InterfaceDeclaration
 {
-    public string Name { get; }
-    public List<InterfaceParameter> Parameters { get; }
-    public InterfaceType ReturnType { get; }
-    public int Line { get; }
-    public int Col { get; }
-    public string FilePath { get; set; } = string.Empty;
-
     public InterfaceDeclaration(string name, List<InterfaceParameter> parameters,
         InterfaceType returnType, int line, int col)
     {
@@ -34,4 +34,11 @@ public class InterfaceDeclaration
         Line = line;
         Col = col;
     }
+
+    public string Name { get; }
+    public List<InterfaceParameter> Parameters { get; }
+    public InterfaceType ReturnType { get; }
+    public int Line { get; }
+    public int Col { get; }
+    public string FilePath { get; set; } = string.Empty;
 }

@@ -1,4 +1,5 @@
 using System;
+using JetBrains.Annotations;
 
 namespace EasyPlayscript;
 
@@ -8,11 +9,10 @@ public enum ActionScope
     TransientNode
 }
 
-[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-public sealed class ImplementationAttribute : Attribute
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+[UsedImplicitly]
+public sealed class ImplementationAttribute(string? alias = null) : Attribute
 {
-    public string? Alias { get; }
-    public ActionScope Scope { get; set; } = ActionScope.GlobalService;
-
-    public ImplementationAttribute(string? alias = null) => Alias = alias;
+    [UsedImplicitly] public string? Alias { get; } = alias;
+    [UsedImplicitly] public ActionScope Scope { get; set; } = ActionScope.GlobalService;
 }

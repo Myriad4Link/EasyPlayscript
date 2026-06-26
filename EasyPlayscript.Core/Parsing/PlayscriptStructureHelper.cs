@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,8 +7,8 @@ using Antlr4.Runtime;
 namespace EasyPlayscript.Parsing;
 
 /// <summary>
-/// Helper for Pass 1 structure recognition. Parses playscript source and extracts
-/// compiler calls with their associated script block raw content.
+///     Helper for Pass 1 structure recognition. Parses playscript source and extracts
+///     compiler calls with their associated script block raw content.
 /// </summary>
 public static class PlayscriptStructureHelper
 {
@@ -28,8 +29,8 @@ public static class PlayscriptStructureHelper
         var errors = new List<PlayscriptError>();
         lexer.RemoveErrorListeners();
         parser.RemoveErrorListeners();
-        lexer.AddErrorListener(new CollectingErrorListener(errors, isLexer: true));
-        parser.AddErrorListener(new CollectingErrorListener(errors, isLexer: false));
+        lexer.AddErrorListener(new CollectingErrorListener(errors, true));
+        parser.AddErrorListener(new CollectingErrorListener(errors, false));
 
         var tree = parser.playscript();
         var visitor = new StructureVisitor();
@@ -52,7 +53,7 @@ public static class PlayscriptStructureHelper
                 {
                     PlayscriptStructureParser.SCRIPT => BlockType.Script,
                     PlayscriptStructureParser.TEXT => BlockType.Text,
-                    _ => throw new System.InvalidOperationException("Unexpected blockType token"),
+                    _ => throw new InvalidOperationException("Unexpected blockType token")
                 };
 
                 var nameNode = context.IDENTIFIER();
@@ -83,12 +84,10 @@ public static class PlayscriptStructureHelper
                 var parameters = new List<InterfaceParameter>();
                 var paramListCtx = context.paramList();
                 if (paramListCtx != null)
-                {
                     parameters.AddRange(from paramCtx in paramListCtx.parameter()
                         let paramName = paramCtx.IDENTIFIER().GetText()
                         let paramType = MapTypeSpec(paramCtx.typeSpec())
                         select new InterfaceParameter(paramName, paramType));
-                }
 
                 var returnType = MapTypeSpec(typeSpecCtx);
 
@@ -98,26 +97,32 @@ public static class PlayscriptStructureHelper
             return string.Empty;
         }
 
-        private static InterfaceType MapTypeSpec(PlayscriptStructureParser.TypeSpecContext typeSpec) =>
-            typeSpec.Start.Type switch
+        private static InterfaceType MapTypeSpec(PlayscriptStructureParser.TypeSpecContext typeSpec)
+        {
+            return typeSpec.Start.Type switch
             {
                 PlayscriptStructureParser.STRING_TYPE => InterfaceType.String,
                 PlayscriptStructureParser.INT_TYPE => InterfaceType.Int,
                 PlayscriptStructureParser.DECIMAL_TYPE => InterfaceType.Decimal,
                 PlayscriptStructureParser.BOOL_TYPE => InterfaceType.Bool,
-                _ => InterfaceType.Void,
+                _ => InterfaceType.Void
             };
+        }
     }
 
     private class CollectingErrorListener(List<PlayscriptError> errors, bool isLexer)
         : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
         public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e) =>
+            int line, int charPositionInLine, string msg, RecognitionException e)
+        {
             errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
+        }
 
         public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e) =>
+            int line, int charPositionInLine, string msg, RecognitionException e)
+        {
             errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
+        }
     }
 }

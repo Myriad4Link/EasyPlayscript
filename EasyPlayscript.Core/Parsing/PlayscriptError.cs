@@ -1,7 +1,7 @@
 namespace EasyPlayscript.Parsing;
 
 /// <summary>
-/// Represents a syntax or lexer error in playscript.
+///     Represents a syntax or lexer error in playscript.
 /// </summary>
 public readonly struct PlayscriptError(int line, int col, string msg, bool isLexer)
 {

@@ -1,17 +1,15 @@
 using System.Collections.Generic;
 using EasyPlayscript.Generator;
-using EasyPlayscript.Parsing;
 using Xunit;
 
 namespace EasyPlayscript.Tests;
 
 public class PlayscriptContextEmitterTests
 {
-    private static readonly Dictionary<string, ScriptBlock> EmptyScripts = new();
-    private static readonly Dictionary<string, TextBlock> EmptyTexts = new();
-
     private const string DefaultOutputPath = "playscripts.bin";
     private const string DefaultAesKey = "";
+    private static readonly Dictionary<string, ScriptBlock> EmptyScripts = new();
+    private static readonly Dictionary<string, TextBlock> EmptyTexts = new();
 
     [Fact]
     public void Generate_Empty_ProducesSealedClass()
@@ -53,7 +51,8 @@ public class PlayscriptContextEmitterTests
     [Fact]
     public void Generate_BackslashPath_NormalizedToForwardSlash()
     {
-        var code = PlayscriptContextEmitter.Generate(EmptyScripts, EmptyTexts, "bin\\Debug\\net8.0\\playscripts.bin", DefaultAesKey);
+        var code = PlayscriptContextEmitter.Generate(EmptyScripts, EmptyTexts, "bin\\Debug\\net8.0\\playscripts.bin",
+            DefaultAesKey);
         Assert.Contains("ResolvePath(\"bin/Debug/net8.0/playscripts.bin\"", code);
     }
 
@@ -62,7 +61,7 @@ public class PlayscriptContextEmitterTests
     {
         var scripts = new Dictionary<string, ScriptBlock>
         {
-            ["load_tooltip"] = new ScriptBlock()
+            ["load_tooltip"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(scripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
 
@@ -75,7 +74,7 @@ public class PlayscriptContextEmitterTests
     {
         var texts = new Dictionary<string, TextBlock>
         {
-            ["intro"] = new TextBlock()
+            ["intro"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, texts, DefaultOutputPath, DefaultAesKey);
 
@@ -88,7 +87,7 @@ public class PlayscriptContextEmitterTests
     {
         var scripts = new Dictionary<string, ScriptBlock>
         {
-            ["load_tooltip"] = new ScriptBlock()
+            ["load_tooltip"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(scripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
 
@@ -101,7 +100,7 @@ public class PlayscriptContextEmitterTests
     {
         var texts = new Dictionary<string, TextBlock>
         {
-            ["intro"] = new TextBlock()
+            ["intro"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, texts, DefaultOutputPath, DefaultAesKey);
 
@@ -132,9 +131,9 @@ public class PlayscriptContextEmitterTests
     {
         var scripts = new Dictionary<string, ScriptBlock>
         {
-            ["alpha"] = new ScriptBlock(),
-            ["beta"] = new ScriptBlock(),
-            ["gamma"] = new ScriptBlock()
+            ["alpha"] = new(),
+            ["beta"] = new(),
+            ["gamma"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(scripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
 
@@ -149,8 +148,8 @@ public class PlayscriptContextEmitterTests
     {
         var scripts = new Dictionary<string, ScriptBlock>
         {
-            ["intro"] = new ScriptBlock(),
-            ["outro"] = new ScriptBlock()
+            ["intro"] = new(),
+            ["outro"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(scripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
 
@@ -165,7 +164,7 @@ public class PlayscriptContextEmitterTests
     {
         var texts = new Dictionary<string, TextBlock>
         {
-            ["credits"] = new TextBlock()
+            ["credits"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, texts, DefaultOutputPath, DefaultAesKey);
 
@@ -178,7 +177,7 @@ public class PlayscriptContextEmitterTests
     {
         var scripts = new Dictionary<string, ScriptBlock>
         {
-            ["class"] = new ScriptBlock()
+            ["class"] = new()
         };
         var code = PlayscriptContextEmitter.Generate(scripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
 

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using EasyPlayscript.Parsing;
 using Xunit;
 

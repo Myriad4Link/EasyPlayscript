@@ -6,6 +6,5 @@ namespace EasyPlayscript;
 [MessagePackObject]
 public class ScriptBlock
 {
-    [Key(0)]
-    public List<Page> Pages { get; set; } = new();
+    [Key(0)] public List<Page> Pages { get; set; } = new();
 }

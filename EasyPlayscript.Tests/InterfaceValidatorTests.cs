@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using EasyPlayscript.Parsing;
 using Xunit;
@@ -25,7 +24,8 @@ public class InterfaceValidatorTests
         return builder.TextResult;
     }
 
-    private static InterfaceDeclaration MakeInterface(string name, InterfaceType returnType, params (string n, InterfaceType t)[] parameters)
+    private static InterfaceDeclaration MakeInterface(string name, InterfaceType returnType,
+        params (string n, InterfaceType t)[] parameters)
     {
         var parms = parameters.Select(p => new InterfaceParameter(p.n, p.t)).ToList();
         return new InterfaceDeclaration(name, parms, returnType, 1, 0) { FilePath = "test" };
@@ -107,7 +107,8 @@ public class InterfaceValidatorTests
     [Fact]
     public void MakeSignatureKey_FormatsCorrectly()
     {
-        var decl = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var decl = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         Assert.Equal("transition(string,decimal):void", InterfaceValidator.MakeSignatureKey(decl));
     }
 
@@ -163,7 +164,8 @@ public class InterfaceValidatorTests
     public void ValidateDuplicateSignatures_DifferentSignature_ReturnsEmpty()
     {
         var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
-        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var data = new PlayscriptCompilationData();
         data.Interfaces.AddRange(new[] { a, b });
         var errors = InterfaceValidator.ValidateDuplicateSignatures(data);
@@ -175,7 +177,8 @@ public class InterfaceValidatorTests
     [Fact]
     public void ValidateArgumentTypes_CountMismatch_ReturnsError()
     {
-        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
@@ -189,7 +192,8 @@ public class InterfaceValidatorTests
     [Fact]
     public void ValidateArgumentTypes_TypeMismatch_ReturnsError()
     {
-        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", \"not_a_number\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
@@ -203,7 +207,8 @@ public class InterfaceValidatorTests
     [Fact]
     public void ValidateArgumentTypes_IntToDecimal_ReturnsEmpty()
     {
-        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", 1)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
@@ -216,7 +221,8 @@ public class InterfaceValidatorTests
     [Fact]
     public void ValidateArgumentTypes_AllMatch_ReturnsEmpty()
     {
-        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", 1.0)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
@@ -278,7 +284,8 @@ public class InterfaceValidatorTests
     [Fact]
     public void ValidateArgumentTypes_TextBlock_TypeMismatch_ReturnsError()
     {
-        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildTextBlock("@transition(\"fade_out\", \"not_a_number\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
@@ -331,7 +338,8 @@ public class InterfaceValidatorTests
     [Fact]
     public void ValidateArgumentTypes_ScriptBlock_TypeMismatch()
     {
-        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var iface = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", \"not_a_number\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
@@ -348,7 +356,8 @@ public class InterfaceValidatorTests
     public void ValidateArgumentTypes_OverloadMatch_ReturnsEmpty()
     {
         var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String));
-        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\", 1.0)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.AddRange(new[] { a, b });
@@ -361,8 +370,10 @@ public class InterfaceValidatorTests
     [Fact]
     public void ValidateArgumentTypes_OverloadTypeMismatch_ShowsAllCandidates()
     {
-        var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
-        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Int));
+        var a = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
+        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Int));
         var block = BuildScriptBlock("@transition(\"fade_out\", true)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.AddRange(new[] { a, b });
@@ -379,7 +390,8 @@ public class InterfaceValidatorTests
     public void ValidateArgumentTypes_OverloadCountMismatch_ShowsAllCandidates()
     {
         var a = MakeInterface("transition", InterfaceType.Void);
-        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String), ("duration", InterfaceType.Decimal));
+        var b = MakeInterface("transition", InterfaceType.Void, ("type", InterfaceType.String),
+            ("duration", InterfaceType.Decimal));
         var block = BuildScriptBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.AddRange(new[] { a, b });

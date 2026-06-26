@@ -25,23 +25,27 @@ public static class InterfaceValidator
                 yield return call;
     }
 
-    public static InterfaceType? GetArgumentType(ArgumentValue arg) =>
-        arg switch
+    public static InterfaceType? GetArgumentType(ArgumentValue arg)
+    {
+        return arg switch
         {
             StringArgument => InterfaceType.String,
             IntArgument => InterfaceType.Int,
             DoubleArgument => InterfaceType.Decimal,
             BoolArgument => InterfaceType.Bool,
-            _ => null,
+            _ => null
         };
+    }
 
-    public static bool IsAssignableTo(InterfaceType actual, InterfaceType expected) =>
-        (actual, expected) switch
+    public static bool IsAssignableTo(InterfaceType actual, InterfaceType expected)
+    {
+        return (actual, expected) switch
         {
             var (a, e) when a == e => true,
             (InterfaceType.Int, InterfaceType.Decimal) => true,
-            _ => false,
+            _ => false
         };
+    }
 
     public static string MakeSignatureKey(InterfaceDeclaration decl)
     {
@@ -80,7 +84,9 @@ public static class InterfaceValidator
                     decl.FilePath, decl.Line, decl.Col, sig));
             }
             else
+            {
                 signatureMap[key] = decl;
+            }
         }
 
         return errors;
@@ -172,7 +178,9 @@ public static class InterfaceValidator
     }
 
     private static bool TryMatchOverload(ConsumerCallItem call, InterfaceDeclaration overload)
-        => FindFirstArgMismatch(call, overload) < 0;
+    {
+        return FindFirstArgMismatch(call, overload) < 0;
+    }
 
     private static int FindFirstArgMismatch(ConsumerCallItem call, InterfaceDeclaration overload)
     {

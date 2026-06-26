@@ -5,8 +5,8 @@ using Antlr4.Runtime;
 namespace EasyPlayscript.Parsing;
 
 /// <summary>
-/// Creates ANTLR lexer/parser instances from playscript block content (Pass 2)
-/// and collects syntax errors. Used to parse the raw content extracted by Pass 1.
+///     Creates ANTLR lexer/parser instances from playscript block content (Pass 2)
+///     and collects syntax errors. Used to parse the raw content extracted by Pass 1.
 /// </summary>
 public static class PlayscriptContentHelper
 {
@@ -20,8 +20,8 @@ public static class PlayscriptContentHelper
         var errors = new List<PlayscriptError>();
         lexer.RemoveErrorListeners();
         parser.RemoveErrorListeners();
-        lexer.AddErrorListener(new CollectingErrorListener(errors, isLexer: true));
-        parser.AddErrorListener(new CollectingErrorListener(errors, isLexer: false));
+        lexer.AddErrorListener(new CollectingErrorListener(errors, true));
+        parser.AddErrorListener(new CollectingErrorListener(errors, false));
 
         return (parser, errors);
     }
@@ -36,8 +36,8 @@ public static class PlayscriptContentHelper
         var errors = new List<PlayscriptError>();
         lexer.RemoveErrorListeners();
         parser.RemoveErrorListeners();
-        lexer.AddErrorListener(new CollectingErrorListener(errors, isLexer: true));
-        parser.AddErrorListener(new CollectingErrorListener(errors, isLexer: false));
+        lexer.AddErrorListener(new CollectingErrorListener(errors, true));
+        parser.AddErrorListener(new CollectingErrorListener(errors, false));
 
         return (parser, errors);
     }
@@ -46,11 +46,15 @@ public static class PlayscriptContentHelper
         : IAntlrErrorListener<int>, IAntlrErrorListener<IToken>
     {
         public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e) =>
+            int line, int charPositionInLine, string msg, RecognitionException e)
+        {
             errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
+        }
 
         public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol,
-            int line, int charPositionInLine, string msg, RecognitionException e) =>
+            int line, int charPositionInLine, string msg, RecognitionException e)
+        {
             errors.Add(new PlayscriptError(line, charPositionInLine, msg, isLexer));
+        }
     }
 }

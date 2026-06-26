@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using EasyPlayscript.Generator;
 using Microsoft.CodeAnalysis;
@@ -88,7 +89,7 @@ public class ScriptRegistryTests
     [Fact]
     public void ConsumerCallItem_StoresIdentifierAndArguments()
     {
-        var item = new ConsumerCallItem("transition", new System.Collections.Generic.List<ArgumentValue> { new StringArgument("fade_out") });
+        var item = new ConsumerCallItem("transition", new List<ArgumentValue> { new StringArgument("fade_out") });
         Assert.Equal("transition", item.Identifier);
         Assert.Single(item.Arguments);
         Assert.IsType<StringArgument>(item.Arguments[0]);
@@ -98,14 +99,14 @@ public class ScriptRegistryTests
     [Fact]
     public void ConsumerCallItem_Result_DefaultsToNull()
     {
-        var item = new ConsumerCallItem("test", new System.Collections.Generic.List<ArgumentValue>());
+        var item = new ConsumerCallItem("test", new List<ArgumentValue>());
         Assert.Null(item.Result);
     }
 
     [Fact]
     public void ConsumerCallItem_CanStoreResult()
     {
-        var item = new ConsumerCallItem("get_name", new System.Collections.Generic.List<ArgumentValue>());
+        var item = new ConsumerCallItem("get_name", new List<ArgumentValue>());
         item.Result = "Player";
         Assert.Equal("Player", item.Result);
     }
@@ -117,7 +118,7 @@ public class ScriptRegistryTests
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("public string Render(PlayscriptRegistry registry, PlayscriptExecutionContext context)", textText);
+        Assert.Contains("public string Render(PlayscriptRegistry registry, TransientNodeContext context)", textText);
     }
 
     [Fact]
@@ -127,6 +128,7 @@ public class ScriptRegistryTests
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("public string Render(PlayscriptContext context, PlayscriptExecutionContext? sceneContext = null)", textText);
+        Assert.Contains("public string Render(PlayscriptContext context, TransientNodeContext? sceneContext = null)",
+            textText);
     }
 }

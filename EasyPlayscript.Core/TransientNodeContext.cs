@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace EasyPlayscript;
 
-public class PlayscriptExecutionContext
+public class TransientNodeContext
 {
     private readonly Dictionary<Type, object> _sceneNodes = new();
 
@@ -12,7 +12,7 @@ public class PlayscriptExecutionContext
         _sceneNodes[typeof(TNode)] = instance ?? throw new ArgumentNullException(nameof(instance));
     }
 
-    public TNode Get<TNode>() where TNode : class
+    public TNode? Get<TNode>() where TNode : class
     {
         return _sceneNodes.TryGetValue(typeof(TNode), out var node) ? (TNode)node : null;
     }

@@ -128,18 +128,18 @@ public class ScriptRegistryTests
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("public string Render(PlayscriptContext context, TransientNodeContext? sceneContext = null)",
+        Assert.Contains("public string Render(PlayscriptRuntime runtime, TransientNodeContext? sceneContext = null)",
             textText);
     }
 
     [Fact]
-    public void GeneratesScript_WithSessionProperty()
+    public void GeneratesScript_WithRuntimeProperty()
     {
         var runResult = RunGenerator();
         var scriptFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Script.g.cs"));
         var scriptText = scriptFile.GetText().ToString();
 
-        Assert.Contains("internal PlayscriptSession? Session { get; set; }", scriptText);
+        Assert.Contains("internal PlayscriptRuntime? Runtime { get; set; }", scriptText);
     }
 
     [Fact]
@@ -150,17 +150,17 @@ public class ScriptRegistryTests
         var scriptText = scriptFile.GetText().ToString();
 
         Assert.Contains("public void Run()", scriptText);
-        Assert.Contains("Session.DispatchCall(call);", scriptText);
+        Assert.Contains("Runtime.DispatchCall(call);", scriptText);
     }
 
     [Fact]
-    public void GeneratesText_WithSessionProperty()
+    public void GeneratesText_WithRuntimeProperty()
     {
         var runResult = RunGenerator();
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("internal PlayscriptSession? Session { get; set; }", textText);
+        Assert.Contains("internal PlayscriptRuntime? Runtime { get; set; }", textText);
     }
 
     [Fact]
@@ -171,6 +171,6 @@ public class ScriptRegistryTests
         var textText = textFile.GetText().ToString();
 
         Assert.Contains("public string Render()", textText);
-        Assert.Contains("Render(Session.Registry, Session.SceneContext);", textText);
+        Assert.Contains("Render(Runtime.Registry, Runtime.SceneContext);", textText);
     }
 }

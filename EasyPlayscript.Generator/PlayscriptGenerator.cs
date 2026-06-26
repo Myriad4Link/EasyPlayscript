@@ -17,7 +17,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
     ///     Registers the incremental generator pipeline:
     ///     1. Parse each .scpt file into scripts, texts, and interfaces (Pass 1 + Pass 2).
     ///     2. Discover [Implementation]-decorated methods via ForAttributeWithMetadataName.
-    ///     3. Merge per-file data, run cross-file validation, emit PlayscriptRegistry + PlayscriptContext.
+    ///     3. Merge per-file data, run cross-file validation, emit PlayscriptRegistry + PlayscriptRuntime.
     /// </summary>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -98,13 +98,9 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var registryCode = PlayscriptRegistryEmitter.Generate(ctx.Data);
             spc.AddSource("PlayscriptRegistry.g.cs", SourceText.From(registryCode, Encoding.UTF8));
 
-            var contextCode = PlayscriptContextEmitter.Generate(
+            var runtimeCode = PlayscriptRuntimeEmitter.Generate(
                 ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey);
-            spc.AddSource("PlayscriptContext.g.cs", SourceText.From(contextCode, Encoding.UTF8));
-
-            var sessionCode = PlayscriptSessionEmitter.Generate(
-                ctx.Data.Scripts, ctx.Data.Texts);
-            spc.AddSource("PlayscriptSession.g.cs", SourceText.From(sessionCode, Encoding.UTF8));
+            spc.AddSource("PlayscriptRuntime.g.cs", SourceText.From(runtimeCode, Encoding.UTF8));
         });
     }
 

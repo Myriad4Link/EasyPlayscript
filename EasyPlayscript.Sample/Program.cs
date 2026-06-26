@@ -41,12 +41,12 @@ public static class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
 
-        var session = new PlayscriptSession();
+        var session = new PlayscriptRuntime();
         session.Register(new AudioSystem(), ActionScope.GlobalService);
         session.Register(new UiSystem(), ActionScope.TransientNode);
 
         Console.WriteLine("=== Scripts ===");
-        foreach (var key in Enum.GetValues<PlayscriptContext.ScriptKey>())
+        foreach (var key in Enum.GetValues<PlayscriptRuntime.ScriptKey>())
         {
             var script = session.GetScript(key);
             Console.WriteLine($"\n[{key}] ({script.Block.Pages.Count} page(s))");
@@ -54,7 +54,7 @@ public static class Program
         }
 
         Console.WriteLine("\n=== Texts ===");
-        foreach (var key in Enum.GetValues<PlayscriptContext.TextKey>())
+        foreach (var key in Enum.GetValues<PlayscriptRuntime.TextKey>())
         {
             Console.WriteLine($"\n[{key}]");
             Console.WriteLine(session.GetText(key).Render());
@@ -77,7 +77,7 @@ public static class Program
                             parts.Add(text.Text);
                             break;
                         case ConsumerCallItem call:
-                            script.Session!.DispatchCall(call);
+                            script.Runtime!.DispatchCall(call);
                             parts.Add(call.Result != null ? $"[{call.Result}]" : $"[@{call.Identifier}]");
                             break;
                     }

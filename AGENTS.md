@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A custom scripting language (`.scpt` files) with a two-pass ANTLR parser, Roslyn source generator, and MSBuild integration. The generator produces `PlayscriptRegistry.g.cs`, `PlayscriptContext.g.cs`, `PlayscriptSession.g.cs`, `Script.g.cs`, and `Text.g.cs` at compile time.
+A custom scripting language (`.scpt` files) with a two-pass ANTLR parser, Roslyn source generator, and MSBuild integration. The generator produces `PlayscriptRegistry.g.cs`, `PlayscriptRuntime.g.cs`, `Script.g.cs`, and `Text.g.cs` at compile time.
 
 ## Project Structure
 
@@ -41,18 +41,18 @@ ANTLR grammars in `EasyPlayscript.Core/core/playscript/definition/`:
 
 **Position convention**: ANTLR uses 1-based lines, 0-based columns. LSP uses 0-based both.
 
-## PlayscriptSession: The User-Facing API
+## PlayscriptRuntime: The User-Facing API
 
-`PlayscriptSession` (generated, inherits `PlayscriptContext`) is the primary entry point. It encapsulates registry, script/text data, and scene context in one object.
+`PlayscriptRuntime` (generated) is the primary entry point. It encapsulates registry, script/text data, and scene context in one object.
 
 ```csharp
-var session = new PlayscriptSession();
-session.Register(new AudioSystem(), ActionScope.GlobalService);
-session.Register(new UiSystem(), ActionScope.TransientNode);
+var runtime = new PlayscriptRuntime();
+runtime.Register(new AudioSystem(), ActionScope.GlobalService);
+runtime.Register(new UiSystem(), ActionScope.TransientNode);
 
-session.GetText(key).Render();      // fluent chain — no extra params
-session.GetScript(key).Run();       // dispatches all consumer calls
-session.DispatchCall(call);         // low-level single call dispatch
+runtime.GetText(key).Render();      // fluent chain — no extra params
+runtime.GetScript(key).Run();       // dispatches all consumer calls
+runtime.DispatchCall(call);         // low-level single call dispatch
 ```
 
 ### ActionScope Dispatch
@@ -67,14 +67,11 @@ session.DispatchCall(call);         // low-level single call dispatch
 | File | Generator | Contents |
 |------|-----------|----------|
 | `PlayscriptRegistry.g.cs` | `PlayscriptRegistryEmitter` | `_globals` dict, `RegisterGlobal<T>()`, `DispatchCall()` |
-| `PlayscriptContext.g.cs` | `PlayscriptContextEmitter` | `ScriptKey`/`TextKey` enums, `GetScript()`/`GetText()`, lazy loader |
-| `PlayscriptSession.g.cs` | `PlayscriptSessionEmitter` | `PlayscriptSession` subclass with `Register<T>()`, `DispatchCall()` |
+| `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeEmitter` | `PlayscriptRuntime` class with `Register<T>()`, `DispatchCall()`, enums, lazy loader |
 | `Script.g.cs` | `ScriptRegistry` | `Script` class with `Run()` (session-aware) |
 | `Text.g.cs` | `ScriptRegistry` | `Text` class with `Render()` (session-aware + original overloads) |
 
-`Script.Run()` and `Text.Render()` (parameterless) throw if `Session` is null — they only work when created via `session.GetScript()`/`session.GetText()`.
-
-`PlayscriptContext` is **not sealed** (allows `PlayscriptSession` to inherit).
+`Script.Run()` and `Text.Render()` (parameterless) throw if `Runtime` is null — they only work when created via `runtime.GetScript()`/`runtime.GetText()`.
 
 ## Diagnostic Codes
 
@@ -101,7 +98,7 @@ Tests in `EasyPlayscript.Tests/` use `CSharpGeneratorDriver` with:
 
 Pattern: create generator → add additional files → run driver → assert on generated syntax tree or diagnostics.
 
-Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptContextEmitterTests`, `PlayscriptSessionEmitterTests`) call emitters directly with hand-built `PlayscriptCompilationData` — no Roslyn driver needed.
+Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`) call emitters directly with hand-built `PlayscriptCompilationData` — no Roslyn driver needed.
 
 `ScriptRegistryTests` uses `CSharpGeneratorDriver` with the `ScriptRegistry` generator (post-initialization, no .scpt files needed).
 
@@ -112,8 +109,7 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptContextEmitterTests`
 - `EasyPlayscript.Core/Parsing/ImplementationValidator.cs` — validates `[Implementation]` method presence and duplicates
 - `EasyPlayscript.Generator/PlayscriptGenerator.cs` — main generator entry point, emits all `.g.cs` files
 - `EasyPlayscript.Generator/PlayscriptRegistryEmitter.cs` — generates `PlayscriptRegistry.g.cs` with `_globals` dict + scope-aware dispatch
-- `EasyPlayscript.Generator/PlayscriptContextEmitter.cs` — generates `PlayscriptContext.g.cs` (non-sealed, with enums)
-- `EasyPlayscript.Generator/PlayscriptSessionEmitter.cs` — generates `PlayscriptSession.g.cs`
+- `EasyPlayscript.Generator/PlayscriptRuntimeEmitter.cs` — generates `PlayscriptRuntime.g.cs` (enums, lazy loader, register, dispatch)
 - `EasyPlayscript.Generator/ScriptRegistry.cs` — generates `Script.g.cs` and `Text.g.cs` (post-initialization)
 - `EasyPlayscript.Core/TransientNodeContext.cs` — transient node type-map for scene-scoped components
 - `EasyPlayscript.Core/ImplementationAttribute.cs` — `[Implementation]` attribute + `ActionScope` enum
@@ -128,5 +124,5 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptContextEmitterTests`
 - `nuget-local/` is the local NuGet feed; `pack-local.ps1` rebuilds packages there and clears global cache
 - `NuGet.Config` clears default sources and adds only `nuget.org` + `./nuget-local`
 - No CI workflows exist — this is a local development repo
-- `Script.g.cs` and `Text.g.cs` are emitted via `RegisterPostInitializationOutput` (runs before other generators). They reference `PlayscriptSession` by name, which is generated later. This works because all generated sources compile together
+- `Script.g.cs` and `Text.g.cs` are emitted via `RegisterPostInitializationOutput` (runs before other generators). They reference `PlayscriptRuntime` by name, which is generated later. This works because all generated sources compile together
 - `PlayscriptRegistry.DispatchCall` switch cases use `{ }` blocks to scope local variables — C# switch cases share scope without blocks

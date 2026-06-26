@@ -3,10 +3,11 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using EasyPlayscript.Parsing;
 
 namespace EasyPlayscript.Generator;
 
-public static class PlayscriptContextEmitter
+public static class PlayscriptRuntimeEmitter
 {
     private static readonly HashSet<string> CSharpKeywords =
     [
@@ -41,18 +42,21 @@ public static class PlayscriptContextEmitter
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
-        indented.WriteLine("public class PlayscriptContext");
+        indented.WriteLine("public class PlayscriptRuntime");
         indented.WriteLine("{");
         indented.Indent++;
 
-        indented.WriteLine(
-            "private readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts;");
-        indented.WriteLine(
-            "private readonly System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>> _texts;");
+        // ── Fields & properties ──
+        indented.WriteLine("private readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts;");
+        indented.WriteLine("private readonly System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>> _texts;");
         indented.WriteLine("public PlayscriptRegistry Registry { get; }");
+        indented.WriteLine("public TransientNodeContext SceneContext { get; } = new();");
         indented.WriteLine();
 
-        indented.WriteLine("public PlayscriptContext(PlayscriptRegistry registry)");
+        // ── Constructor ──
+        indented.WriteLine("public PlayscriptRuntime() : this(new PlayscriptRegistry()) { }");
+        indented.WriteLine();
+        indented.WriteLine("public PlayscriptRuntime(PlayscriptRegistry registry)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("Registry = registry ?? throw new ArgumentNullException(nameof(registry));");
@@ -68,6 +72,42 @@ public static class PlayscriptContextEmitter
         indented.WriteLine("}");
         indented.WriteLine();
 
+        // ── Register & Dispatch ──
+        indented.WriteLine("public void Register<T>(T instance, ActionScope scope) where T : class");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("switch (scope)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("case ActionScope.GlobalService:");
+        indented.Indent++;
+        indented.WriteLine("Registry.RegisterGlobal(instance);");
+        indented.WriteLine("break;");
+        indented.Indent--;
+        indented.WriteLine("case ActionScope.TransientNode:");
+        indented.Indent++;
+        indented.WriteLine("SceneContext.Bind(instance);");
+        indented.WriteLine("break;");
+        indented.Indent--;
+        indented.WriteLine("default:");
+        indented.Indent++;
+        indented.WriteLine("throw new ArgumentOutOfRangeException(nameof(scope));");
+        indented.Indent--;
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        indented.WriteLine("public void DispatchCall(ConsumerCallItem call)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("Registry.DispatchCall(call, SceneContext);");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── ScriptKey enum + GetScript ──
         var sortedScripts = scripts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
         if (sortedScripts.Count > 0)
         {
@@ -83,12 +123,19 @@ public static class PlayscriptContextEmitter
             indented.Indent--;
             indented.WriteLine("}");
             indented.WriteLine();
-            indented.WriteLine("public Script GetScript(ScriptKey key) => new Script");
+            indented.WriteLine("public Script GetScript(ScriptKey key)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("Block = _scripts.Value[ScriptKeyToString(key)]");
+            indented.WriteLine("var script = new Script");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("Block = _scripts.Value[ScriptKeyToString(key)],");
+            indented.WriteLine("Runtime = this");
             indented.Indent--;
             indented.WriteLine("};");
+            indented.WriteLine("return script;");
+            indented.Indent--;
+            indented.WriteLine("}");
             indented.WriteLine();
             indented.WriteLine("private static string ScriptKeyToString(ScriptKey key) => key switch");
             indented.WriteLine("{");
@@ -100,9 +147,11 @@ public static class PlayscriptContextEmitter
             indented.WriteLine("};");
         }
 
+        // ── TextKey enum + GetText ──
         var sortedTexts = texts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
         if (sortedTexts.Count > 0)
         {
+            if (sortedScripts.Count > 0) indented.WriteLine();
             indented.WriteLine("public enum TextKey");
             indented.WriteLine("{");
             indented.Indent++;
@@ -115,12 +164,19 @@ public static class PlayscriptContextEmitter
             indented.Indent--;
             indented.WriteLine("}");
             indented.WriteLine();
-            indented.WriteLine("public Text GetText(TextKey key) => new Text");
+            indented.WriteLine("public Text GetText(TextKey key)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("Block = _texts.Value[TextKeyToString(key)]");
+            indented.WriteLine("var text = new Text");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("Block = _texts.Value[TextKeyToString(key)],");
+            indented.WriteLine("Runtime = this");
             indented.Indent--;
             indented.WriteLine("};");
+            indented.WriteLine("return text;");
+            indented.Indent--;
+            indented.WriteLine("}");
             indented.WriteLine();
             indented.WriteLine("private static string TextKeyToString(TextKey key) => key switch");
             indented.WriteLine("{");
@@ -132,6 +188,7 @@ public static class PlayscriptContextEmitter
             indented.WriteLine("};");
         }
 
+        // ── ResolvePath ──
         indented.WriteLine();
         indented.WriteLine("private static string ResolvePath(string path) =>");
         indented.Indent++;

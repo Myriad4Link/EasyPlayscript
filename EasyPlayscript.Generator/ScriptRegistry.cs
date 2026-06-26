@@ -40,14 +40,14 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("public ScriptBlock Block { get; set; } = default!;");
         indented.WriteLine();
-        indented.WriteLine("internal PlayscriptSession? Session { get; set; }");
+        indented.WriteLine("internal PlayscriptRuntime? Runtime { get; set; }");
         indented.WriteLine();
         indented.WriteLine("public void Run()");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("if (Session == null) throw new System.InvalidOperationException(");
+        indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Script.Run() requires a PlayscriptSession. Use session.GetScript() to create session-aware scripts.\");");
+        indented.WriteLine("\"Script.Run() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
         indented.Indent--;
         indented.WriteLine("foreach (var page in Block.Pages)");
         indented.Indent++;
@@ -59,7 +59,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("if (item is ConsumerCallItem call)");
         indented.Indent++;
-        indented.WriteLine("Session.DispatchCall(call);");
+        indented.WriteLine("Runtime.DispatchCall(call);");
         indented.Indent--;
         indented.Indent--;
         indented.Indent--;
@@ -91,7 +91,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("public TextBlock Block { get; set; } = default!;");
         indented.WriteLine();
-        indented.WriteLine("internal PlayscriptSession? Session { get; set; }");
+        indented.WriteLine("internal PlayscriptRuntime? Runtime { get; set; }");
         indented.WriteLine();
         indented.WriteLine("public string Render(PlayscriptRegistry registry, TransientNodeContext context)");
         indented.WriteLine("{");
@@ -129,16 +129,16 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("}");
         indented.WriteLine();
         indented.WriteLine(
-            "public string Render(PlayscriptContext context, TransientNodeContext? sceneContext = null) => Render(context.Registry, sceneContext ?? new TransientNodeContext());");
+            "public string Render(PlayscriptRuntime runtime, TransientNodeContext? sceneContext = null) => Render(runtime.Registry, sceneContext ?? new TransientNodeContext());");
         indented.WriteLine();
         indented.WriteLine("public string Render()");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("if (Session == null) throw new System.InvalidOperationException(");
+        indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Text.Render() requires a PlayscriptSession. Use session.GetText() to create session-aware texts.\");");
+        indented.WriteLine("\"Text.Render() requires a PlayscriptRuntime. Use runtime.GetText() to create runtime-aware texts.\");");
         indented.Indent--;
-        indented.WriteLine("return Render(Session.Registry, Session.SceneContext);");
+        indented.WriteLine("return Render(Runtime.Registry, Runtime.SceneContext);");
         indented.Indent--;
         indented.WriteLine("}");
         indented.Indent--;

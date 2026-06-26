@@ -35,18 +35,33 @@ public class ScriptNavigator(ScriptBlock block)
         _lineIndex = 0;
     }
 
+    /// <summary>
+    ///     True if the current line is the last in its paragraph, or if the script is empty / the pointer is past the end.
+    ///     Returns <c>true</c> for empty scripts and when <see cref="IsEnd"/> is true.
+    /// </summary>
     public bool IsLastLineOfParagraph => Block.Pages.Count == 0 || IsEnd() ||
                                          _lineIndex >= Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines.Count -
                                          1;
 
+    /// <summary>
+    ///     True if the current paragraph is the last on its page, or if the script is empty / the pointer is past the end.
+    ///     Returns <c>true</c> for empty scripts and when <see cref="IsEnd"/> is true.
+    /// </summary>
     public bool IsLastParagraphOfPage => Block.Pages.Count == 0 || IsEnd() ||
                                          _paragraphIndex >= Block.Pages[_pageIndex].Paragraphs.Count - 1;
 
+    /// <summary>
+    ///     True if the current page is the last in the script, or if the script is empty / the pointer is past the end.
+    ///     Returns <c>true</c> for empty scripts and when <see cref="IsEnd"/> is true.
+    /// </summary>
     public bool IsLastPage => Block.Pages.Count == 0 || IsEnd() ||
                               _pageIndex >= Block.Pages.Count - 1;
 
+    /// <summary>True if the current line is the last on its page (i.e., last line of last paragraph on the page).</summary>
     public bool IsLastLineOfPage => IsLastLineOfParagraph && IsLastParagraphOfPage;
+    /// <summary>True if the current line is the last in the entire script.</summary>
     public bool IsLastLineOfScript => IsLastLineOfPage && IsLastPage;
+    /// <summary>True if the current paragraph is the last in the entire script.</summary>
     public bool IsLastParagraphOfScript => IsLastParagraphOfPage && IsLastPage;
 
     public string? RenderNextLine(Func<Line, string> renderLine)

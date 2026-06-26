@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using EasyPlayscript.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace EasyPlayscript.Tests;
@@ -184,13 +187,12 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void GeneratesScript_WithPointerFields()
+    public void GeneratesScript_WithNavigatorDelegation()
     {
         var source = GetScriptSource();
 
-        Assert.Contains("private int _pageIndex;", source);
-        Assert.Contains("private int _paragraphIndex;", source);
-        Assert.Contains("private int _lineIndex;", source);
+        Assert.Contains("private ScriptNavigator? _navigator;", source);
+        Assert.Contains("private ScriptNavigator Navigator => _navigator ??= new ScriptNavigator(Block);", source);
     }
 
     [Fact]
@@ -207,7 +209,7 @@ public class ScriptRegistryTests
         var source = GetScriptSource();
 
         Assert.Contains("public void JumpTo(ScriptPointer pointer)", source);
-        Assert.Contains("throw new System.ArgumentOutOfRangeException", source);
+        Assert.Contains("Navigator.JumpTo(pointer)", source);
     }
 
     [Fact]
@@ -216,9 +218,7 @@ public class ScriptRegistryTests
         var source = GetScriptSource();
 
         Assert.Contains("public void Reset()", source);
-        Assert.Contains("_pageIndex = 0;", source);
-        Assert.Contains("_paragraphIndex = 0;", source);
-        Assert.Contains("_lineIndex = 0;", source);
+        Assert.Contains("Navigator.Reset()", source);
     }
 
     [Fact]
@@ -259,12 +259,100 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void GeneratesScript_WithRenderLineAndAdvanceLineHelpers()
+    public void GeneratesScript_WithRenderLineHelper()
     {
         var source = GetScriptSource();
 
         Assert.Contains("private string RenderLine(Line line)", source);
-        Assert.Contains("private void AdvanceLine()", source);
-        Assert.Contains("private bool IsEnd()", source);
+        Assert.Contains("Navigator.RenderNextLine(RenderLine)", source);
+        Assert.Contains("Navigator.RenderNextParagraph(RenderLine)", source);
+        Assert.Contains("Navigator.RenderNextPage(RenderLine)", source);
+    }
+
+    // ─── Script Navigation: Structural Parity with ScriptNavigator ────────────
+
+    private static string GetScriptNavigatorSource(
+        [CallerFilePath] string testFilePath = "")
+    {
+        var testDir = Path.GetDirectoryName(testFilePath)!;
+        var solutionDir = Path.GetFullPath(Path.Combine(testDir, ".."));
+        return File.ReadAllText(Path.Combine(solutionDir, "EasyPlayscript.Core", "ScriptNavigator.cs"));
+    }
+
+    private static HashSet<string> GetPublicMembers(string source, string className)
+    {
+        var tree = CSharpSyntaxTree.ParseText(source);
+        var root = tree.GetRoot();
+        var classDecl = root.DescendantNodes()
+            .OfType<ClassDeclarationSyntax>()
+            .First(c => c.Identifier.Text == className);
+
+        var members = new HashSet<string>();
+        foreach (var member in classDecl.Members)
+        {
+            var modifiers = member.Modifiers.Select(m => m.Text).ToList();
+            if (!modifiers.Contains("public")) continue;
+
+            switch (member)
+            {
+                case MethodDeclarationSyntax method:
+                    var paramList = string.Join(", ",
+                        method.ParameterList.Parameters.Select(p => $"{p.Type} {p.Identifier}"));
+                    members.Add($"method {method.Identifier.Text}({paramList})");
+                    break;
+                case PropertyDeclarationSyntax prop:
+                    members.Add($"property {prop.Identifier.Text}");
+                    break;
+            }
+        }
+        return members;
+    }
+
+    [Fact]
+    public void GeneratedScript_NavigationAPIMatchesScriptNavigator()
+    {
+        var scriptSource = GetScriptSource();
+        var navigatorSource = GetScriptNavigatorSource();
+
+        var scriptMembers = GetPublicMembers(scriptSource, "Script");
+        var navigatorMembers = GetPublicMembers(navigatorSource, "ScriptNavigator");
+
+        // These navigation members must exist in both classes (same name, same purpose).
+        // ScriptNavigator.Render* takes a Func<Line,string> callback; Script wraps it internally.
+        var sharedNavigation = new HashSet<string>
+        {
+            "method JumpTo(ScriptPointer pointer)",
+            "method Reset()",
+            "property Pointer",
+            "property IsLastLineOfParagraph",
+            "property IsLastParagraphOfPage",
+            "property IsLastPage",
+            "property IsLastLineOfPage",
+            "property IsLastLineOfScript",
+            "property IsLastParagraphOfScript",
+        };
+
+        var missing = sharedNavigation.Except(scriptMembers).ToList();
+        Assert.True(missing.Count == 0,
+            $"Generated Script is missing shared navigation members from ScriptNavigator:\n  {string.Join("\n  ", missing)}");
+
+        // ScriptNavigator should also have all these shared members (sanity check).
+        var missingFromNav = sharedNavigation.Except(navigatorMembers).ToList();
+        Assert.True(missingFromNav.Count == 0,
+            $"ScriptNavigator is missing shared navigation members:\n  {string.Join("\n  ", missingFromNav)}");
+    }
+
+    [Fact]
+    public void GeneratedScript_HasExpectedNavigationMethods()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public string? RenderNextLine()", source);
+        Assert.Contains("public string? RenderNextParagraph()", source);
+        Assert.Contains("public string? RenderNextPage()", source);
+        Assert.Contains("public void Run()", source);
+        Assert.Contains("public void JumpTo(ScriptPointer pointer)", source);
+        Assert.Contains("public void Reset()", source);
+        Assert.Contains("public ScriptPointer Pointer", source);
     }
 }

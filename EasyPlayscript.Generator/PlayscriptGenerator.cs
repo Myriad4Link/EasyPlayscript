@@ -101,6 +101,10 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var contextCode = PlayscriptContextEmitter.Generate(
                 ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey);
             spc.AddSource("PlayscriptContext.g.cs", SourceText.From(contextCode, Encoding.UTF8));
+
+            var sessionCode = PlayscriptSessionEmitter.Generate(
+                ctx.Data.Implementations, ctx.Data.Scripts, ctx.Data.Texts);
+            spc.AddSource("PlayscriptSession.g.cs", SourceText.From(sessionCode, Encoding.UTF8));
         });
     }
 

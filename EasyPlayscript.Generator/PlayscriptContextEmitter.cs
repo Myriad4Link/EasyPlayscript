@@ -41,7 +41,7 @@ public static class PlayscriptContextEmitter
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
-        indented.WriteLine("public sealed class PlayscriptContext");
+        indented.WriteLine("public class PlayscriptContext");
         indented.WriteLine("{");
         indented.Indent++;
 

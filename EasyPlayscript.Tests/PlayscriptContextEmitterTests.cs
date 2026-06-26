@@ -12,10 +12,11 @@ public class PlayscriptContextEmitterTests
     private static readonly Dictionary<string, TextBlock> EmptyTexts = new();
 
     [Fact]
-    public void Generate_Empty_ProducesSealedClass()
+    public void Generate_Empty_ProducesNonSealedClass()
     {
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("public sealed class PlayscriptContext", code);
+        Assert.Contains("public class PlayscriptContext", code);
+        Assert.DoesNotContain("sealed", code);
     }
 
     [Fact]

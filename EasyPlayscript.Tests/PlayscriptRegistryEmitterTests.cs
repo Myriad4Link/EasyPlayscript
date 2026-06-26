@@ -32,7 +32,7 @@ public class PlayscriptRegistryEmitterTests
     }
 
     [Fact]
-    public void Generate_WithImplementation_GeneratesRegisterMethod()
+    public void Generate_WithImplementation_GeneratesRegisterGlobalMethod()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
@@ -44,8 +44,10 @@ public class PlayscriptRegistryEmitterTests
         });
 
         var code = PlayscriptRegistryEmitter.Generate(data);
-        Assert.Contains("public void Register(global::Game.AudioSystem instance)", code);
-        Assert.Contains("private global::Game.AudioSystem? _audioSystem;", code);
+        Assert.Contains("public void RegisterGlobal<T>(T instance) where T : class", code);
+        Assert.Contains("Dictionary<System.Type, object> _globals", code);
+        Assert.DoesNotContain("public void Register(global::Game.AudioSystem instance)", code);
+        Assert.DoesNotContain("private global::Game.AudioSystem? _audioSystem;", code);
     }
 
     [Fact]
@@ -152,7 +154,7 @@ public class PlayscriptRegistryEmitterTests
     }
 
     [Fact]
-    public void Generate_MultipleClasses_MultipleRegisterMethods()
+    public void Generate_MultipleClasses_SingleRegisterGlobal()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
@@ -171,8 +173,9 @@ public class PlayscriptRegistryEmitterTests
         });
 
         var code = PlayscriptRegistryEmitter.Generate(data);
-        Assert.Contains("public void Register(global::Game.AudioSystem instance)", code);
-        Assert.Contains("public void Register(global::Game.UiSystem instance)", code);
+        Assert.Contains("public void RegisterGlobal<T>(T instance) where T : class", code);
+        Assert.DoesNotContain("public void Register(global::Game.AudioSystem instance)", code);
+        Assert.DoesNotContain("public void Register(global::Game.UiSystem instance)", code);
     }
 
     [Fact]
@@ -224,7 +227,7 @@ public class PlayscriptRegistryEmitterTests
     }
 
     [Fact]
-    public void TransientNode_NoFieldOrRegister_Generated()
+    public void TransientNode_NoPerClassFieldOrRegister_Generated()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
@@ -243,6 +246,7 @@ public class PlayscriptRegistryEmitterTests
 
         Assert.DoesNotContain("private global::Game.SceneTransitioner?", code);
         Assert.DoesNotContain("public void Register(global::Game.SceneTransitioner", code);
+        Assert.Contains("RegisterGlobal<T>", code);
     }
 
     [Fact]
@@ -268,7 +272,7 @@ public class PlayscriptRegistryEmitterTests
     }
 
     [Fact]
-    public void GlobalService_Dispatch_UsesField()
+    public void GlobalService_Dispatch_UsesGlobals()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
@@ -289,6 +293,7 @@ public class PlayscriptRegistryEmitterTests
 
         var code = PlayscriptRegistryEmitter.Generate(data);
 
+        Assert.Contains("_globals.TryGetValue(typeof(global::Game.AudioSystem)", code);
         Assert.Contains("_audioSystem.play(", code);
         Assert.DoesNotContain("context.Get", code);
     }
@@ -329,8 +334,9 @@ public class PlayscriptRegistryEmitterTests
 
         var code = PlayscriptRegistryEmitter.Generate(data);
 
-        Assert.Contains("private global::Game.UiSystem? _uiSystem;", code);
-        Assert.Contains("public void Register(global::Game.UiSystem", code);
+        Assert.DoesNotContain("private global::Game.UiSystem? _uiSystem;", code);
+        Assert.DoesNotContain("public void Register(global::Game.UiSystem", code);
+        Assert.Contains("_globals.TryGetValue(typeof(global::Game.UiSystem)", code);
         Assert.Contains("_uiSystem.play(", code);
         Assert.Contains("context.Get<global::Game.UiSystem>()", code);
     }

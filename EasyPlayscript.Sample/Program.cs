@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Text;
 using EasyPlayscript.Generated;
 
@@ -42,31 +41,27 @@ public static class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
 
-        var registry = new PlayscriptRegistry();
-        registry.Register(new AudioSystem());
-
-        var context = new PlayscriptContext(registry);
-        var sceneContext = new TransientNodeContext();
-        sceneContext.Bind(new UiSystem());
+        var session = new PlayscriptSession();
+        session.Register(new AudioSystem(), ActionScope.GlobalService);
+        session.Register(new UiSystem(), ActionScope.TransientNode);
 
         Console.WriteLine("=== Scripts ===");
         foreach (var key in Enum.GetValues<PlayscriptContext.ScriptKey>())
         {
-            var script = context.GetScript(key);
+            var script = session.GetScript(key);
             Console.WriteLine($"\n[{key}] ({script.Block.Pages.Count} page(s))");
-            PrintScript(script, registry, sceneContext);
+            PrintScript(script);
         }
 
         Console.WriteLine("\n=== Texts ===");
         foreach (var key in Enum.GetValues<PlayscriptContext.TextKey>())
         {
-            var text = context.GetText(key);
             Console.WriteLine($"\n[{key}]");
-            PrintText(text, registry, sceneContext);
+            Console.WriteLine(session.GetText(key).Render());
         }
     }
 
-    private static void PrintScript(Script script, PlayscriptRegistry registry, TransientNodeContext sceneContext)
+    private static void PrintScript(Script script)
     {
         for (var pi = 0; pi < script.Block.Pages.Count; pi++)
         {
@@ -74,7 +69,7 @@ public static class Program
             foreach (var paragraph in script.Block.Pages[pi].Paragraphs)
             foreach (var line in paragraph.Lines)
             {
-                var parts = new List<string>();
+                var parts = new System.Collections.Generic.List<string>();
                 foreach (var item in line.Items)
                     switch (item)
                     {
@@ -82,7 +77,7 @@ public static class Program
                             parts.Add(text.Text);
                             break;
                         case ConsumerCallItem call:
-                            registry.DispatchCall(call, sceneContext);
+                            script.Session!.DispatchCall(call);
                             parts.Add(call.Result != null ? $"[{call.Result}]" : $"[@{call.Identifier}]");
                             break;
                     }
@@ -90,10 +85,5 @@ public static class Program
                 Console.WriteLine($"    {string.Join("", parts)}");
             }
         }
-    }
-
-    private static void PrintText(Text text, PlayscriptRegistry registry, TransientNodeContext sceneContext)
-    {
-        Console.WriteLine(text.Render(registry, sceneContext));
     }
 }

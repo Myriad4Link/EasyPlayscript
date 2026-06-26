@@ -40,34 +40,15 @@ public static class PlayscriptRegistryEmitter
         indented.WriteLine("{");
         indented.Indent++;
 
-        var globalImplGroups = data.Implementations
-            .Where(i => i.Scope == ActionScope.GlobalService)
-            .GroupBy(i => i.ClassName)
-            .OrderBy(g => g.Key, StringComparer.Ordinal)
-            .ToList();
-
-        foreach (var group in globalImplGroups)
-        {
-            var className = group.Key;
-            var fieldName = $"_{CamelCase(className)}";
-            indented.WriteLine($"private {className}? {fieldName};");
-        }
-
-        if (globalImplGroups.Count > 0)
-            indented.WriteLine();
-
-        foreach (var group in globalImplGroups)
-        {
-            var className = group.Key;
-            var fieldName = $"_{CamelCase(className)}";
-            indented.WriteLine($"public void Register({className} instance)");
-            indented.WriteLine("{");
-            indented.Indent++;
-            indented.WriteLine($"{fieldName} = instance ?? throw new ArgumentNullException(nameof(instance));");
-            indented.Indent--;
-            indented.WriteLine("}");
-            indented.WriteLine();
-        }
+        indented.WriteLine("private readonly System.Collections.Generic.Dictionary<System.Type, object> _globals = new();");
+        indented.WriteLine();
+        indented.WriteLine("public void RegisterGlobal<T>(T instance) where T : class");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("_globals[typeof(T)] = instance ?? throw new ArgumentNullException(nameof(instance));");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
 
         indented.WriteLine("internal void DispatchCall(ConsumerCallItem call, TransientNodeContext context)");
         indented.WriteLine("{");
@@ -95,6 +76,7 @@ public static class PlayscriptRegistryEmitter
                     indented.WriteLine($"case \"{iface.Name}\" when call.Arguments.Count == {iface.Parameters.Count}:");
                 else
                     indented.WriteLine($"case \"{iface.Name}\":");
+                indented.WriteLine("{");
                 indented.Indent++;
 
                 var argList = string.Join(", ",
@@ -116,16 +98,19 @@ public static class PlayscriptRegistryEmitter
                 }
                 else
                 {
-                    var classFieldName = $"_{CamelCase(impl.ClassName)}";
+                    var localName = $"_{CamelCase(impl.ClassName)}";
                     indented.WriteLine(
-                        $"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
+                        $"if (!_globals.TryGetValue(typeof({impl.ClassName}), out var {localName}Obj)) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
+                    indented.WriteLine($"var {localName} = ({impl.ClassName}){localName}Obj;");
                     if (iface.ReturnType == InterfaceType.Void)
-                        indented.WriteLine($"{classFieldName}.{impl.MethodName}({argList});");
+                        indented.WriteLine($"{localName}.{impl.MethodName}({argList});");
                     else
-                        indented.WriteLine($"call.Result = {classFieldName}.{impl.MethodName}({argList});");
+                        indented.WriteLine($"call.Result = {localName}.{impl.MethodName}({argList});");
                 }
 
                 indented.WriteLine("break;");
+                indented.Indent--;
+                indented.WriteLine("}");
                 indented.Indent--;
                 indented.Indent--;
             }

@@ -205,7 +205,8 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_ContainsSealedContext()
     {
         var code = GenerateContextCode(("Example", ScriptBlockExample));
-        Assert.Contains("public sealed class PlayscriptContext", code);
+        Assert.Contains("public class PlayscriptContext", code);
+        Assert.DoesNotContain("sealed", code);
     }
 
     [Fact]
@@ -746,7 +747,7 @@ public class PlayscriptGeneratorTests
                                                      """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
-        Assert.Contains("Register(global::TestNs.Effects instance)", code);
+        Assert.Contains("RegisterGlobal<T>", code);
         Assert.Contains("case \"fade\":", code);
     }
 
@@ -845,7 +846,7 @@ public class PlayscriptGeneratorTests
                                                      """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
-        Assert.Contains("Register(global::TestNs.Inner instance)", code);
+        Assert.Contains("RegisterGlobal<T>", code);
     }
 
     [Fact]
@@ -860,7 +861,7 @@ public class PlayscriptGeneratorTests
                                                      """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
-        Assert.Contains("Register(GlobalEffects instance)", code);
+        Assert.Contains("RegisterGlobal<T>", code);
         Assert.DoesNotContain("global::", code);
     }
 
@@ -923,8 +924,9 @@ public class PlayscriptGeneratorTests
 
         var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
 
-        Assert.Contains("private global::Game.AudioSystem? _audioSystem;", code);
-        Assert.Contains("Register(global::Game.AudioSystem", code);
+        Assert.DoesNotContain("private global::Game.AudioSystem? _audioSystem;", code);
+        Assert.DoesNotContain("Register(global::Game.AudioSystem", code);
+        Assert.Contains("_globals.TryGetValue(typeof(global::Game.AudioSystem)", code);
         Assert.Contains("_audioSystem.play(", code);
 
         Assert.DoesNotContain("private global::Game.Transitioner", code);

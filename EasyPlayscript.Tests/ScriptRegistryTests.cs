@@ -115,34 +115,33 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void GeneratesText_WithRenderRegistryMethod()
+    public void GeneratesText_WithRenderSessionMethod()
     {
         var runResult = RunGenerator();
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("public string Render(PlayscriptRegistry registry, TransientNodeContext context)", textText);
+        Assert.Contains("public string Render(PlayscriptRegistry registry, PlayscriptRuntimeSession session)", textText);
     }
 
     [Fact]
-    public void GeneratesText_WithRenderContextMethod()
+    public void GeneratesText_WithRenderOverload()
     {
         var runResult = RunGenerator();
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("public string Render(PlayscriptRuntime runtime, TransientNodeContext? sceneContext = null)",
-            textText);
+        Assert.Contains("public string Render(PlayscriptRuntimeSession session)", textText);
     }
 
     [Fact]
-    public void GeneratesScript_WithRuntimeProperty()
+    public void GeneratesScript_WithSessionProperty()
     {
         var runResult = RunGenerator();
         var scriptFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Script.g.cs"));
         var scriptText = scriptFile.GetText().ToString();
 
-        Assert.Contains("internal PlayscriptRuntime? Runtime { get; set; }", scriptText);
+        Assert.Contains("internal PlayscriptRuntimeSession? Runtime { get; set; }", scriptText);
     }
 
     [Fact]
@@ -157,13 +156,13 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void GeneratesText_WithRuntimeProperty()
+    public void GeneratesText_WithSessionProperty()
     {
         var runResult = RunGenerator();
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("internal PlayscriptRuntime? Runtime { get; set; }", textText);
+        Assert.Contains("internal PlayscriptRuntimeSession? Runtime { get; set; }", textText);
     }
 
     [Fact]
@@ -174,7 +173,17 @@ public class ScriptRegistryTests
         var textText = textFile.GetText().ToString();
 
         Assert.Contains("public string Render()", textText);
-        Assert.Contains("Render(Runtime.Registry, Runtime.SceneContext);", textText);
+        Assert.Contains("Render(Runtime.Registry, Runtime);", textText);
+    }
+
+    [Fact]
+    public void GeneratesText_NoTransientNodeContext()
+    {
+        var runResult = RunGenerator();
+        var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
+        var textText = textFile.GetText().ToString();
+
+        Assert.DoesNotContain("TransientNodeContext", textText);
     }
 
     // ─── Script Navigation: Generated Code Assertions ──────────────────────────

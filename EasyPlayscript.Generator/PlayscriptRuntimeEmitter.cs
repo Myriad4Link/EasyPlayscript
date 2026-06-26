@@ -42,7 +42,7 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
-        indented.WriteLine("public class PlayscriptRuntime");
+        indented.WriteLine("public class PlayscriptRuntimeSession : global::EasyPlayscript.PlayscriptSessionScope");
         indented.WriteLine("{");
         indented.Indent++;
 
@@ -50,13 +50,12 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("private readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts;");
         indented.WriteLine("private readonly System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>> _texts;");
         indented.WriteLine("public PlayscriptRegistry Registry { get; }");
-        indented.WriteLine("public TransientNodeContext SceneContext { get; } = new();");
         indented.WriteLine();
 
-        // ── Constructor ──
-        indented.WriteLine("public PlayscriptRuntime() : this(new PlayscriptRegistry()) { }");
+        // ── Constructors ──
+        indented.WriteLine("public PlayscriptRuntimeSession() : this(new PlayscriptRegistry()) { }");
         indented.WriteLine();
-        indented.WriteLine("public PlayscriptRuntime(PlayscriptRegistry registry)");
+        indented.WriteLine("public PlayscriptRuntimeSession(PlayscriptRegistry registry) : base()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("Registry = registry ?? throw new ArgumentNullException(nameof(registry));");
@@ -72,37 +71,22 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("}");
         indented.WriteLine();
 
-        // ── Register & Dispatch ──
-        indented.WriteLine("public void Register<T>(T instance, ActionScope scope) where T : class");
+        // ── CreateChild override ──
+        indented.WriteLine("public override PlayscriptRuntimeSession CreateChild()");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("switch (scope)");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("case ActionScope.GlobalService:");
-        indented.Indent++;
-        indented.WriteLine("Registry.RegisterGlobal(instance);");
-        indented.WriteLine("break;");
-        indented.Indent--;
-        indented.WriteLine("case ActionScope.TransientNode:");
-        indented.Indent++;
-        indented.WriteLine("SceneContext.Bind(instance);");
-        indented.WriteLine("break;");
-        indented.Indent--;
-        indented.WriteLine("default:");
-        indented.Indent++;
-        indented.WriteLine("throw new ArgumentOutOfRangeException(nameof(scope));");
-        indented.Indent--;
-        indented.Indent--;
-        indented.WriteLine("}");
+        indented.WriteLine("var child = new PlayscriptRuntimeSession(Registry);");
+        indented.WriteLine("child.SetParent(this);");
+        indented.WriteLine("return child;");
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
 
+        // ── Dispatch ──
         indented.WriteLine("public void DispatchCall(ConsumerCallItem call)");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("Registry.DispatchCall(call, SceneContext);");
+        indented.WriteLine("Registry.DispatchCall(call, this);");
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();

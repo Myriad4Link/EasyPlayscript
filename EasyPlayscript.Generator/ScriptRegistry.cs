@@ -42,7 +42,7 @@ public class ScriptRegistry : IIncrementalGenerator
         // ── Properties ──
         indented.WriteLine("public ScriptBlock Block { get; set; } = default!;");
         indented.WriteLine();
-        indented.WriteLine("internal PlayscriptRuntime? Runtime { get; set; }");
+        indented.WriteLine("internal PlayscriptRuntimeSession? Runtime { get; set; }");
         indented.WriteLine();
 
         // ── Navigator (single source of truth for all navigation state) ──
@@ -85,7 +85,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Script.RenderLine() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.WriteLine("\"Script.RenderLine() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
         indented.Indent--;
         indented.WriteLine("Runtime.DispatchCall(call);");
         indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
@@ -106,7 +106,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextLine() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.WriteLine("\"Script.RenderNextLine() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
         indented.Indent--;
         indented.WriteLine("return Navigator.RenderNextLine(RenderLine);");
         indented.Indent--;
@@ -117,7 +117,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextParagraph() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.WriteLine("\"Script.RenderNextParagraph() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
         indented.Indent--;
         indented.WriteLine("return Navigator.RenderNextParagraph(RenderLine);");
         indented.Indent--;
@@ -128,7 +128,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextPage() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.WriteLine("\"Script.RenderNextPage() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
         indented.Indent--;
         indented.WriteLine("return Navigator.RenderNextPage(RenderLine);");
         indented.Indent--;
@@ -141,7 +141,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Script.Run() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.WriteLine("\"Script.Run() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
         indented.Indent--;
         indented.WriteLine("foreach (var page in Block.Pages)");
         indented.Indent++;
@@ -185,9 +185,9 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("public TextBlock Block { get; set; } = default!;");
         indented.WriteLine();
-        indented.WriteLine("internal PlayscriptRuntime? Runtime { get; set; }");
+        indented.WriteLine("internal PlayscriptRuntimeSession? Runtime { get; set; }");
         indented.WriteLine();
-        indented.WriteLine("public string Render(PlayscriptRegistry registry, TransientNodeContext context)");
+        indented.WriteLine("public string Render(PlayscriptRegistry registry, PlayscriptRuntimeSession session)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("var sb = new System.Text.StringBuilder();");
@@ -208,7 +208,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("case ConsumerCallItem call:");
         indented.Indent++;
-        indented.WriteLine("registry.DispatchCall(call, context);");
+        indented.WriteLine("registry.DispatchCall(call, session);");
         indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
         indented.WriteLine("break;");
         indented.Indent--;
@@ -223,16 +223,16 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("}");
         indented.WriteLine();
         indented.WriteLine(
-            "public string Render(PlayscriptRuntime runtime, TransientNodeContext? sceneContext = null) => Render(runtime.Registry, sceneContext ?? new TransientNodeContext());");
+            "public string Render(PlayscriptRuntimeSession session) => Render(session.Registry, session);");
         indented.WriteLine();
         indented.WriteLine("public string Render()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
         indented.Indent++;
-        indented.WriteLine("\"Text.Render() requires a PlayscriptRuntime. Use runtime.GetText() to create runtime-aware texts.\");");
+        indented.WriteLine("\"Text.Render() requires a PlayscriptRuntimeSession. Use session.GetText() to create session-aware texts.\");");
         indented.Indent--;
-        indented.WriteLine("return Render(Runtime.Registry, Runtime.SceneContext);");
+        indented.WriteLine("return Render(Runtime.Registry, Runtime);");
         indented.Indent--;
         indented.WriteLine("}");
         indented.Indent--;

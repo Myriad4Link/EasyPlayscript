@@ -9,7 +9,6 @@ public class ImplementationInfo
     public string? Alias { get; set; }
     public List<string> ParameterTypeNames { get; set; } = new();
     public string ReturnTypeName { get; set; } = "void";
-    public ActionScope Scope { get; set; } = ActionScope.GlobalService;
     public string FilePath { get; set; } = string.Empty;
     public int Line { get; set; }
 

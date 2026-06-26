@@ -20,7 +20,7 @@ public class PlayscriptRegistryEmitterTests
     public void Generate_Empty_HasDispatchCall()
     {
         var code = PlayscriptRegistryEmitter.Generate(EmptyData);
-        Assert.Contains("internal void DispatchCall(ConsumerCallItem call, TransientNodeContext context)", code);
+        Assert.Contains("internal void DispatchCall(ConsumerCallItem call, PlayscriptRuntimeSession session)", code);
     }
 
     [Fact]
@@ -29,25 +29,6 @@ public class PlayscriptRegistryEmitterTests
         var code = PlayscriptRegistryEmitter.Generate(EmptyData);
         Assert.Contains("default:", code);
         Assert.Contains("throw new InvalidOperationException", code);
-    }
-
-    [Fact]
-    public void Generate_WithImplementation_GeneratesRegisterGlobalMethod()
-    {
-        var data = new PlayscriptCompilationData();
-        data.Implementations.Add(new ImplementationInfo
-        {
-            ClassName = "global::Game.AudioSystem",
-            MethodName = "play",
-            ParameterTypeNames = new List<string> { "string", "double" },
-            ReturnTypeName = "void"
-        });
-
-        var code = PlayscriptRegistryEmitter.Generate(data);
-        Assert.Contains("public void RegisterGlobal<T>(T instance) where T : class", code);
-        Assert.Contains("Dictionary<System.Type, object> _globals", code);
-        Assert.DoesNotContain("public void Register(global::Game.AudioSystem instance)", code);
-        Assert.DoesNotContain("private global::Game.AudioSystem? _audioSystem;", code);
     }
 
     [Fact]
@@ -76,7 +57,7 @@ public class PlayscriptRegistryEmitterTests
     }
 
     [Fact]
-    public void Generate_VoidInterface_DirectCall()
+    public void Generate_VoidInterface_UsesSessionGet()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
@@ -91,6 +72,7 @@ public class PlayscriptRegistryEmitterTests
             InterfaceType.Void, 1, 0));
 
         var code = PlayscriptRegistryEmitter.Generate(data);
+        Assert.Contains("session.Get<global::Game.System>()", code);
         Assert.Contains("_system.do_thing()", code);
         Assert.DoesNotContain("call.Result", code);
         Assert.Contains("NullReferenceException", code);
@@ -113,6 +95,7 @@ public class PlayscriptRegistryEmitterTests
 
         var code = PlayscriptRegistryEmitter.Generate(data);
         Assert.Contains("call.Result = _system.get_name()", code);
+        Assert.Contains("session.Get<global::Game.System>()", code);
         Assert.Contains("NullReferenceException", code);
     }
 
@@ -151,31 +134,6 @@ public class PlayscriptRegistryEmitterTests
         var code = PlayscriptRegistryEmitter.Generate(data);
         Assert.Contains("when call.Arguments.Count == 1", code);
         Assert.Contains("when call.Arguments.Count == 2", code);
-    }
-
-    [Fact]
-    public void Generate_MultipleClasses_SingleRegisterGlobal()
-    {
-        var data = new PlayscriptCompilationData();
-        data.Implementations.Add(new ImplementationInfo
-        {
-            ClassName = "global::Game.AudioSystem",
-            MethodName = "play",
-            ParameterTypeNames = new List<string> { "string" },
-            ReturnTypeName = "void"
-        });
-        data.Implementations.Add(new ImplementationInfo
-        {
-            ClassName = "global::Game.UiSystem",
-            MethodName = "transition",
-            ParameterTypeNames = new List<string> { "string" },
-            ReturnTypeName = "void"
-        });
-
-        var code = PlayscriptRegistryEmitter.Generate(data);
-        Assert.Contains("public void RegisterGlobal<T>(T instance) where T : class", code);
-        Assert.DoesNotContain("public void Register(global::Game.AudioSystem instance)", code);
-        Assert.DoesNotContain("public void Register(global::Game.UiSystem instance)", code);
     }
 
     [Fact]
@@ -227,7 +185,7 @@ public class PlayscriptRegistryEmitterTests
     }
 
     [Fact]
-    public void TransientNode_NoPerClassFieldOrRegister_Generated()
+    public void Dispatch_UsesSessionGet()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
@@ -235,8 +193,7 @@ public class PlayscriptRegistryEmitterTests
             ClassName = "global::Game.SceneTransitioner",
             MethodName = "transition",
             ParameterTypeNames = new List<string> { "string" },
-            ReturnTypeName = "void",
-            Scope = ActionScope.TransientNode
+            ReturnTypeName = "void"
         });
         data.Interfaces.Add(new InterfaceDeclaration("transition",
             new List<InterfaceParameter> { new("type", InterfaceType.String) },
@@ -244,76 +201,47 @@ public class PlayscriptRegistryEmitterTests
 
         var code = PlayscriptRegistryEmitter.Generate(data);
 
-        Assert.DoesNotContain("private global::Game.SceneTransitioner?", code);
-        Assert.DoesNotContain("public void Register(global::Game.SceneTransitioner", code);
-        Assert.Contains("RegisterGlobal<T>", code);
+        Assert.Contains("session.Get<global::Game.SceneTransitioner>()", code);
+        Assert.DoesNotContain("_globals", code);
+        Assert.DoesNotContain("context.Get", code);
     }
 
     [Fact]
-    public void TransientNode_Dispatch_UsesContext()
+    public void DispatchCall_HasSessionParameter()
     {
-        var data = new PlayscriptCompilationData();
-        data.Implementations.Add(new ImplementationInfo
-        {
-            ClassName = "global::Game.SceneTransitioner",
-            MethodName = "transition",
-            ParameterTypeNames = new List<string> { "string" },
-            ReturnTypeName = "void",
-            Scope = ActionScope.TransientNode
-        });
-        data.Interfaces.Add(new InterfaceDeclaration("transition",
-            new List<InterfaceParameter> { new("type", InterfaceType.String) },
-            InterfaceType.Void, 1, 0));
-
-        var code = PlayscriptRegistryEmitter.Generate(data);
-
-        Assert.Contains("context.Get<global::Game.SceneTransitioner>()", code);
-        Assert.DoesNotContain("_sceneTransitioner.transition(", code);
+        var code = PlayscriptRegistryEmitter.Generate(EmptyData);
+        Assert.Contains("DispatchCall(ConsumerCallItem call, PlayscriptRuntimeSession session)", code);
     }
 
     [Fact]
-    public void GlobalService_Dispatch_UsesGlobals()
+    public void Generate_NoGlobalsDict()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
         {
             ClassName = "global::Game.AudioSystem",
             MethodName = "play",
-            ParameterTypeNames = new List<string> { "string", "double" },
-            ReturnTypeName = "void",
-            Scope = ActionScope.GlobalService
+            ParameterTypeNames = new List<string> { "string" },
+            ReturnTypeName = "void"
         });
         data.Interfaces.Add(new InterfaceDeclaration("play",
-            new List<InterfaceParameter>
-            {
-                new("sound", InterfaceType.String),
-                new("volume", InterfaceType.Decimal)
-            },
+            new List<InterfaceParameter> { new("s", InterfaceType.String) },
             InterfaceType.Void, 1, 0));
 
         var code = PlayscriptRegistryEmitter.Generate(data);
-
-        Assert.Contains("_globals.TryGetValue(typeof(global::Game.AudioSystem)", code);
-        Assert.Contains("_audioSystem.play(", code);
-        Assert.DoesNotContain("context.Get", code);
+        Assert.DoesNotContain("_globals", code);
+        Assert.DoesNotContain("RegisterGlobal", code);
+        Assert.Contains("session.Get<global::Game.AudioSystem>()", code);
     }
 
     [Fact]
-    public void DispatchCall_HasContextParameter()
-    {
-        var code = PlayscriptRegistryEmitter.Generate(EmptyData);
-        Assert.Contains("DispatchCall(ConsumerCallItem call, TransientNodeContext context)", code);
-    }
-
-    [Fact]
-    public void MixedScopes_SameClass_RoutedCorrectly()
+    public void MultipleImplementations_AllUseSessionGet()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
         {
-            ClassName = "global::Game.UiSystem",
+            ClassName = "global::Game.AudioSystem",
             MethodName = "play",
-            Scope = ActionScope.GlobalService,
             ParameterTypeNames = new List<string> { "string" },
             ReturnTypeName = "void"
         });
@@ -321,7 +249,6 @@ public class PlayscriptRegistryEmitterTests
         {
             ClassName = "global::Game.UiSystem",
             MethodName = "transition",
-            Scope = ActionScope.TransientNode,
             ParameterTypeNames = new List<string> { "string" },
             ReturnTypeName = "void"
         });
@@ -333,11 +260,8 @@ public class PlayscriptRegistryEmitterTests
             InterfaceType.Void, 1, 0));
 
         var code = PlayscriptRegistryEmitter.Generate(data);
-
-        Assert.DoesNotContain("private global::Game.UiSystem? _uiSystem;", code);
-        Assert.DoesNotContain("public void Register(global::Game.UiSystem", code);
-        Assert.Contains("_globals.TryGetValue(typeof(global::Game.UiSystem)", code);
-        Assert.Contains("_uiSystem.play(", code);
-        Assert.Contains("context.Get<global::Game.UiSystem>()", code);
+        Assert.Contains("session.Get<global::Game.AudioSystem>()", code);
+        Assert.Contains("session.Get<global::Game.UiSystem>()", code);
+        Assert.DoesNotContain("_globals", code);
     }
 }

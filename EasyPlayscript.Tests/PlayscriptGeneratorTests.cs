@@ -39,17 +39,10 @@ public class PlayscriptGeneratorTests
     private const string ImplementationAttributeSource = """
                                                          namespace EasyPlayscript
                                                          {
-                                                             public enum ActionScope
-                                                             {
-                                                                 GlobalService,
-                                                                 TransientNode
-                                                             }
-
                                                              [System.AttributeUsage(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
                                                              public sealed class ImplementationAttribute : System.Attribute
                                                              {
                                                                  public string? Alias { get; }
-                                                                 public ActionScope Scope { get; set; } = ActionScope.GlobalService;
                                                                  public ImplementationAttribute(string? alias = null) => Alias = alias;
                                                              }
                                                          }
@@ -199,14 +192,14 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain("Dictionary<string, ScriptBlock> _texts", code);
     }
 
-    // ─── PlayscriptRuntime Structure ────────────────────────────────────────
+    // ─── PlayscriptRuntimeSession Structure ────────────────────────────────────
 
     [Fact]
-    public void GeneratedCode_ContainsRuntimeClass()
+    public void GeneratedCode_ContainsSessionClass()
     {
         var code = GenerateRuntimeCode(("Example", ScriptBlockExample));
-        Assert.Contains("public class PlayscriptRuntime", code);
-        Assert.DoesNotContain("public sealed class PlayscriptRuntime", code);
+        Assert.Contains("public class PlayscriptRuntimeSession", code);
+        Assert.DoesNotContain("public sealed class PlayscriptRuntimeSession", code);
     }
 
     [Fact]
@@ -241,7 +234,7 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_HasConstructor()
     {
         var code = GenerateRuntimeCode(("Example", ScriptBlockExample));
-        Assert.Contains("public PlayscriptRuntime(PlayscriptRegistry registry)", code);
+        Assert.Contains("public PlayscriptRuntimeSession(PlayscriptRegistry registry)", code);
         Assert.Contains("LoadScripts", code);
         Assert.Contains("LoadTexts", code);
     }
@@ -280,7 +273,7 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_EmptyAesKey_EmbedsEmptyString()
     {
         var code = GenerateRuntimeCodeWithKey("", ("Example", ScriptBlockExample));
-        Assert.Contains("public PlayscriptRuntime(PlayscriptRegistry", code);
+        Assert.Contains("public PlayscriptRuntimeSession(PlayscriptRegistry", code);
         Assert.DoesNotContain("dev-key-change-me", code);
         Assert.Contains("ResolvePath(\"test-scripts.bin\")", code);
         Assert.Contains("LoadScripts(ResolvePath(\"test-scripts.bin\"), \"\")", code);
@@ -747,7 +740,7 @@ public class PlayscriptGeneratorTests
                                                      """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
-        Assert.Contains("RegisterGlobal<T>", code);
+        Assert.Contains("session.Get<global::TestNs.Effects>()", code);
         Assert.Contains("case \"fade\":", code);
     }
 
@@ -846,7 +839,7 @@ public class PlayscriptGeneratorTests
                                                      """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
-        Assert.Contains("RegisterGlobal<T>", code);
+        Assert.Contains("session.Get<global::TestNs.Inner>()", code);
     }
 
     [Fact]
@@ -861,14 +854,14 @@ public class PlayscriptGeneratorTests
                                                      """;
         var code = GenerateRegistryCodeWithSource(source,
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
-        Assert.Contains("RegisterGlobal<T>", code);
+        Assert.Contains("session.Get<GlobalEffects>()", code);
         Assert.DoesNotContain("global::", code);
     }
 
-    // ─── ActionScope: TransientNode Dispatch ──────────────────────────────
+    // ─── Unified Dispatch (session.Get) ──────────────────────────────────
 
     [Fact]
-    public void Generator_TransientImplementation_ContextDispatch()
+    public void Generator_UnifiedDispatch_SessionGet()
     {
         var scpt = """
                    interface transition(type: string) : void
@@ -882,7 +875,7 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class Transitioner
                                                          {
-                                                             [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
+                                                             [EasyPlayscript.Implementation]
                                                              public void transition(string type) { }
                                                          }
                                                      }
@@ -890,12 +883,12 @@ public class PlayscriptGeneratorTests
 
         var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
 
-        Assert.Contains("context.Get<global::Game.Transitioner>()", code);
-        Assert.DoesNotContain("Register(global::Game.Transitioner", code);
+        Assert.Contains("session.Get<global::Game.Transitioner>()", code);
+        Assert.DoesNotContain("_globals", code);
     }
 
     [Fact]
-    public void Generator_MixedScopes_CorrectRouting()
+    public void Generator_MultipleImplementations_AllUseSessionGet()
     {
         var scpt = """
                    interface play(sound: string, volume: decimal) : void
@@ -911,12 +904,12 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class AudioSystem
                                                          {
-                                                             [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.GlobalService)]
+                                                             [EasyPlayscript.Implementation]
                                                              public void play(string sound, double volume) { }
                                                          }
                                                          public class Transitioner
                                                          {
-                                                             [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
+                                                             [EasyPlayscript.Implementation]
                                                              public void transition(string type) { }
                                                          }
                                                      }
@@ -924,12 +917,9 @@ public class PlayscriptGeneratorTests
 
         var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
 
-        Assert.DoesNotContain("private global::Game.AudioSystem? _audioSystem;", code);
-        Assert.DoesNotContain("Register(global::Game.AudioSystem", code);
-        Assert.Contains("_globals.TryGetValue(typeof(global::Game.AudioSystem)", code);
-        Assert.Contains("_audioSystem.play(", code);
-
-        Assert.DoesNotContain("private global::Game.Transitioner", code);
-        Assert.Contains("context.Get<global::Game.Transitioner>()", code);
+        Assert.Contains("session.Get<global::Game.AudioSystem>()", code);
+        Assert.Contains("session.Get<global::Game.Transitioner>()", code);
+        Assert.DoesNotContain("_globals", code);
+        Assert.DoesNotContain("context.Get", code);
     }
 }

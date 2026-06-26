@@ -42,14 +42,6 @@ internal static class ImplementationScanner
             ? s
             : null;
 
-        var scope = ActionScope.GlobalService;
-        foreach (var namedArg in attr.NamedArguments)
-            if (namedArg.Key == "Scope" && namedArg.Value.Value is int scopeValue)
-            {
-                scope = (ActionScope)scopeValue;
-                break;
-            }
-
         var paramTypes = methodSymbol.Parameters
             .Select(p => MapToCSharpTypeName(p.Type))
             .ToList();
@@ -66,7 +58,6 @@ internal static class ImplementationScanner
             Alias = alias,
             ParameterTypeNames = paramTypes,
             ReturnTypeName = returnType,
-            Scope = scope,
             FilePath = lineSpan.Path,
             Line = lineSpan.StartLinePosition.Line + 1
         };

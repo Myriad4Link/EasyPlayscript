@@ -26,17 +26,7 @@ public static class PlayscriptRegistryEmitter
         indented.WriteLine("{");
         indented.Indent++;
 
-        indented.WriteLine("private readonly System.Collections.Generic.Dictionary<System.Type, object> _globals = new();");
-        indented.WriteLine();
-        indented.WriteLine("public void RegisterGlobal<T>(T instance) where T : class");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("_globals[typeof(T)] = instance ?? throw new ArgumentNullException(nameof(instance));");
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.WriteLine();
-
-        indented.WriteLine("internal void DispatchCall(ConsumerCallItem call, TransientNodeContext context)");
+        indented.WriteLine("internal void DispatchCall(ConsumerCallItem call, PlayscriptRuntimeSession session)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("switch (call.Identifier)");
@@ -70,28 +60,15 @@ public static class PlayscriptRegistryEmitter
                         $"(({MapArgumentType(p.Type)})call.Arguments[{i}]).Value"));
 
                 var shortName = impl.ClassName.Split(["::", "."], StringSplitOptions.RemoveEmptyEntries).Last();
+                var localName = $"_{CamelCase(impl.ClassName)}";
 
-                if (impl.Scope == ActionScope.TransientNode)
-                {
-                    var localName = $"_{CamelCase(impl.ClassName)}Node";
-                    indented.WriteLine($"var {localName} = context.Get<{impl.ClassName}>();");
-                    indented.WriteLine(
-                        $"if ({localName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} missing from execution context.\");");
-                    if (iface.ReturnType == InterfaceType.Void)
-                        indented.WriteLine($"{localName}.{impl.MethodName}({argList});");
-                    else
-                        indented.WriteLine($"call.Result = {localName}.{impl.MethodName}({argList});");
-                }
+                indented.WriteLine($"var {localName} = session.Get<{impl.ClassName}>();");
+                indented.WriteLine(
+                    $"if ({localName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} was not registered before script execution.\");");
+                if (iface.ReturnType == InterfaceType.Void)
+                    indented.WriteLine($"{localName}.{impl.MethodName}({argList});");
                 else
-                {
-                    var localName = $"_{CamelCase(impl.ClassName)}";
-                    indented.WriteLine(
-                        $"if (!_globals.TryGetValue(typeof({impl.ClassName}), out var {localName}Obj)) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
-                    indented.WriteLine($"var {localName} = ({impl.ClassName}){localName}Obj;");
-                    indented.WriteLine(iface.ReturnType == InterfaceType.Void
-                        ? $"{localName}.{impl.MethodName}({argList});"
-                        : $"call.Result = {localName}.{impl.MethodName}({argList});");
-                }
+                    indented.WriteLine($"call.Result = {localName}.{impl.MethodName}({argList});");
 
                 indented.WriteLine("break;");
                 indented.Indent--;

@@ -15,42 +15,52 @@ public class PlayscriptRuntimeEmitterTests
     // ── Class structure ──
 
     [Fact]
-    public void Generate_ProducesNonSealedClass()
+    public void Generate_ProducesSessionClass()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("public class PlayscriptRuntime", code);
-        Assert.DoesNotContain("public sealed class PlayscriptRuntime", code);
+        Assert.Contains("public class PlayscriptRuntimeSession", code);
+        Assert.DoesNotContain("public sealed class PlayscriptRuntimeSession", code);
+        Assert.DoesNotContain("public class PlayscriptRuntime\r\n", code);
+        Assert.DoesNotContain("public class PlayscriptRuntime\n", code);
     }
 
     [Fact]
-    public void Generate_DoesNotInheritPlayscriptContext()
+    public void Generate_InheritsFromBase()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.DoesNotContain(": PlayscriptContext", code);
+        Assert.Contains(": global::EasyPlayscript.PlayscriptSessionScope", code);
     }
 
     [Fact]
     public void Generate_HasDefaultConstructor()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("public PlayscriptRuntime() : this(new PlayscriptRegistry())", code);
+        Assert.Contains("public PlayscriptRuntimeSession() : this(new PlayscriptRegistry())", code);
     }
 
     [Fact]
     public void Generate_HasRegistryConstructor()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("public PlayscriptRuntime(PlayscriptRegistry registry)", code);
+        Assert.Contains("public PlayscriptRuntimeSession(PlayscriptRegistry registry) : base()", code);
     }
 
     [Fact]
-    public void Generate_HasSceneContextProperty()
+    public void Generate_HasRegistryProperty()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("public TransientNodeContext SceneContext { get; }", code);
+        Assert.Contains("public PlayscriptRegistry Registry { get; }", code);
     }
 
-    // ── Lazy declarations ──
+    [Fact]
+    public void Generate_HasCreateChildOverride()
+    {
+        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
+        Assert.Contains("public override PlayscriptRuntimeSession CreateChild()", code);
+        Assert.Contains("child.SetParent(this)", code);
+    }
+
+    // ── Fields ──
 
     [Fact]
     public void Generate_HasLazyDeclarations()
@@ -92,44 +102,14 @@ public class PlayscriptRuntimeEmitterTests
         Assert.Contains("LoadScripts(ResolvePath(\"playscripts.bin\"), \"\")", code);
     }
 
-    // ── Register & Dispatch ──
-
-    [Fact]
-    public void Generate_HasRegisterMethod()
-    {
-        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("public void Register<T>(T instance, ActionScope scope) where T : class", code);
-    }
-
-    [Fact]
-    public void Generate_Register_RoutesGlobalService()
-    {
-        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("case ActionScope.GlobalService:", code);
-        Assert.Contains("Registry.RegisterGlobal(instance);", code);
-    }
-
-    [Fact]
-    public void Generate_Register_RoutesTransientNode()
-    {
-        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("case ActionScope.TransientNode:", code);
-        Assert.Contains("SceneContext.Bind(instance);", code);
-    }
+    // ── Dispatch ──
 
     [Fact]
     public void Generate_HasDispatchCall()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
         Assert.Contains("public void DispatchCall(ConsumerCallItem call)", code);
-        Assert.Contains("Registry.DispatchCall(call, SceneContext);", code);
-    }
-
-    [Fact]
-    public void Generate_Register_HasDefaultCase()
-    {
-        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains("throw new ArgumentOutOfRangeException(nameof(scope))", code);
+        Assert.Contains("Registry.DispatchCall(call, this)", code);
     }
 
     // ── ScriptKey enum & GetScript ──

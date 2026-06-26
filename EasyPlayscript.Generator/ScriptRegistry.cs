@@ -38,10 +38,221 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("public class Script");
         indented.WriteLine("{");
         indented.Indent++;
+
+        // ── Properties ──
         indented.WriteLine("public ScriptBlock Block { get; set; } = default!;");
         indented.WriteLine();
         indented.WriteLine("internal PlayscriptRuntime? Runtime { get; set; }");
         indented.WriteLine();
+
+        // ── Pointer fields ──
+        indented.WriteLine("private int _pageIndex;");
+        indented.WriteLine("private int _paragraphIndex;");
+        indented.WriteLine("private int _lineIndex;");
+        indented.WriteLine();
+        indented.WriteLine("public ScriptPointer Pointer => new(_pageIndex, _paragraphIndex, _lineIndex);");
+        indented.WriteLine();
+
+        // ── JumpTo ──
+        indented.WriteLine("public void JumpTo(ScriptPointer pointer)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (pointer.PageIndex < 0 || pointer.PageIndex >= Block.Pages.Count)");
+        indented.Indent++;
+        indented.WriteLine("throw new System.ArgumentOutOfRangeException(nameof(pointer), \"PageIndex out of range.\");");
+        indented.Indent--;
+        indented.WriteLine("if (pointer.ParagraphIndex < 0 || pointer.ParagraphIndex >= Block.Pages[pointer.PageIndex].Paragraphs.Count)");
+        indented.Indent++;
+        indented.WriteLine("throw new System.ArgumentOutOfRangeException(nameof(pointer), \"ParagraphIndex out of range.\");");
+        indented.Indent--;
+        indented.WriteLine("if (pointer.LineIndex < 0 || pointer.LineIndex >= Block.Pages[pointer.PageIndex].Paragraphs[pointer.ParagraphIndex].Lines.Count)");
+        indented.Indent++;
+        indented.WriteLine("throw new System.ArgumentOutOfRangeException(nameof(pointer), \"LineIndex out of range.\");");
+        indented.Indent--;
+        indented.WriteLine("_pageIndex = pointer.PageIndex;");
+        indented.WriteLine("_paragraphIndex = pointer.ParagraphIndex;");
+        indented.WriteLine("_lineIndex = pointer.LineIndex;");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── Reset ──
+        indented.WriteLine("public void Reset()");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("_pageIndex = 0;");
+        indented.WriteLine("_paragraphIndex = 0;");
+        indented.WriteLine("_lineIndex = 0;");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── IsLast properties ──
+        indented.WriteLine("public bool IsLastLineOfParagraph => Block.Pages.Count == 0 || IsEnd() ||");
+        indented.Indent++;
+        indented.WriteLine("_lineIndex >= Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines.Count - 1;");
+        indented.Indent--;
+        indented.WriteLine();
+        indented.WriteLine("public bool IsLastParagraphOfPage => Block.Pages.Count == 0 || IsEnd() ||");
+        indented.Indent++;
+        indented.WriteLine("_paragraphIndex >= Block.Pages[_pageIndex].Paragraphs.Count - 1;");
+        indented.Indent--;
+        indented.WriteLine();
+        indented.WriteLine("public bool IsLastPage => Block.Pages.Count == 0 || IsEnd() ||");
+        indented.Indent++;
+        indented.WriteLine("_pageIndex >= Block.Pages.Count - 1;");
+        indented.Indent--;
+        indented.WriteLine();
+        indented.WriteLine("public bool IsLastLineOfPage => IsLastLineOfParagraph && IsLastParagraphOfPage;");
+        indented.WriteLine("public bool IsLastLineOfScript => IsLastLineOfPage && IsLastPage;");
+        indented.WriteLine("public bool IsLastParagraphOfScript => IsLastParagraphOfPage && IsLastPage;");
+        indented.WriteLine();
+
+        // ── RenderLine helper ──
+        indented.WriteLine("private string RenderLine(Line line)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("var sb = new System.Text.StringBuilder();");
+        indented.WriteLine("foreach (var item in line.Items)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("switch (item)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("case TextItem textItem:");
+        indented.Indent++;
+        indented.WriteLine("sb.Append(textItem.Text);");
+        indented.WriteLine("break;");
+        indented.Indent--;
+        indented.WriteLine("case ConsumerCallItem call:");
+        indented.Indent++;
+        indented.WriteLine("Runtime!.DispatchCall(call);");
+        indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
+        indented.WriteLine("break;");
+        indented.Indent--;
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine("return sb.ToString();");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── AdvanceLine helper ──
+        indented.WriteLine("private void AdvanceLine()");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("_lineIndex++;");
+        indented.WriteLine("if (_pageIndex >= Block.Pages.Count) return;");
+        indented.WriteLine("var currentPage = Block.Pages[_pageIndex];");
+        indented.WriteLine("if (_paragraphIndex >= currentPage.Paragraphs.Count) return;");
+        indented.WriteLine("var currentParagraph = currentPage.Paragraphs[_paragraphIndex];");
+        indented.WriteLine("if (_lineIndex >= currentParagraph.Lines.Count)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("_lineIndex = 0;");
+        indented.WriteLine("_paragraphIndex++;");
+        indented.WriteLine("if (_paragraphIndex >= currentPage.Paragraphs.Count)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("_paragraphIndex = 0;");
+        indented.WriteLine("_pageIndex++;");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── IsEnd helper ──
+        indented.WriteLine("private bool IsEnd() => _pageIndex >= Block.Pages.Count;");
+        indented.WriteLine();
+
+        // ── RenderNextLine ──
+        indented.WriteLine("public string? RenderNextLine()");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
+        indented.Indent++;
+        indented.WriteLine("\"Script.RenderNextLine() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.Indent--;
+        indented.WriteLine("if (IsEnd()) return null;");
+        indented.WriteLine("var line = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines[_lineIndex];");
+        indented.WriteLine("var result = RenderLine(line);");
+        indented.WriteLine("AdvanceLine();");
+        indented.WriteLine("return result;");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── RenderNextParagraph ──
+        indented.WriteLine("public string? RenderNextParagraph()");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
+        indented.Indent++;
+        indented.WriteLine("\"Script.RenderNextParagraph() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.Indent--;
+        indented.WriteLine("if (IsEnd()) return null;");
+        indented.WriteLine("var sb = new System.Text.StringBuilder();");
+        indented.WriteLine("var paragraph = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex];");
+        indented.WriteLine("for (int i = 0; i < paragraph.Lines.Count; i++)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (i > 0) sb.AppendLine();");
+        indented.WriteLine("sb.Append(RenderLine(paragraph.Lines[i]));");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine("_paragraphIndex++;");
+        indented.WriteLine("if (_paragraphIndex >= Block.Pages[_pageIndex].Paragraphs.Count)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("_paragraphIndex = 0;");
+        indented.WriteLine("_pageIndex++;");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine("_lineIndex = 0;");
+        indented.WriteLine("return sb.ToString();");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── RenderNextPage ──
+        indented.WriteLine("public string? RenderNextPage()");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (Runtime == null) throw new System.InvalidOperationException(");
+        indented.Indent++;
+        indented.WriteLine("\"Script.RenderNextPage() requires a PlayscriptRuntime. Use runtime.GetScript() to create runtime-aware scripts.\");");
+        indented.Indent--;
+        indented.WriteLine("if (IsEnd()) return null;");
+        indented.WriteLine("var sb = new System.Text.StringBuilder();");
+        indented.WriteLine("var page = Block.Pages[_pageIndex];");
+        indented.WriteLine("for (int pi = 0; pi < page.Paragraphs.Count; pi++)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (pi > 0) { sb.AppendLine(); sb.AppendLine(); }");
+        indented.WriteLine("var paragraph = page.Paragraphs[pi];");
+        indented.WriteLine("for (int li = 0; li < paragraph.Lines.Count; li++)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (li > 0) sb.AppendLine();");
+        indented.WriteLine("sb.Append(RenderLine(paragraph.Lines[li]));");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine("_pageIndex++;");
+        indented.WriteLine("_paragraphIndex = 0;");
+        indented.WriteLine("_lineIndex = 0;");
+        indented.WriteLine("return sb.ToString();");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine();
+
+        // ── Run ──
         indented.WriteLine("public void Run()");
         indented.WriteLine("{");
         indented.Indent++;

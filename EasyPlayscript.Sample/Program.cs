@@ -45,12 +45,44 @@ public static class Program
         session.Register(new AudioSystem(), ActionScope.GlobalService);
         session.Register(new UiSystem(), ActionScope.TransientNode);
 
-        Console.WriteLine("=== Scripts ===");
+        Console.WriteLine("=== Scripts (line-by-line) ===");
         foreach (var key in Enum.GetValues<PlayscriptRuntime.ScriptKey>())
         {
             var script = session.GetScript(key);
             Console.WriteLine($"\n[{key}] ({script.Block.Pages.Count} page(s))");
-            PrintScript(script);
+
+            while (script.RenderNextLine() is { } line)
+            {
+                var at = script.Pointer;
+                var tag = script.IsLastLineOfScript ? " [last]" : "";
+                Console.WriteLine($"  ({at.PageIndex},{at.ParagraphIndex},{at.LineIndex}) {line}{tag}");
+            }
+        }
+
+        Console.WriteLine("\n=== Scripts (page-by-page) ===");
+        foreach (var key in Enum.GetValues<PlayscriptRuntime.ScriptKey>())
+        {
+            var script = session.GetScript(key);
+            Console.WriteLine($"\n[{key}]");
+
+            while (script.RenderNextPage() is { } page)
+                Console.WriteLine(page);
+        }
+
+        Console.WriteLine("\n=== Scripts (JumpTo demo) ===");
+        foreach (var key in Enum.GetValues<PlayscriptRuntime.ScriptKey>())
+        {
+            var script = session.GetScript(key);
+            if (script.Block.Pages.Count < 2) continue;
+
+            Console.WriteLine($"\n[{key}] jumping to page 2:");
+            script.JumpTo(new ScriptPointer(1, 0, 0));
+            while (script.RenderNextLine() is { } line)
+                Console.WriteLine($"  {line}");
+
+            Console.WriteLine("  Resetting...");
+            script.Reset();
+            Console.WriteLine($"  First line again: {script.RenderNextLine()}");
         }
 
         Console.WriteLine("\n=== Texts ===");
@@ -58,32 +90,6 @@ public static class Program
         {
             Console.WriteLine($"\n[{key}]");
             Console.WriteLine(session.GetText(key).Render());
-        }
-    }
-
-    private static void PrintScript(Script script)
-    {
-        for (var pi = 0; pi < script.Block.Pages.Count; pi++)
-        {
-            Console.WriteLine($"  Page {pi + 1}:");
-            foreach (var paragraph in script.Block.Pages[pi].Paragraphs)
-            foreach (var line in paragraph.Lines)
-            {
-                var parts = new System.Collections.Generic.List<string>();
-                foreach (var item in line.Items)
-                    switch (item)
-                    {
-                        case TextItem text:
-                            parts.Add(text.Text);
-                            break;
-                        case ConsumerCallItem call:
-                            script.Runtime!.DispatchCall(call);
-                            parts.Add(call.Result != null ? $"[{call.Result}]" : $"[@{call.Identifier}]");
-                            break;
-                    }
-
-                Console.WriteLine($"    {string.Join("", parts)}");
-            }
         }
     }
 }

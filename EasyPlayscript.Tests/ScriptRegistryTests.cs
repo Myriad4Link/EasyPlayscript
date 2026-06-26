@@ -173,4 +173,98 @@ public class ScriptRegistryTests
         Assert.Contains("public string Render()", textText);
         Assert.Contains("Render(Runtime.Registry, Runtime.SceneContext);", textText);
     }
+
+    // ─── Script Navigation: Generated Code Assertions ──────────────────────────
+
+    private static string GetScriptSource()
+    {
+        var runResult = RunGenerator();
+        var scriptFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Script.g.cs"));
+        return scriptFile.GetText().ToString();
+    }
+
+    [Fact]
+    public void GeneratesScript_WithPointerFields()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("private int _pageIndex;", source);
+        Assert.Contains("private int _paragraphIndex;", source);
+        Assert.Contains("private int _lineIndex;", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithPointerProperty()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public ScriptPointer Pointer", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithJumpToMethod()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public void JumpTo(ScriptPointer pointer)", source);
+        Assert.Contains("throw new System.ArgumentOutOfRangeException", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithResetMethod()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public void Reset()", source);
+        Assert.Contains("_pageIndex = 0;", source);
+        Assert.Contains("_paragraphIndex = 0;", source);
+        Assert.Contains("_lineIndex = 0;", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithRenderNextLine()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public string? RenderNextLine()", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithRenderNextParagraph()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public string? RenderNextParagraph()", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithRenderNextPage()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public string? RenderNextPage()", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithIsLastProperties()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("public bool IsLastLineOfParagraph", source);
+        Assert.Contains("public bool IsLastParagraphOfPage", source);
+        Assert.Contains("public bool IsLastPage", source);
+        Assert.Contains("public bool IsLastLineOfPage", source);
+        Assert.Contains("public bool IsLastLineOfScript", source);
+        Assert.Contains("public bool IsLastParagraphOfScript", source);
+    }
+
+    [Fact]
+    public void GeneratesScript_WithRenderLineAndAdvanceLineHelpers()
+    {
+        var source = GetScriptSource();
+
+        Assert.Contains("private string RenderLine(Line line)", source);
+        Assert.Contains("private void AdvanceLine()", source);
+        Assert.Contains("private bool IsEnd()", source);
+    }
 }

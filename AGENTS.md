@@ -55,6 +55,26 @@ runtime.GetScript(key).Run();       // dispatches all consumer calls
 runtime.DispatchCall(call);         // low-level single call dispatch
 ```
 
+### Script Navigation API
+
+The generated `Script` class supports pointer-based step-by-step navigation. Navigation logic lives in `ScriptNavigator` (Core); the generated class delegates to it.
+
+```csharp
+var script = runtime.GetScript(key);
+
+script.Pointer                        // ScriptPointer(0,0,0)
+script.RenderNextLine()               // string? — dispatches consumer calls + returns text
+script.RenderNextParagraph()          // string? — lines joined by newline
+script.RenderNextPage()               // string? — paragraphs joined by blank line
+script.IsLastLineOfParagraph          // bool (also: IsLastLineOfPage, IsLastLineOfScript, etc.)
+script.JumpTo(pointer)                // void — validates bounds
+script.Reset()                        // void — rewinds to (0,0,0)
+```
+
+- `Render*` methods return `null` when the pointer is past the end.
+- `IsLast*` properties return `true` for empty scripts and when the pointer is past the end.
+- `Run()` is unaffected by the pointer — it always dispatches everything.
+
 ### ActionScope Dispatch
 
 - **GlobalService**: Stored in a `Dictionary<Type, object>` (`_globals`). Dispatched via `_globals.TryGetValue(typeof(T))`.
@@ -68,7 +88,7 @@ runtime.DispatchCall(call);         // low-level single call dispatch
 |------|-----------|----------|
 | `PlayscriptRegistry.g.cs` | `PlayscriptRegistryEmitter` | `_globals` dict, `RegisterGlobal<T>()`, `DispatchCall()` |
 | `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeEmitter` | `PlayscriptRuntime` class with `Register<T>()`, `DispatchCall()`, enums, lazy loader |
-| `Script.g.cs` | `ScriptRegistry` | `Script` class with `Run()` (session-aware) |
+| `Script.g.cs` | `ScriptRegistry` | `Script` class with `Run()` + pointer-based navigation (session-aware) |
 | `Text.g.cs` | `ScriptRegistry` | `Text` class with `Render()` (session-aware + original overloads) |
 
 `Script.Run()` and `Text.Render()` (parameterless) throw if `Runtime` is null — they only work when created via `runtime.GetScript()`/`runtime.GetText()`.
@@ -111,6 +131,8 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `EasyPlayscript.Generator/PlayscriptRegistryEmitter.cs` — generates `PlayscriptRegistry.g.cs` with `_globals` dict + scope-aware dispatch
 - `EasyPlayscript.Generator/PlayscriptRuntimeEmitter.cs` — generates `PlayscriptRuntime.g.cs` (enums, lazy loader, register, dispatch)
 - `EasyPlayscript.Generator/ScriptRegistry.cs` — generates `Script.g.cs` and `Text.g.cs` (post-initialization)
+- `EasyPlayscript.Core/ScriptNavigator.cs` — pointer-based navigation for Script (RenderNext*, IsLast*, JumpTo, Reset)
+- `EasyPlayscript.Core/ScriptPointer.cs` — immutable value type for script position (pageIndex, paragraphIndex, lineIndex)
 - `EasyPlayscript.Core/TransientNodeContext.cs` — transient node type-map for scene-scoped components
 - `EasyPlayscript.Core/ImplementationAttribute.cs` — `[Implementation]` attribute + `ActionScope` enum
 - `EasyPlayscript.Sample/scripts/*.scpt` — example `.scpt` files
@@ -126,3 +148,4 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - No CI workflows exist — this is a local development repo
 - `Script.g.cs` and `Text.g.cs` are emitted via `RegisterPostInitializationOutput` (runs before other generators). They reference `PlayscriptRuntime` by name, which is generated later. This works because all generated sources compile together
 - `PlayscriptRegistry.DispatchCall` switch cases use `{ }` blocks to scope local variables — C# switch cases share scope without blocks
+- `ScriptNavigator` (Core) owns all pointer state; the generated `Script` class delegates to it. The navigator takes a `Func<Line, string>` render callback so it can be tested without a runtime. The generated Script passes its own `RenderLine` method (which dispatches consumer calls) as that callback

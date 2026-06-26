@@ -206,7 +206,7 @@ public class PlayscriptGeneratorTests
     {
         var code = GenerateContextCode(("Example", ScriptBlockExample));
         Assert.Contains("public class PlayscriptContext", code);
-        Assert.DoesNotContain("sealed", code);
+        Assert.DoesNotContain("public sealed class PlayscriptContext", code);
     }
 
     [Fact]

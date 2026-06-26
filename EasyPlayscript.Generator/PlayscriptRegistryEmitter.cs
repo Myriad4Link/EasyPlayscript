@@ -9,20 +9,6 @@ namespace EasyPlayscript.Generator;
 
 public static class PlayscriptRegistryEmitter
 {
-    private static readonly HashSet<string> CSharpKeywords =
-    [
-        "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char",
-        "checked", "class", "const", "continue", "decimal", "default", "delegate",
-        "do", "double", "else", "enum", "event", "explicit", "extern", "false",
-        "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit",
-        "in", "int", "interface", "internal", "is", "lock", "long", "namespace",
-        "new", "null", "object", "operator", "out", "override", "params", "private",
-        "protected", "public", "readonly", "ref", "return", "sbyte", "sealed",
-        "short", "sizeof", "stackalloc", "static", "string", "struct", "switch",
-        "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked",
-        "unsafe", "ushort", "using", "virtual", "void", "volatile", "while"
-    ];
-
     public static string Generate(PlayscriptCompilationData data)
     {
         using var writer = new StringWriter();
@@ -83,7 +69,7 @@ public static class PlayscriptRegistryEmitter
                     iface.Parameters.Select((p, i) =>
                         $"(({MapArgumentType(p.Type)})call.Arguments[{i}]).Value"));
 
-                var shortName = impl.ClassName.Split(new[] { "::", "." }, StringSplitOptions.RemoveEmptyEntries).Last();
+                var shortName = impl.ClassName.Split(["::", "."], StringSplitOptions.RemoveEmptyEntries).Last();
 
                 if (impl.Scope == ActionScope.TransientNode)
                 {
@@ -102,27 +88,23 @@ public static class PlayscriptRegistryEmitter
                     indented.WriteLine(
                         $"if (!_globals.TryGetValue(typeof({impl.ClassName}), out var {localName}Obj)) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
                     indented.WriteLine($"var {localName} = ({impl.ClassName}){localName}Obj;");
-                    if (iface.ReturnType == InterfaceType.Void)
-                        indented.WriteLine($"{localName}.{impl.MethodName}({argList});");
-                    else
-                        indented.WriteLine($"call.Result = {localName}.{impl.MethodName}({argList});");
+                    indented.WriteLine(iface.ReturnType == InterfaceType.Void
+                        ? $"{localName}.{impl.MethodName}({argList});"
+                        : $"call.Result = {localName}.{impl.MethodName}({argList});");
                 }
 
                 indented.WriteLine("break;");
                 indented.Indent--;
                 indented.WriteLine("}");
                 indented.Indent--;
-                indented.Indent--;
             }
         }
 
-        indented.Indent++;
         indented.WriteLine("default:");
         indented.Indent++;
         indented.WriteLine("throw new InvalidOperationException(");
         indented.Indent++;
         indented.WriteLine("$\"EasyPlayscript: Unhandled action '{call.Identifier}'.\");");
-        indented.Indent--;
         indented.Indent--;
         indented.Indent--;
 

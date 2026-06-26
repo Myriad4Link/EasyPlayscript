@@ -2,29 +2,13 @@ using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using EasyPlayscript.Parsing;
 
 namespace EasyPlayscript.Generator;
 
 public static class PlayscriptSessionEmitter
 {
-    private static readonly HashSet<string> CSharpKeywords =
-    [
-        "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char",
-        "checked", "class", "const", "continue", "decimal", "default", "delegate",
-        "do", "double", "else", "enum", "event", "explicit", "extern", "false",
-        "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit",
-        "in", "int", "interface", "internal", "is", "lock", "long", "namespace",
-        "new", "null", "object", "operator", "out", "override", "params", "private",
-        "protected", "public", "readonly", "ref", "return", "sbyte", "sealed",
-        "short", "sizeof", "stackalloc", "static", "string", "struct", "switch",
-        "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked",
-        "unsafe", "ushort", "using", "virtual", "void", "volatile", "while"
-    ];
-
     public static string Generate(
-        List<ImplementationInfo> implementations,
         Dictionary<string, ScriptBlock> scripts,
         Dictionary<string, TextBlock> texts)
     {
@@ -83,8 +67,7 @@ public static class PlayscriptSessionEmitter
         indented.WriteLine("}");
         indented.WriteLine();
 
-        var sortedScripts = scripts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
-        if (sortedScripts.Count > 0)
+        if (scripts.Count > 0)
         {
             indented.WriteLine("public new Script GetScript(ScriptKey key)");
             indented.WriteLine("{");
@@ -97,8 +80,7 @@ public static class PlayscriptSessionEmitter
             indented.WriteLine();
         }
 
-        var sortedTexts = texts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
-        if (sortedTexts.Count > 0)
+        if (texts.Count > 0)
         {
             indented.WriteLine("public new Text GetText(TextKey key)");
             indented.WriteLine("{");

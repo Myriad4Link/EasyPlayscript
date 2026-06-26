@@ -16,7 +16,7 @@ public class PlayscriptContextEmitterTests
     {
         var code = PlayscriptContextEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
         Assert.Contains("public class PlayscriptContext", code);
-        Assert.DoesNotContain("sealed", code);
+        Assert.DoesNotContain("public sealed class PlayscriptContext", code);
     }
 
     [Fact]

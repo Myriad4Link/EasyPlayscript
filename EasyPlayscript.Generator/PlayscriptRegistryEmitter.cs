@@ -40,22 +40,23 @@ public static class PlayscriptRegistryEmitter
         indented.WriteLine("{");
         indented.Indent++;
 
-        var implGroups = data.Implementations
+        var globalImplGroups = data.Implementations
+            .Where(i => i.Scope == ActionScope.GlobalService)
             .GroupBy(i => i.ClassName)
             .OrderBy(g => g.Key, StringComparer.Ordinal)
             .ToList();
 
-        foreach (var group in implGroups)
+        foreach (var group in globalImplGroups)
         {
             var className = group.Key;
             var fieldName = $"_{CamelCase(className)}";
             indented.WriteLine($"private {className}? {fieldName};");
         }
 
-        if (implGroups.Count > 0)
+        if (globalImplGroups.Count > 0)
             indented.WriteLine();
 
-        foreach (var group in implGroups)
+        foreach (var group in globalImplGroups)
         {
             var className = group.Key;
             var fieldName = $"_{CamelCase(className)}";
@@ -68,7 +69,7 @@ public static class PlayscriptRegistryEmitter
             indented.WriteLine();
         }
 
-        indented.WriteLine("internal void DispatchCall(ConsumerCallItem call)");
+        indented.WriteLine("internal void DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("switch (call.Identifier)");
@@ -89,8 +90,6 @@ public static class PlayscriptRegistryEmitter
                 var impl = FindMatchingImplementation(data.Implementations, iface);
                 if (impl == null) continue;
 
-                var classFieldName = $"_{CamelCase(impl.ClassName)}";
-
                 indented.Indent++;
                 if (hasMultipleOverloads)
                     indented.WriteLine($"case \"{iface.Name}\" when call.Arguments.Count == {iface.Parameters.Count}:");
@@ -104,17 +103,26 @@ public static class PlayscriptRegistryEmitter
 
                 var shortName = impl.ClassName.Split(new[] { "::", "." }, StringSplitOptions.RemoveEmptyEntries).Last();
 
-                if (iface.ReturnType == InterfaceType.Void)
+                if (impl.Scope == ActionScope.TransientNode)
                 {
+                    var localName = $"_{CamelCase(impl.ClassName)}Node";
+                    indented.WriteLine($"var {localName} = context.Get<{impl.ClassName}>();");
                     indented.WriteLine(
-                        $"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
-                    indented.WriteLine($"{classFieldName}.{impl.MethodName}({argList});");
+                        $"if ({localName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} missing from execution context.\");");
+                    if (iface.ReturnType == InterfaceType.Void)
+                        indented.WriteLine($"{localName}.{impl.MethodName}({argList});");
+                    else
+                        indented.WriteLine($"call.Result = {localName}.{impl.MethodName}({argList});");
                 }
                 else
                 {
+                    var classFieldName = $"_{CamelCase(impl.ClassName)}";
                     indented.WriteLine(
                         $"if ({classFieldName} == null) throw new NullReferenceException(\"EasyPlayscript: {shortName} instance was not registered before script execution.\");");
-                    indented.WriteLine($"call.Result = {classFieldName}.{impl.MethodName}({argList});");
+                    if (iface.ReturnType == InterfaceType.Void)
+                        indented.WriteLine($"{classFieldName}.{impl.MethodName}({argList});");
+                    else
+                        indented.WriteLine($"call.Result = {classFieldName}.{impl.MethodName}({argList});");
                 }
 
                 indented.WriteLine("break;");

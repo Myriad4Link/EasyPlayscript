@@ -37,9 +37,19 @@ internal static class ImplementationScanner
 
         var containingType = methodSymbol.ContainingType;
 
-        string? alias = null;
-        if (attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string { Length: > 0 } s)
-            alias = s;
+        var alias = attr.ConstructorArguments.Length > 0 && attr.ConstructorArguments[0].Value is string { Length: > 0 } s
+            ? s
+            : (string?)null;
+
+        var scope = ActionScope.GlobalService;
+        foreach (var namedArg in attr.NamedArguments)
+        {
+            if (namedArg.Key == "Scope" && namedArg.Value.Value is int scopeValue)
+            {
+                scope = (ActionScope)scopeValue;
+                break;
+            }
+        }
 
         var paramTypes = methodSymbol.Parameters
             .Select(p => MapToCSharpTypeName(p.Type))
@@ -57,6 +67,7 @@ internal static class ImplementationScanner
             Alias = alias,
             ParameterTypeNames = paramTypes,
             ReturnTypeName = returnType,
+            Scope = scope,
             FilePath = lineSpan.Path,
             Line = lineSpan.StartLinePosition.Line + 1
         };

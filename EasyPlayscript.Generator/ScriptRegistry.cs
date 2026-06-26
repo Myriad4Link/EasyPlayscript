@@ -63,7 +63,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("public TextBlock Block { get; set; } = default!;");
         indented.WriteLine();
-        indented.WriteLine("public string Render(PlayscriptRegistry registry)");
+        indented.WriteLine("public string Render(PlayscriptRegistry registry, PlayscriptExecutionContext context)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("var sb = new System.Text.StringBuilder();");
@@ -84,7 +84,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("case ConsumerCallItem call:");
         indented.Indent++;
-        indented.WriteLine("registry.DispatchCall(call);");
+        indented.WriteLine("registry.DispatchCall(call, context);");
         indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
         indented.WriteLine("break;");
         indented.Indent--;
@@ -98,7 +98,9 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
-        indented.WriteLine("public string Render(PlayscriptContext context) => Render(context.Registry);");
+        indented.WriteLine("public string Render(PlayscriptRegistry registry) => Render(registry, new PlayscriptExecutionContext());");
+        indented.WriteLine();
+        indented.WriteLine("public string Render(PlayscriptContext context, PlayscriptExecutionContext? sceneContext = null) => Render(context.Registry, sceneContext ?? new PlayscriptExecutionContext());");
         indented.Indent--;
         indented.WriteLine("}");
 

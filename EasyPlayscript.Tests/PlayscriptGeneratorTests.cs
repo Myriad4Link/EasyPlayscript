@@ -40,10 +40,17 @@ public class PlayscriptGeneratorTests
     private const string ImplementationAttributeSource = """
         namespace EasyPlayscript
         {
+            public enum ActionScope
+            {
+                GlobalService,
+                TransientNode
+            }
+
             [System.AttributeUsage(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
             public sealed class ImplementationAttribute : System.Attribute
             {
                 public string? Alias { get; }
+                public ActionScope Scope { get; set; } = ActionScope.GlobalService;
                 public ImplementationAttribute(string? alias = null) => Alias = alias;
             }
         }
@@ -850,5 +857,72 @@ public class PlayscriptGeneratorTests
             ("fade", "interface fade() : void\nscript s[\n@fade()\n]"));
         Assert.Contains("Register(GlobalEffects instance)", code);
         Assert.DoesNotContain("global::", code);
+    }
+
+    // ─── ActionScope: TransientNode Dispatch ──────────────────────────────
+
+    [Fact]
+    public void Generator_TransientImplementation_ContextDispatch()
+    {
+        var scpt = """
+            interface transition(type: string) : void
+            script test_script[
+            @transition("fade")
+            ]
+            """;
+
+        var source = ImplementationAttributeSource + """
+            namespace Game
+            {
+                public class Transitioner
+                {
+                    [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
+                    public void transition(string type) { }
+                }
+            }
+            """;
+
+        var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
+
+        Assert.Contains("context.Get<global::Game.Transitioner>()", code);
+        Assert.DoesNotContain("Register(global::Game.Transitioner", code);
+    }
+
+    [Fact]
+    public void Generator_MixedScopes_CorrectRouting()
+    {
+        var scpt = """
+            interface play(sound: string, volume: decimal) : void
+            interface transition(type: string) : void
+            script test_script[
+            @play("bgm", 0.8)
+            @transition("fade")
+            ]
+            """;
+
+        var source = ImplementationAttributeSource + """
+            namespace Game
+            {
+                public class AudioSystem
+                {
+                    [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.GlobalService)]
+                    public void play(string sound, double volume) { }
+                }
+                public class Transitioner
+                {
+                    [EasyPlayscript.Implementation(Scope = EasyPlayscript.ActionScope.TransientNode)]
+                    public void transition(string type) { }
+                }
+            }
+            """;
+
+        var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
+
+        Assert.Contains("private global::Game.AudioSystem? _audioSystem;", code);
+        Assert.Contains("Register(global::Game.AudioSystem", code);
+        Assert.Contains("_audioSystem.play(", code);
+
+        Assert.DoesNotContain("private global::Game.Transitioner", code);
+        Assert.Contains("context.Get<global::Game.Transitioner>()", code);
     }
 }

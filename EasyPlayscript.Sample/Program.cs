@@ -29,7 +29,7 @@ public class AudioSystem
 
 public class UiSystem
 {
-    [Implementation]
+    [Implementation(Scope = ActionScope.TransientNode)]
     public void transition(string type)
     {
         Console.WriteLine($"  [transition] type={type}");
@@ -44,16 +44,17 @@ public static class Program
 
         var registry = new PlayscriptRegistry();
         registry.Register(new AudioSystem());
-        registry.Register(new UiSystem());
 
         var context = new PlayscriptContext(registry);
+        var sceneContext = new PlayscriptExecutionContext();
+        sceneContext.Bind(new UiSystem());
 
         Console.WriteLine("=== Scripts ===");
         foreach (var key in Enum.GetValues<PlayscriptContext.ScriptKey>())
         {
             var script = context.GetScript(key);
             Console.WriteLine($"\n[{key}] ({script.Block.Pages.Count} page(s))");
-            PrintScript(script, registry);
+            PrintScript(script, registry, sceneContext);
         }
 
         Console.WriteLine("\n=== Texts ===");
@@ -61,11 +62,11 @@ public static class Program
         {
             var text = context.GetText(key);
             Console.WriteLine($"\n[{key}]");
-            PrintText(text, registry);
+            PrintText(text, registry, sceneContext);
         }
     }
 
-    private static void PrintScript(Script script, PlayscriptRegistry registry)
+    private static void PrintScript(Script script, PlayscriptRegistry registry, PlayscriptExecutionContext sceneContext)
     {
         for (var pi = 0; pi < script.Block.Pages.Count; pi++)
         {
@@ -81,7 +82,7 @@ public static class Program
                             parts.Add(text.Text);
                             break;
                         case ConsumerCallItem call:
-                            registry.DispatchCall(call);
+                            registry.DispatchCall(call, sceneContext);
                             parts.Add(call.Result != null ? $"[{call.Result}]" : $"[@{call.Identifier}]");
                             break;
                     }
@@ -91,8 +92,8 @@ public static class Program
         }
     }
 
-    private static void PrintText(Text text, PlayscriptRegistry registry)
+    private static void PrintText(Text text, PlayscriptRegistry registry, PlayscriptExecutionContext sceneContext)
     {
-        Console.WriteLine(text.Render(registry));
+        Console.WriteLine(text.Render(registry, sceneContext));
     }
 }

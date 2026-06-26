@@ -117,7 +117,7 @@ public class ScriptRegistryTests
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("public string Render(PlayscriptRegistry registry)", textText);
+        Assert.Contains("public string Render(PlayscriptRegistry registry, PlayscriptExecutionContext context)", textText);
     }
 
     [Fact]
@@ -127,6 +127,6 @@ public class ScriptRegistryTests
         var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
         var textText = textFile.GetText().ToString();
 
-        Assert.Contains("public string Render(PlayscriptContext context)", textText);
+        Assert.Contains("public string Render(PlayscriptContext context, PlayscriptExecutionContext? sceneContext = null)", textText);
     }
 }

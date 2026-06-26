@@ -20,7 +20,7 @@ public class PlayscriptRegistryEmitterTests
     public void Generate_Empty_HasDispatchCall()
     {
         var code = PlayscriptRegistryEmitter.Generate(EmptyData);
-        Assert.Contains("internal void DispatchCall(ConsumerCallItem call)", code);
+        Assert.Contains("internal void DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)", code);
     }
 
     [Fact]
@@ -221,5 +221,117 @@ public class PlayscriptRegistryEmitterTests
         var code = PlayscriptRegistryEmitter.Generate(data);
         Assert.Contains("((BoolArgument)call.Arguments[0]).Value", code);
         Assert.Contains("((IntArgument)call.Arguments[1]).Value", code);
+    }
+
+    [Fact]
+    public void TransientNode_NoFieldOrRegister_Generated()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.SceneTransitioner",
+            MethodName = "transition",
+            ParameterTypeNames = new List<string> { "string" },
+            ReturnTypeName = "void",
+            Scope = ActionScope.TransientNode
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("transition",
+            new List<InterfaceParameter> { new("type", InterfaceType.String) },
+            InterfaceType.Void, 1, 0));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+
+        Assert.DoesNotContain("private global::Game.SceneTransitioner?", code);
+        Assert.DoesNotContain("public void Register(global::Game.SceneTransitioner", code);
+    }
+
+    [Fact]
+    public void TransientNode_Dispatch_UsesContext()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.SceneTransitioner",
+            MethodName = "transition",
+            ParameterTypeNames = new List<string> { "string" },
+            ReturnTypeName = "void",
+            Scope = ActionScope.TransientNode
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("transition",
+            new List<InterfaceParameter> { new("type", InterfaceType.String) },
+            InterfaceType.Void, 1, 0));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+
+        Assert.Contains("context.Get<global::Game.SceneTransitioner>()", code);
+        Assert.DoesNotContain("_sceneTransitioner.transition(", code);
+    }
+
+    [Fact]
+    public void GlobalService_Dispatch_UsesField()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.AudioSystem",
+            MethodName = "play",
+            ParameterTypeNames = new List<string> { "string", "double" },
+            ReturnTypeName = "void",
+            Scope = ActionScope.GlobalService
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("play",
+            new List<InterfaceParameter>
+            {
+                new("sound", InterfaceType.String),
+                new("volume", InterfaceType.Decimal)
+            },
+            InterfaceType.Void, 1, 0));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+
+        Assert.Contains("_audioSystem.play(", code);
+        Assert.DoesNotContain("context.Get", code);
+    }
+
+    [Fact]
+    public void DispatchCall_HasContextParameter()
+    {
+        var code = PlayscriptRegistryEmitter.Generate(EmptyData);
+        Assert.Contains("DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)", code);
+    }
+
+    [Fact]
+    public void MixedScopes_SameClass_RoutedCorrectly()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.UiSystem",
+            MethodName = "play",
+            Scope = ActionScope.GlobalService,
+            ParameterTypeNames = new List<string> { "string" },
+            ReturnTypeName = "void"
+        });
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.UiSystem",
+            MethodName = "transition",
+            Scope = ActionScope.TransientNode,
+            ParameterTypeNames = new List<string> { "string" },
+            ReturnTypeName = "void"
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("play",
+            new List<InterfaceParameter> { new("s", InterfaceType.String) },
+            InterfaceType.Void, 1, 0));
+        data.Interfaces.Add(new InterfaceDeclaration("transition",
+            new List<InterfaceParameter> { new("type", InterfaceType.String) },
+            InterfaceType.Void, 1, 0));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+
+        Assert.Contains("private global::Game.UiSystem? _uiSystem;", code);
+        Assert.Contains("public void Register(global::Game.UiSystem", code);
+        Assert.Contains("_uiSystem.play(", code);
+        Assert.Contains("context.Get<global::Game.UiSystem>()", code);
     }
 }

@@ -39,6 +39,21 @@ ANTLR grammars in `EasyPlayscript.Core/core/playscript/definition/`:
 
 **Position convention**: ANTLR uses 1-based lines, 0-based columns. LSP uses 0-based both.
 
+## ActionScope: Global vs Transient Dispatch
+
+`[Implementation]` has a `Scope` property (`ActionScope.GlobalService` by default, or `ActionScope.TransientNode`).
+
+- **GlobalService**: The generated registry stores a field and `Register()` method for the class. Dispatch calls the field directly.
+- **TransientNode**: No field or `Register()` method is generated. Dispatch fetches the instance from `PlayscriptExecutionContext.Get<T>()` at runtime.
+
+A single class can have mixed scopes — the registry will have a field for it (if any method is GlobalService), and transient methods route through the context.
+
+`PlayscriptExecutionContext` (`EasyPlayscript.Core/PlayscriptExecutionContext.cs`) is a type-keyed dictionary:
+- `Bind<T>(instance)` — register a transient node
+- `Get<T>()` — retrieve it (returns null if unbound)
+
+`DispatchCall` signature is `DispatchCall(ConsumerCallItem call, PlayscriptExecutionContext context)`. All callers must pass context.
+
 ## Diagnostic Codes
 
 | Code | Meaning |
@@ -64,20 +79,26 @@ Tests in `EasyPlayscript.Tests/` use `CSharpGeneratorDriver` with:
 
 Pattern: create generator → add additional files → run driver → assert on generated syntax tree or diagnostics.
 
+Emitter tests (`PlayscriptRegistryEmitterTests`) call `PlayscriptRegistryEmitter.Generate()` directly with hand-built `PlayscriptCompilationData` — no Roslyn driver needed.
+
 ## Key Files
 
 - `EasyPlayscript.Core/Parsing/PlayscriptPipeline.cs` — orchestrates validation
 - `EasyPlayscript.Core/Parsing/InterfaceValidator.cs` — cross-file interface validation
 - `EasyPlayscript.Core/Parsing/ImplementationValidator.cs` — validates `[Implementation]` method presence and duplicates
 - `EasyPlayscript.Generator/PlayscriptGenerator.cs` — main generator entry point
+- `EasyPlayscript.Generator/PlayscriptRegistryEmitter.cs` — generates `PlayscriptRegistry.g.cs` with scope-aware dispatch
+- `EasyPlayscript.Generator/ScriptRegistry.cs` — generates `Script` and `Text` data classes
+- `EasyPlayscript.Core/PlayscriptExecutionContext.cs` — transient node type-map for scene-scoped components
 - `EasyPlayscript.Sample/scripts/*.scpt` — example `.scpt` files
 - `LSP-PLAN.md` — in-progress plan for an LSP server (not yet implemented)
 
 ## Gotchas
 
 - The `.uid` files are JetBrains Rider cache — ignore them
-- `EasyPlayscript.Sample` references `EasyPlayscript.Generator` twice: once as normal dependency, once as `OutputItemType="Analyzer"` for source generation
+- `EasyPlayscript.Sample` references NuGet packages (not project references). After changing Core or Generator, run `./pack-local.ps1` before building the Sample
 - `EasyPlayscript.BuildTask` must be built before `EasyPlayscript.Sample` (the sample's MSBuild target references the build task DLL)
 - `nuget-local/` is the local NuGet feed; `pack-local.ps1` rebuilds packages there and clears global cache
 - `NuGet.Config` clears default sources and adds only `nuget.org` + `./nuget-local`
 - No CI workflows exist — this is a local development repo
+- `Text.Render(PlayscriptRegistry registry)` creates an empty `PlayscriptExecutionContext` internally — transient-only classes won't be resolved through this overload

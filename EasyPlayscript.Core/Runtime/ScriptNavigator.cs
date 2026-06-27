@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using EasyPlayscript.DataModel;
 
 namespace EasyPlayscript.Runtime;
@@ -113,6 +114,64 @@ public class ScriptNavigator(ScriptBlock block)
             {
                 if (li > 0) sb.AppendLine();
                 sb.Append(renderLine(paragraph.Lines[li]));
+            }
+        }
+
+        _pageIndex++;
+        _paragraphIndex = 0;
+        _lineIndex = 0;
+        return sb.ToString();
+    }
+
+    public async Task<string?> RenderNextLineAsync(Func<Line, Task<string>> renderLine)
+    {
+        if (IsEnd()) return null;
+        var line = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines[_lineIndex];
+        var result = await renderLine(line);
+        AdvanceLine();
+        return result;
+    }
+
+    public async Task<string?> RenderNextParagraphAsync(Func<Line, Task<string>> renderLine)
+    {
+        if (IsEnd()) return null;
+        var sb = new StringBuilder();
+        var paragraph = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex];
+        for (var i = 0; i < paragraph.Lines.Count; i++)
+        {
+            if (i > 0) sb.AppendLine();
+            sb.Append(await renderLine(paragraph.Lines[i]));
+        }
+
+        _paragraphIndex++;
+        if (_paragraphIndex >= Block.Pages[_pageIndex].Paragraphs.Count)
+        {
+            _paragraphIndex = 0;
+            _pageIndex++;
+        }
+
+        _lineIndex = 0;
+        return sb.ToString();
+    }
+
+    public async Task<string?> RenderNextPageAsync(Func<Line, Task<string>> renderLine)
+    {
+        if (IsEnd()) return null;
+        var sb = new StringBuilder();
+        var page = Block.Pages[_pageIndex];
+        for (var pi = 0; pi < page.Paragraphs.Count; pi++)
+        {
+            if (pi > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine();
+            }
+
+            var paragraph = page.Paragraphs[pi];
+            for (var li = 0; li < paragraph.Lines.Count; li++)
+            {
+                if (li > 0) sb.AppendLine();
+                sb.Append(await renderLine(paragraph.Lines[li]));
             }
         }
 

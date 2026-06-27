@@ -12,6 +12,8 @@ public static class DiagnosticCodes
     public const string MissingImplementation = "SCPT009";
     public const string DuplicateImplementation = "SCPT010";
     public const string UnusedImplementation = "SCPT011";
+    public const string AsyncSyncMismatch = "SCPT012";
+    public const string SyncAsyncMismatch = "SCPT013";
 
     public const string UnexpectedTokenFormat = "{0}";
     public const string MismatchedInputFormat = "{0}";
@@ -27,4 +29,10 @@ public static class DiagnosticCodes
 
     public const string UnusedImplementationFormat =
         "[Implementation] method \"{0}.{1}\" is not used by any playscript";
+
+    public const string AsyncSyncMismatchFormat =
+        "Interface \"{0}\" is async but [Implementation] method does not return Task";
+
+    public const string SyncAsyncMismatchFormat =
+        "Interface \"{0}\" is not async but [Implementation] method returns Task";
 }

@@ -32,6 +32,13 @@ public class ImplementationValidatorTests
         return new InterfaceDeclaration(name, parms, returnType, 1, 0) { FilePath = "test" };
     }
 
+    private static InterfaceDeclaration MakeAsyncInterface(string name, InterfaceType returnType,
+        params (string n, InterfaceType t)[] parameters)
+    {
+        var parms = parameters.Select(p => new InterfaceParameter(p.n, p.t)).ToList();
+        return new InterfaceDeclaration(name, parms, returnType, 1, 0, isAsync: true) { FilePath = "test" };
+    }
+
     private static ImplementationInfo MakeImplementation(string className, string methodName,
         string? alias = null, params string[] paramTypeNames)
     {
@@ -41,6 +48,21 @@ public class ImplementationValidatorTests
             MethodName = methodName,
             Alias = alias,
             ParameterTypeNames = paramTypeNames.ToList(),
+            FilePath = "test.cs",
+            Line = 1
+        };
+    }
+
+    private static ImplementationInfo MakeAsyncImplementation(string className, string methodName,
+        string? alias = null, params string[] paramTypeNames)
+    {
+        return new ImplementationInfo
+        {
+            ClassName = className,
+            MethodName = methodName,
+            Alias = alias,
+            ParameterTypeNames = paramTypeNames.ToList(),
+            IsAsync = true,
             FilePath = "test.cs",
             Line = 1
         };
@@ -221,5 +243,55 @@ public class ImplementationValidatorTests
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Single(warnings);
         Assert.Equal(DiagnosticCodes.UnusedImplementation, warnings[0].Code);
+    }
+
+    // ─── Async/Sync Mismatch Validation ──────────────────────────────────────
+
+    [Fact]
+    public void ValidateMissingImplementations_AsyncInterface_SyncImpl_ReportsSCPT012()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(MakeAsyncInterface("load", InterfaceType.String,
+            ("id", InterfaceType.Int)));
+        data.Implementations.Add(MakeImplementation("Game.Data", "load", null, "int"));
+
+        var errors = ImplementationValidator.ValidateMissingImplementations(data);
+        Assert.Contains(errors, e => e.Code == DiagnosticCodes.AsyncSyncMismatch);
+    }
+
+    [Fact]
+    public void ValidateMissingImplementations_SyncInterface_AsyncImpl_ReportsSCPT013()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(MakeInterface("play", InterfaceType.Void,
+            ("sound", InterfaceType.String)));
+        data.Implementations.Add(MakeAsyncImplementation("Game.Audio", "play", null, "string"));
+
+        var errors = ImplementationValidator.ValidateMissingImplementations(data);
+        Assert.Contains(errors, e => e.Code == DiagnosticCodes.SyncAsyncMismatch);
+    }
+
+    [Fact]
+    public void ValidateMissingImplementations_AsyncInterface_AsyncImpl_Passes()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(MakeAsyncInterface("load", InterfaceType.String,
+            ("id", InterfaceType.Int)));
+        data.Implementations.Add(MakeAsyncImplementation("Game.Data", "load", null, "int"));
+
+        var errors = ImplementationValidator.ValidateMissingImplementations(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidateMissingImplementations_SyncInterface_SyncImpl_Passes()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(MakeInterface("play", InterfaceType.Void,
+            ("sound", InterfaceType.String)));
+        data.Implementations.Add(MakeImplementation("Game.Audio", "play", null, "string"));
+
+        var errors = ImplementationValidator.ValidateMissingImplementations(data);
+        Assert.Empty(errors);
     }
 }

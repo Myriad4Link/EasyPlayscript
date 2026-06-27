@@ -39,7 +39,24 @@ ANTLR grammars in `EasyPlayscript.Core/core/playscript/definition/`:
 - `PlayscriptStructureLexer.g4` + `PlayscriptStructureParser.g4` (Pass 1)
 - `PlayscriptContentLexer.g4` + `PlayscriptContentParser.g4` (Pass 2)
 
+**Regenerating ANTLR**: After editing `.g4` files, run the ANTLR tool **without** `-package` flag — the grammars use `@header { namespace ...; }` for file-scoped namespaces. Using `-package` adds a conflicting block namespace.
+
 **Position convention**: ANTLR uses 1-based lines, 0-based columns. LSP uses 0-based both.
+
+## Async Interfaces
+
+Grammar supports `async` keyword on interface declarations:
+```
+async interface fetch_user_name(user_id: int) : string
+async interface log_event(event: string) : void
+```
+
+Rules:
+- `async interface` requires `[Implementation]` methods to return `Task<T>` (or `Task` for void) and be `async`
+- Sync `interface` requires sync implementations — mixing is an error (SCPT012/SCPT013)
+- Sync rendering (`Run()`, `RenderNextLine()`) fire-and-forgets async calls (`_ = impl.Method(args)`) — return values are lost
+- Async rendering (`RunAsync()`, `RenderNextLineAsync()`) properly awaits all calls
+- `ImplementationScanner` detects async via `INamedTypeSymbol.OriginalDefinition` checking for `System.Threading.Tasks.Task` / `Task<T>`
 
 ## PlayscriptRuntimeSession: The User-Facing API
 
@@ -79,6 +96,8 @@ script.Reset()                        // void — rewinds to (0,0,0)
 - `Render*` methods return `null` when the pointer is past the end.
 - `IsLast*` properties return `true` for empty scripts and when the pointer is past the end.
 - `Run()` is unaffected by the pointer — it always dispatches everything.
+- Async variants: `RenderNextLineAsync()`, `RenderNextParagraphAsync()`, `RenderNextPageAsync()`, `RunAsync()` — properly await async implementations.
+- `Text` has `RenderAsync()` overloads mirroring sync `Render()`.
 
 ### Service Dispatch (Parent-Child Chain)
 
@@ -95,10 +114,10 @@ The generated `PlayscriptRegistry.DispatchCall(call, session)` calls `session.Ge
 
 | File | Generator | Contents |
 |------|-----------|----------|
-| `PlayscriptRegistry.g.cs` | `PlayscriptRegistryEmitter` | `DispatchCall()` switch using `session.Get<T>()` |
+| `PlayscriptRegistry.g.cs` | `PlayscriptRegistryEmitter` | `DispatchCall()` switch using `session.Get<T>()`; `DispatchCallAsync()` with `await` for async impls |
 | `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeEmitter` | `PlayscriptRuntimeSession` class (extends `PlayscriptSessionScope`), `Registry`, `CreateChild()`, enums, lazy loader |
-| `Script.g.cs` | `ScriptRegistry` | `Script` class with `Run()` + pointer-based navigation (session-aware) |
-| `Text.g.cs` | `ScriptRegistry` | `Text` class with `Render()` (session-aware) |
+| `Script.g.cs` | `ScriptRegistry` | `Script` class with `Run()`, `RunAsync()` + pointer-based navigation (session-aware) |
+| `Text.g.cs` | `ScriptRegistry` | `Text` class with `Render()`, `RenderAsync()` (session-aware) |
 
 `Script.Run()` and `Text.Render()` (parameterless) throw if `Runtime` is null — they only work when created via `session.GetScript()`/`session.GetText()`.
 
@@ -116,6 +135,8 @@ The generated `PlayscriptRegistry.DispatchCall(call, session)` calls `session.Ge
 | SCPT009 | Missing `[Implementation]` method |
 | SCPT010 | Duplicate `[Implementation]` |
 | SCPT011 | Unused `[Implementation]` (warning) |
+| SCPT012 | Async interface with sync implementation |
+| SCPT013 | Sync interface with async implementation |
 
 All codes defined in `EasyPlayscript.Generator/PlayscriptDiagnostics.cs`.
 
@@ -144,6 +165,9 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `EasyPlayscript.Core/ScriptNavigator.cs` — pointer-based navigation for Script (RenderNext*, IsLast*, JumpTo, Reset)
 - `EasyPlayscript.Core/ScriptPointer.cs` — immutable value type for script position (pageIndex, paragraphIndex, lineIndex)
 - `EasyPlayscript.Core/ImplementationAttribute.cs` — `[Implementation]` attribute (no scope — all services use parent-child chain)
+- `EasyPlayscript.Core/Parsing/InterfaceDeclaration.cs` — `InterfaceDeclaration` with `IsAsync` property; `InterfaceType` enum
+- `EasyPlayscript.Core/Parsing/ImplementationInfo.cs` — `ImplementationInfo` with `IsAsync` property
+- `EasyPlayscript.Generator/ImplementationScanner.cs` — extracts `[Implementation]` methods, detects async via `INamedTypeSymbol`
 - `EasyPlayscript.Sample/scripts/*.scpt` — example `.scpt` files
 - `LSP-PLAN.md` — in-progress plan for an LSP server (not yet implemented)
 
@@ -158,5 +182,6 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `Script.g.cs` and `Text.g.cs` are emitted via `RegisterPostInitializationOutput` (runs before other generators). They reference `PlayscriptRuntimeSession` by name, which is generated later. This works because all generated sources compile together
 - `PlayscriptRegistry.DispatchCall` switch cases use `{ }` blocks to scope local variables — C# switch cases share scope without blocks
 - `ScriptNavigator` (Core) owns all pointer state; the generated `Script` class delegates to it. The navigator takes a `Func<Line, string>` render callback so it can be tested without a runtime. The generated Script passes its own `RenderLine` method (which dispatches consumer calls) as that callback
+- `ScriptNavigator` also has async variants (`RenderNextLineAsync`, etc.) taking `Func<Line, Task<string>>`. The generated Script passes `RenderLineAsync` (which uses `await Runtime.DispatchCallAsync(call)`) as that callback
 - The generated `PlayscriptRuntimeSession` inherits from `PlayscriptSessionScope` (Core). The base holds the service dictionary and parent chain; the generated class adds `Registry`, `DispatchCall`, `CreateChild` override, and script/text loading
 - `CreateChild()` returns `PlayscriptRuntimeSession` (covariant return). The child shares the same `Registry` instance as the parent

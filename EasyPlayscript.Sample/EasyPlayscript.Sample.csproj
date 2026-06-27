@@ -7,7 +7,6 @@
         <PlayscriptAesKey>dev-key-change-me</PlayscriptAesKey>
 
         <!--        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>-->
-        <!--        <CompilerGeneratedFilesOutputPath>obj\Generated</CompilerGeneratedFilesOutputPath>-->
     </PropertyGroup>
     <ItemGroup>
         <CompilerVisibleProperty Include="PlayscriptOutputPath"/>

@@ -27,7 +27,8 @@ public static class PlayscriptRuntimeEmitter
         Dictionary<string, ScriptBlock> scripts,
         Dictionary<string, TextBlock> texts,
         string outputPath,
-        string aesKey)
+        string aesKey,
+        bool hasAsync = false)
     {
         var normalizedPath = outputPath.Replace('\\', '/');
         using var writer = new StringWriter();
@@ -38,19 +39,22 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine();
         indented.WriteLine("using System;");
         indented.WriteLine("using System.Collections.Generic;");
+        indented.WriteLine("using System.IO;");
         indented.WriteLine("using EasyPlayscript;");
         indented.WriteLine("using EasyPlayscript.DataModel;");
         indented.WriteLine("using EasyPlayscript.Runtime;");
+        if (hasAsync)
+            indented.WriteLine("using System.Threading.Tasks;");
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
-        indented.WriteLine("public class PlayscriptRuntimeSession : global::EasyPlayscript.Runtime.PlayscriptSessionScope");
+        indented.WriteLine("public class PlayscriptRuntimeSession : PlayscriptSessionScope");
         indented.WriteLine("{");
         indented.Indent++;
 
         // ── Fields & properties ──
-        indented.WriteLine("private readonly System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>> _scripts;");
-        indented.WriteLine("private readonly System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>> _texts;");
+        indented.WriteLine("private readonly Lazy<Dictionary<string, ScriptBlock>> _scripts;");
+        indented.WriteLine("private readonly Lazy<Dictionary<string, TextBlock>> _texts;");
         indented.WriteLine("public PlayscriptRegistry Registry { get; }");
         indented.WriteLine();
 
@@ -61,11 +65,11 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("Registry = registry ?? throw new ArgumentNullException(nameof(registry));");
-        indented.WriteLine("_scripts = new System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>>(");
+        indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptBlock>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
         indented.Indent--;
-        indented.WriteLine("_texts = new System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>>(");
+        indented.WriteLine("_texts = new Lazy<Dictionary<string, TextBlock>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
         indented.Indent--;
@@ -76,11 +80,11 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("Registry = registry;");
-        indented.WriteLine("_scripts = new System.Lazy<System.Collections.Generic.Dictionary<string, ScriptBlock>>(");
+        indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptBlock>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
         indented.Indent--;
-        indented.WriteLine("_texts = new System.Lazy<System.Collections.Generic.Dictionary<string, TextBlock>>(");
+        indented.WriteLine("_texts = new Lazy<Dictionary<string, TextBlock>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
         indented.Indent--;
@@ -104,6 +108,18 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("Registry.DispatchCall(call, this);");
         indented.Indent--;
         indented.WriteLine("}");
+
+        if (hasAsync)
+        {
+            indented.WriteLine();
+            indented.WriteLine("public async Task DispatchCallAsync(ConsumerCallItem call)");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("await Registry.DispatchCallAsync(call, this);");
+            indented.Indent--;
+            indented.WriteLine("}");
+        }
+
         indented.WriteLine();
 
         // ── ScriptKey enum + GetScript ──
@@ -141,7 +157,7 @@ public static class PlayscriptRuntimeEmitter
             indented.Indent++;
             foreach (var kvp in sortedScripts)
                 indented.WriteLine($"ScriptKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
-            indented.WriteLine("_ => throw new System.ArgumentOutOfRangeException(nameof(key), key, null)");
+            indented.WriteLine("_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)");
             indented.Indent--;
             indented.WriteLine("};");
         }
@@ -182,7 +198,7 @@ public static class PlayscriptRuntimeEmitter
             indented.Indent++;
             foreach (var kvp in sortedTexts)
                 indented.WriteLine($"TextKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
-            indented.WriteLine("_ => throw new System.ArgumentOutOfRangeException(nameof(key), key, null)");
+            indented.WriteLine("_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)");
             indented.Indent--;
             indented.WriteLine("};");
         }
@@ -192,7 +208,7 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("private static string ResolvePath(string path) =>");
         indented.Indent++;
         indented.WriteLine(
-            "System.IO.Path.IsPathRooted(path) ? path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);");
+            "Path.IsPathRooted(path) ? path : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);");
         indented.Indent--;
 
         indented.Indent--;

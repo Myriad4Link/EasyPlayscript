@@ -22,11 +22,13 @@ public class InterfaceDeclaration(
     List<InterfaceParameter> parameters,
     InterfaceType returnType,
     int line,
-    int col)
+    int col,
+    bool isAsync = false)
 {
     public string Name { get; } = name;
     public List<InterfaceParameter> Parameters { get; } = parameters;
     public InterfaceType ReturnType { get; } = returnType;
+    public bool IsAsync { get; } = isAsync;
     public int Line { get; } = line;
     public int Col { get; } = col;
     public string FilePath { get; set; } = string.Empty;

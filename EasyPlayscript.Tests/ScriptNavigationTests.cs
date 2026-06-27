@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EasyPlayscript.DataModel;
 using EasyPlayscript.Runtime;
 using Xunit;
@@ -564,5 +565,92 @@ public class ScriptNavigationTests
         Assert.Contains("p0p0l0", results[0]);
         Assert.Contains("p0p1l0", results[0]);
         Assert.Equal("p1p0l0", results[1]);
+    }
+
+    // ─── Async Navigation Tests ──────────────────────────────────────────────
+
+    private static Task<string> RenderLineAsync(Line line)
+    {
+        return Task.FromResult(RenderLine(line));
+    }
+
+    [Fact]
+    public async Task RenderNextLineAsync_EmptyScript_ReturnsNull()
+    {
+        var nav = CreateNav(Block());
+        Assert.Null(await nav.RenderNextLineAsync(RenderLineAsync));
+    }
+
+    [Fact]
+    public async Task RenderNextLineAsync_SingleTextItem_ReturnsText()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("Hello"))))));
+        Assert.Equal("Hello", await nav.RenderNextLineAsync(RenderLineAsync));
+    }
+
+    [Fact]
+    public async Task RenderNextLineAsync_MultipleItems_Concatenates()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("A"), T("B"))))));
+        Assert.Equal("AB", await nav.RenderNextLineAsync(RenderLineAsync));
+    }
+
+    [Fact]
+    public async Task RenderNextLineAsync_AdvancesPointer()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("A")), Li(T("B"))))));
+        await nav.RenderNextLineAsync(RenderLineAsync);
+        Assert.Equal(new ScriptPointer(0, 0, 1), nav.Pointer);
+    }
+
+    [Fact]
+    public async Task RenderNextParagraphAsync_MultipleLines_JoinsWithNewline()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("Line1")), Li(T("Line2"))))));
+        var result = await nav.RenderNextParagraphAsync(RenderLineAsync);
+        Assert.Contains("Line1", result);
+        Assert.Contains("Line2", result);
+    }
+
+    [Fact]
+    public async Task RenderNextPageAsync_MultipleParagraphs_SeparatesWithBlankLine()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("P1"))), Para(Li(T("P2"))))));
+        var result = await nav.RenderNextPageAsync(RenderLineAsync);
+        Assert.Contains("P1", result);
+        Assert.Contains("P2", result);
+    }
+
+    [Fact]
+    public async Task RenderNextLineAsync_EmptyScript_ReturnsNullAndDoesNotAdvance()
+    {
+        var nav = CreateNav(Block());
+        Assert.Null(await nav.RenderNextLineAsync(RenderLineAsync));
+        Assert.Equal(new ScriptPointer(0, 0, 0), nav.Pointer);
+    }
+
+    [Fact]
+    public async Task RenderNextLineAsync_FullSequence_MatchesSync()
+    {
+        var syncNav = CreateMultiLevelNav();
+        var asyncNav = CreateMultiLevelNav();
+
+        var syncResults = new List<string>();
+        while (syncNav.RenderNextLine(RenderLine) is { } line)
+            syncResults.Add(line);
+
+        var asyncResults = new List<string>();
+        while (await asyncNav.RenderNextLineAsync(RenderLineAsync) is { } line)
+            asyncResults.Add(line);
+
+        Assert.Equal(syncResults, asyncResults);
+    }
+
+    [Fact]
+    public async Task JumpTo_ThenRenderNextLineAsync_StartsAtNewPosition()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("First")), Li(T("Second"))))));
+        nav.JumpTo(new ScriptPointer(0, 0, 1));
+        Assert.Equal("Second", await nav.RenderNextLineAsync(RenderLineAsync));
     }
 }

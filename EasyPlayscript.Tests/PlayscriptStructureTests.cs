@@ -370,4 +370,53 @@ public class PlayscriptStructureTests
         Assert.Single(block.Lines[0].Items);
         Assert.Equal("Welcome", ((TextItem)block.Lines[0].Items[0]).Text);
     }
+
+    // ─── Async Interface Parsing ─────────────────────────────────────────────
+
+    [Fact]
+    public void ParseStructure_AsyncInterface_SetsIsAsyncTrue()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("async interface play(sound: string) : void");
+        Assert.Single(result.Interfaces);
+        Assert.True(result.Interfaces[0].IsAsync);
+        Assert.Equal("play", result.Interfaces[0].Name);
+    }
+
+    [Fact]
+    public void ParseStructure_SyncInterface_SetsIsAsyncFalse()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("interface play(sound: string) : void");
+        Assert.Single(result.Interfaces);
+        Assert.False(result.Interfaces[0].IsAsync);
+    }
+
+    [Fact]
+    public void ParseStructure_AsyncInterface_NoParameters()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("async interface on_complete() : void");
+        Assert.Single(result.Interfaces);
+        Assert.True(result.Interfaces[0].IsAsync);
+        Assert.Empty(result.Interfaces[0].Parameters);
+    }
+
+    [Fact]
+    public void ParseStructure_AsyncInterface_NonVoidReturn()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("async interface get_data(id: int) : string");
+        Assert.Single(result.Interfaces);
+        Assert.True(result.Interfaces[0].IsAsync);
+        Assert.Equal(InterfaceType.String, result.Interfaces[0].ReturnType);
+        Assert.Single(result.Interfaces[0].Parameters);
+        Assert.Equal(InterfaceType.Int, result.Interfaces[0].Parameters[0].Type);
+    }
+
+    [Fact]
+    public void ParseStructure_MixedSyncAndAsync()
+    {
+        var input = "interface play(s: string) : void\nasync interface load(id: int) : string";
+        var result = PlayscriptStructureHelper.ParseStructure(input);
+        Assert.Equal(2, result.Interfaces.Count);
+        Assert.False(result.Interfaces[0].IsAsync);
+        Assert.True(result.Interfaces[1].IsAsync);
+    }
 }

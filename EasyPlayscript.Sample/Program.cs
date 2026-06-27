@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using EasyPlayscript.Generated;
 using EasyPlayscript.Runtime;
 
@@ -36,9 +37,29 @@ public class UiSystem
     }
 }
 
+public class DataSystem
+{
+    [Implementation]
+    public async Task<string> fetch_user_name(int user_id)
+    {
+        Console.WriteLine($"  [fetch_user_name] fetching user {user_id}...");
+        await Task.Delay(500); // simulate async I/O
+        Console.WriteLine($"  [fetch_user_name] done");
+        return "旅行者";
+    }
+
+    [Implementation]
+    public async Task log_event(string @event)
+    {
+        Console.WriteLine($"  [log_event] logging '{@event}'...");
+        await Task.Delay(100); // simulate async I/O
+        Console.WriteLine($"  [log_event] done");
+    }
+}
+
 public static class Program
 {
-    public static void Main()
+    public static async Task Main()
     {
         Console.OutputEncoding = Encoding.UTF8;
 
@@ -50,6 +71,7 @@ public static class Program
         var globalSession = new PlayscriptRuntimeSession();
         globalSession.Register(new AudioSystem());
         globalSession.Register(new UiSystem());
+        globalSession.Register(new DataSystem());
 
         Console.WriteLine("\n=== 1. Global Session (base services) ===");
         RunAllScripts(globalSession);
@@ -60,11 +82,9 @@ public static class Program
         RunAllScripts(titleScene);
 
         // ── Combat Scene: overrides the AudioSystem instance ──
-        // Parent-child lets you shadow a parent service by registering
-        // a new instance of the same type on the child session.
         Console.WriteLine("\n=== 3. Combat Scene (overrides AudioSystem instance) ===");
         var combatScene = globalSession.CreateChild();
-        combatScene.Register(new AudioSystem()); // shadows parent's AudioSystem
+        combatScene.Register(new AudioSystem());
         RunAllScripts(combatScene);
 
         // ── Cutscene Scene: creates a fresh child, no overrides ──
@@ -96,8 +116,7 @@ public static class Program
         Console.WriteLine("\n=== 7. Independent Children ===");
         var sceneA = globalSession.CreateChild();
         var sceneB = globalSession.CreateChild();
-        sceneA.Register(new AudioSystem()); // sceneA gets its own
-        // sceneB inherits from parent
+        sceneA.Register(new AudioSystem());
         var aAudio = sceneA.Get<AudioSystem>();
         var bAudio = sceneB.Get<AudioSystem>();
         Console.WriteLine($"  SceneA own instance?  {!ReferenceEquals(aAudio, parentAudio)}");
@@ -127,12 +146,27 @@ public static class Program
             script.Reset();
             Console.WriteLine($"    First line again: {script.RenderNextLine()}");
         }
+
+        // ── Async demo: async render (properly awaits async calls) ──
+        Console.WriteLine("\n=== 10. Async Interfaces (async render — properly awaited) ===");
+        if (Enum.TryParse<PlayscriptRuntimeSession.ScriptKey>("async_demo", out var asyncKey))
+        {
+            var script = globalSession.GetScript(asyncKey);
+
+            Console.WriteLine($"\n  [async_demo] RenderNextLineAsync():");
+            while (await script.RenderNextLineAsync() is { } line)
+            {
+                var at = script.Pointer;
+                Console.WriteLine($"    ({at.PageIndex},{at.ParagraphIndex},{at.LineIndex}) {line}");
+            }
+        }
     }
 
     private static void RunAllScripts(PlayscriptRuntimeSession session)
     {
         foreach (var key in Enum.GetValues<PlayscriptRuntimeSession.ScriptKey>())
         {
+            if (key.ToString() == "async_demo") continue; // skip async demo in sync loop
             var script = session.GetScript(key);
             Console.WriteLine($"\n  [{key}] ({script.Block.Pages.Count} page(s))");
 

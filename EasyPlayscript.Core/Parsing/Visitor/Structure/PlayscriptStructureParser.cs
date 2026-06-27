@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
+// Generated from D:/Myriad-s-Projects/EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -37,9 +37,10 @@ public partial class PlayscriptStructureParser : Parser {
 	protected static DFA[] decisionToDFA;
 	protected static PredictionContextCache sharedContextCache = new PredictionContextCache();
 	public const int
-		SCRIPT=1, TEXT=2, INTERFACE=3, LBRACKET=4, COLON=5, LPAREN=6, RPAREN=7, 
-		COMMA=8, STRING_TYPE=9, INT_TYPE=10, DECIMAL_TYPE=11, BOOL_TYPE=12, VOID_TYPE=13, 
-		IDENTIFIER=14, WS=15, NEWLINE=16, COMMENT=17, RAW_CONTENT=18, RBRACKET=19;
+		SCRIPT=1, TEXT=2, ASYNC=3, INTERFACE=4, LBRACKET=5, COLON=6, LPAREN=7, 
+		RPAREN=8, COMMA=9, STRING_TYPE=10, INT_TYPE=11, DECIMAL_TYPE=12, BOOL_TYPE=13, 
+		VOID_TYPE=14, IDENTIFIER=15, WS=16, NEWLINE=17, COMMENT=18, RAW_CONTENT=19, 
+		RBRACKET=20;
 	public const int
 		RULE_playscript = 0, RULE_topLevelStatement = 1, RULE_blockType = 2, RULE_paramList = 3, 
 		RULE_parameter = 4, RULE_typeSpec = 5;
@@ -49,14 +50,15 @@ public partial class PlayscriptStructureParser : Parser {
 	};
 
 	private static readonly string[] _LiteralNames = {
-		null, "'script'", "'text'", "'interface'", "'['", "':'", "'('", "')'", 
-		"','", "'string'", "'int'", "'decimal'", "'bool'", "'void'", null, null, 
-		null, null, null, "']'"
+		null, "'script'", "'text'", "'async'", "'interface'", "'['", "':'", "'('", 
+		"')'", "','", "'string'", "'int'", "'decimal'", "'bool'", "'void'", null, 
+		null, null, null, null, "']'"
 	};
 	private static readonly string[] _SymbolicNames = {
-		null, "SCRIPT", "TEXT", "INTERFACE", "LBRACKET", "COLON", "LPAREN", "RPAREN", 
-		"COMMA", "STRING_TYPE", "INT_TYPE", "DECIMAL_TYPE", "BOOL_TYPE", "VOID_TYPE", 
-		"IDENTIFIER", "WS", "NEWLINE", "COMMENT", "RAW_CONTENT", "RBRACKET"
+		null, "SCRIPT", "TEXT", "ASYNC", "INTERFACE", "LBRACKET", "COLON", "LPAREN", 
+		"RPAREN", "COMMA", "STRING_TYPE", "INT_TYPE", "DECIMAL_TYPE", "BOOL_TYPE", 
+		"VOID_TYPE", "IDENTIFIER", "WS", "NEWLINE", "COMMENT", "RAW_CONTENT", 
+		"RBRACKET"
 	};
 	public static readonly IVocabulary DefaultVocabulary = new Vocabulary(_LiteralNames, _SymbolicNames);
 
@@ -104,6 +106,16 @@ public partial class PlayscriptStructureParser : Parser {
 		}
 		public override int RuleIndex { get { return RULE_playscript; } }
 		[System.Diagnostics.DebuggerNonUserCode]
+		public override void EnterRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.EnterPlayscript(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override void ExitRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.ExitPlayscript(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptStructureParserVisitor<TResult> typedVisitor = visitor as IPlayscriptStructureParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitPlayscript(this);
@@ -122,7 +134,7 @@ public partial class PlayscriptStructureParser : Parser {
 			State = 15;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 14L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 30L) != 0)) {
 				{
 				{
 				State = 12;
@@ -163,6 +175,7 @@ public partial class PlayscriptStructureParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext typeSpec() {
 			return GetRuleContext<TypeSpecContext>(0);
 		}
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode ASYNC() { return GetToken(PlayscriptStructureParser.ASYNC, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ParamListContext paramList() {
 			return GetRuleContext<ParamListContext>(0);
 		}
@@ -171,6 +184,16 @@ public partial class PlayscriptStructureParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_topLevelStatement; } }
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override void EnterRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.EnterTopLevelStatement(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override void ExitRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.ExitTopLevelStatement(this);
+		}
 		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptStructureParserVisitor<TResult> typedVisitor = visitor as IPlayscriptStructureParserVisitor<TResult>;
@@ -185,7 +208,7 @@ public partial class PlayscriptStructureParser : Parser {
 		EnterRule(_localctx, 2, RULE_topLevelStatement);
 		int _la;
 		try {
-			State = 35;
+			State = 38;
 			ErrorHandler.Sync(this);
 			switch (TokenStream.LA(1)) {
 			case SCRIPT:
@@ -204,30 +227,41 @@ public partial class PlayscriptStructureParser : Parser {
 				Match(RBRACKET);
 				}
 				break;
+			case ASYNC:
 			case INTERFACE:
 				EnterOuterAlt(_localctx, 2);
 				{
-				State = 26;
-				Match(INTERFACE);
 				State = 27;
-				Match(IDENTIFIER);
-				State = 28;
-				Match(LPAREN);
+				ErrorHandler.Sync(this);
+				_la = TokenStream.LA(1);
+				if (_la==ASYNC) {
+					{
+					State = 26;
+					Match(ASYNC);
+					}
+				}
+
+				State = 29;
+				Match(INTERFACE);
 				State = 30;
+				Match(IDENTIFIER);
+				State = 31;
+				Match(LPAREN);
+				State = 33;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 				if (_la==IDENTIFIER) {
 					{
-					State = 29;
+					State = 32;
 					paramList();
 					}
 				}
 
-				State = 32;
+				State = 35;
 				Match(RPAREN);
-				State = 33;
+				State = 36;
 				Match(COLON);
-				State = 34;
+				State = 37;
 				typeSpec();
 				}
 				break;
@@ -255,6 +289,16 @@ public partial class PlayscriptStructureParser : Parser {
 		}
 		public override int RuleIndex { get { return RULE_blockType; } }
 		[System.Diagnostics.DebuggerNonUserCode]
+		public override void EnterRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.EnterBlockType(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override void ExitRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.ExitBlockType(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptStructureParserVisitor<TResult> typedVisitor = visitor as IPlayscriptStructureParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitBlockType(this);
@@ -270,7 +314,7 @@ public partial class PlayscriptStructureParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 37;
+			State = 40;
 			_la = TokenStream.LA(1);
 			if ( !(_la==SCRIPT || _la==TEXT) ) {
 			ErrorHandler.RecoverInline(this);
@@ -309,6 +353,16 @@ public partial class PlayscriptStructureParser : Parser {
 		}
 		public override int RuleIndex { get { return RULE_paramList; } }
 		[System.Diagnostics.DebuggerNonUserCode]
+		public override void EnterRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.EnterParamList(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override void ExitRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.ExitParamList(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptStructureParserVisitor<TResult> typedVisitor = visitor as IPlayscriptStructureParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitParamList(this);
@@ -324,21 +378,21 @@ public partial class PlayscriptStructureParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 39;
+			State = 42;
 			parameter();
-			State = 44;
+			State = 47;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
 			while (_la==COMMA) {
 				{
 				{
-				State = 40;
+				State = 43;
 				Match(COMMA);
-				State = 41;
+				State = 44;
 				parameter();
 				}
 				}
-				State = 46;
+				State = 49;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			}
@@ -367,6 +421,16 @@ public partial class PlayscriptStructureParser : Parser {
 		}
 		public override int RuleIndex { get { return RULE_parameter; } }
 		[System.Diagnostics.DebuggerNonUserCode]
+		public override void EnterRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.EnterParameter(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override void ExitRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.ExitParameter(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptStructureParserVisitor<TResult> typedVisitor = visitor as IPlayscriptStructureParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitParameter(this);
@@ -381,11 +445,11 @@ public partial class PlayscriptStructureParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 47;
+			State = 50;
 			Match(IDENTIFIER);
-			State = 48;
+			State = 51;
 			Match(COLON);
-			State = 49;
+			State = 52;
 			typeSpec();
 			}
 		}
@@ -412,6 +476,16 @@ public partial class PlayscriptStructureParser : Parser {
 		}
 		public override int RuleIndex { get { return RULE_typeSpec; } }
 		[System.Diagnostics.DebuggerNonUserCode]
+		public override void EnterRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.EnterTypeSpec(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override void ExitRule(IParseTreeListener listener) {
+			IPlayscriptStructureParserListener typedListener = listener as IPlayscriptStructureParserListener;
+			if (typedListener != null) typedListener.ExitTypeSpec(this);
+		}
+		[System.Diagnostics.DebuggerNonUserCode]
 		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
 			IPlayscriptStructureParserVisitor<TResult> typedVisitor = visitor as IPlayscriptStructureParserVisitor<TResult>;
 			if (typedVisitor != null) return typedVisitor.VisitTypeSpec(this);
@@ -427,9 +501,9 @@ public partial class PlayscriptStructureParser : Parser {
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 51;
+			State = 54;
 			_la = TokenStream.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 15872L) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 31744L) != 0)) ) {
 			ErrorHandler.RecoverInline(this);
 			}
 			else {
@@ -450,21 +524,22 @@ public partial class PlayscriptStructureParser : Parser {
 	}
 
 	private static int[] _serializedATN = {
-		4,1,19,54,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,5,0,14,8,
-		0,10,0,12,0,17,9,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,
-		31,8,1,1,1,1,1,1,1,3,1,36,8,1,1,2,1,2,1,3,1,3,1,3,5,3,43,8,3,10,3,12,3,
-		46,9,3,1,4,1,4,1,4,1,4,1,5,1,5,1,5,0,0,6,0,2,4,6,8,10,0,2,1,0,1,2,1,0,
-		9,13,51,0,15,1,0,0,0,2,35,1,0,0,0,4,37,1,0,0,0,6,39,1,0,0,0,8,47,1,0,0,
-		0,10,51,1,0,0,0,12,14,3,2,1,0,13,12,1,0,0,0,14,17,1,0,0,0,15,13,1,0,0,
-		0,15,16,1,0,0,0,16,18,1,0,0,0,17,15,1,0,0,0,18,19,5,0,0,1,19,1,1,0,0,0,
-		20,21,3,4,2,0,21,22,5,14,0,0,22,23,5,4,0,0,23,24,5,18,0,0,24,25,5,19,0,
-		0,25,36,1,0,0,0,26,27,5,3,0,0,27,28,5,14,0,0,28,30,5,6,0,0,29,31,3,6,3,
-		0,30,29,1,0,0,0,30,31,1,0,0,0,31,32,1,0,0,0,32,33,5,7,0,0,33,34,5,5,0,
-		0,34,36,3,10,5,0,35,20,1,0,0,0,35,26,1,0,0,0,36,3,1,0,0,0,37,38,7,0,0,
-		0,38,5,1,0,0,0,39,44,3,8,4,0,40,41,5,8,0,0,41,43,3,8,4,0,42,40,1,0,0,0,
-		43,46,1,0,0,0,44,42,1,0,0,0,44,45,1,0,0,0,45,7,1,0,0,0,46,44,1,0,0,0,47,
-		48,5,14,0,0,48,49,5,5,0,0,49,50,3,10,5,0,50,9,1,0,0,0,51,52,7,1,0,0,52,
-		11,1,0,0,0,4,15,30,35,44
+		4,1,20,57,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,5,0,14,8,
+		0,10,0,12,0,17,9,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,28,8,1,1,1,
+		1,1,1,1,1,1,3,1,34,8,1,1,1,1,1,1,1,3,1,39,8,1,1,2,1,2,1,3,1,3,1,3,5,3,
+		46,8,3,10,3,12,3,49,9,3,1,4,1,4,1,4,1,4,1,5,1,5,1,5,0,0,6,0,2,4,6,8,10,
+		0,2,1,0,1,2,1,0,10,14,55,0,15,1,0,0,0,2,38,1,0,0,0,4,40,1,0,0,0,6,42,1,
+		0,0,0,8,50,1,0,0,0,10,54,1,0,0,0,12,14,3,2,1,0,13,12,1,0,0,0,14,17,1,0,
+		0,0,15,13,1,0,0,0,15,16,1,0,0,0,16,18,1,0,0,0,17,15,1,0,0,0,18,19,5,0,
+		0,1,19,1,1,0,0,0,20,21,3,4,2,0,21,22,5,15,0,0,22,23,5,5,0,0,23,24,5,19,
+		0,0,24,25,5,20,0,0,25,39,1,0,0,0,26,28,5,3,0,0,27,26,1,0,0,0,27,28,1,0,
+		0,0,28,29,1,0,0,0,29,30,5,4,0,0,30,31,5,15,0,0,31,33,5,7,0,0,32,34,3,6,
+		3,0,33,32,1,0,0,0,33,34,1,0,0,0,34,35,1,0,0,0,35,36,5,8,0,0,36,37,5,6,
+		0,0,37,39,3,10,5,0,38,20,1,0,0,0,38,27,1,0,0,0,39,3,1,0,0,0,40,41,7,0,
+		0,0,41,5,1,0,0,0,42,47,3,8,4,0,43,44,5,9,0,0,44,46,3,8,4,0,45,43,1,0,0,
+		0,46,49,1,0,0,0,47,45,1,0,0,0,47,48,1,0,0,0,48,7,1,0,0,0,49,47,1,0,0,0,
+		50,51,5,15,0,0,51,52,5,6,0,0,52,53,3,10,5,0,53,9,1,0,0,0,54,55,7,1,0,0,
+		55,11,1,0,0,0,5,15,27,33,38,47
 	};
 
 	public static readonly ATN _ATN =

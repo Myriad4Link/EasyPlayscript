@@ -47,6 +47,7 @@ internal static class ImplementationScanner
             .ToList();
 
         var returnType = MapToCSharpTypeName(methodSymbol.ReturnType);
+        var isAsync = IsAsyncReturnType(methodSymbol.ReturnType);
 
         var location = methodDecl.GetLocation();
         var lineSpan = location.GetLineSpan();
@@ -58,6 +59,7 @@ internal static class ImplementationScanner
             Alias = alias,
             ParameterTypeNames = paramTypes,
             ReturnTypeName = returnType,
+            IsAsync = isAsync,
             FilePath = lineSpan.Path,
             Line = lineSpan.StartLinePosition.Line + 1
         };
@@ -82,5 +84,17 @@ internal static class ImplementationScanner
             SpecialType.System_Void => "void",
             _ => type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)
         };
+    }
+
+    private static bool IsAsyncReturnType(ITypeSymbol returnType)
+    {
+        if (returnType is not INamedTypeSymbol namedType)
+            return false;
+
+        var originalDef = namedType.OriginalDefinition;
+        var ns = originalDef.ContainingNamespace?.ToDisplayString();
+
+        return ns == "System.Threading.Tasks" &&
+               originalDef.MetadataName is "Task" or "Task`1";
     }
 }

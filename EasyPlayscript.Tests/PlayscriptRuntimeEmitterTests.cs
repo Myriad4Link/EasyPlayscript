@@ -270,4 +270,35 @@ public class PlayscriptRuntimeEmitterTests
         Assert.Contains("TextKeyToString", code);
         Assert.Contains("TextKey.credits => \"credits\"", code);
     }
+
+    // ─── Async Dispatch Tests ────────────────────────────────────────────────
+
+    [Fact]
+    public void Generate_WithAsync_GeneratesDispatchCallAsync()
+    {
+        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey, hasAsync: true);
+        Assert.Contains("async Task DispatchCallAsync(ConsumerCallItem call)", code);
+        Assert.Contains("await Registry.DispatchCallAsync(call, this)", code);
+    }
+
+    [Fact]
+    public void Generate_WithoutAsync_NoDispatchCallAsync()
+    {
+        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey, hasAsync: false);
+        Assert.DoesNotContain("DispatchCallAsync", code);
+    }
+
+    [Fact]
+    public void Generate_WithAsync_UsesUsingTask()
+    {
+        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey, hasAsync: true);
+        Assert.Contains("using System.Threading.Tasks;", code);
+    }
+
+    [Fact]
+    public void Generate_Default_NoAsync_NoDispatchCallAsync()
+    {
+        var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
+        Assert.DoesNotContain("DispatchCallAsync", code);
+    }
 }

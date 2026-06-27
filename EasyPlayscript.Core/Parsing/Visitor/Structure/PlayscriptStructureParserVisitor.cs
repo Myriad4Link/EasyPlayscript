@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
+// Generated from D:/Myriad-s-Projects/EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162

@@ -264,4 +264,140 @@ public class PlayscriptRegistryEmitterTests
         Assert.Contains("session.Get<global::Game.UiSystem>()", code);
         Assert.DoesNotContain("_globals", code);
     }
+
+    // ─── Async Dispatch Tests ────────────────────────────────────────────────
+
+    [Fact]
+    public void Generate_AsyncInterface_GeneratesDispatchCallAsync()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.DataService",
+            MethodName = "load_data",
+            ParameterTypeNames = new List<string> { "int" },
+            ReturnTypeName = "System.Threading.Tasks.Task<string>",
+            IsAsync = true
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("load_data",
+            new List<InterfaceParameter> { new("id", InterfaceType.Int) },
+            InterfaceType.String, 1, 0, isAsync: true));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+        Assert.Contains("async Task DispatchCallAsync", code);
+        Assert.Contains("await _dataService.load_data(", code);
+        Assert.Contains("call.Result = ", code);
+    }
+
+    [Fact]
+    public void Generate_AsyncVoidInterface_DispatchCallAsync_Void()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.System",
+            MethodName = "on_done",
+            ParameterTypeNames = new List<string>(),
+            ReturnTypeName = "System.Threading.Tasks.Task",
+            IsAsync = true
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("on_done",
+            new List<InterfaceParameter>(),
+            InterfaceType.Void, 1, 0, isAsync: true));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+        Assert.Contains("await _system.on_done();", code);
+        Assert.DoesNotContain("call.Result", code);
+    }
+
+    [Fact]
+    public void Generate_SyncInterface_NoDispatchCallAsync()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.Audio",
+            MethodName = "play",
+            ParameterTypeNames = new List<string> { "string" },
+            ReturnTypeName = "void"
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("play",
+            new List<InterfaceParameter> { new("s", InterfaceType.String) },
+            InterfaceType.Void, 1, 0));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+        Assert.Contains("void DispatchCall", code);
+        Assert.DoesNotContain("DispatchCallAsync", code);
+    }
+
+    [Fact]
+    public void Generate_MixedSyncAndAsync_GeneratesBothMethods()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.Audio",
+            MethodName = "play",
+            ParameterTypeNames = new List<string> { "string" },
+            ReturnTypeName = "void"
+        });
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.Data",
+            MethodName = "load",
+            ParameterTypeNames = new List<string> { "int" },
+            ReturnTypeName = "System.Threading.Tasks.Task<string>",
+            IsAsync = true
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("play",
+            new List<InterfaceParameter> { new("s", InterfaceType.String) },
+            InterfaceType.Void, 1, 0));
+        data.Interfaces.Add(new InterfaceDeclaration("load",
+            new List<InterfaceParameter> { new("id", InterfaceType.Int) },
+            InterfaceType.String, 1, 0, isAsync: true));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+        Assert.Contains("void DispatchCall", code);
+        Assert.Contains("async Task DispatchCallAsync", code);
+    }
+
+    [Fact]
+    public void Generate_AsyncInterface_SyncDispatch_FireAndForget()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.Data",
+            MethodName = "load",
+            ParameterTypeNames = new List<string> { "int" },
+            ReturnTypeName = "System.Threading.Tasks.Task<string>",
+            IsAsync = true
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("load",
+            new List<InterfaceParameter> { new("id", InterfaceType.Int) },
+            InterfaceType.String, 1, 0, isAsync: true));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+        Assert.Contains("_ = _data.load(", code);
+    }
+
+    [Fact]
+    public void Generate_AsyncInterface_UsesUsingTask()
+    {
+        var data = new PlayscriptCompilationData();
+        data.Implementations.Add(new ImplementationInfo
+        {
+            ClassName = "global::Game.Data",
+            MethodName = "load",
+            ParameterTypeNames = new List<string>(),
+            ReturnTypeName = "System.Threading.Tasks.Task",
+            IsAsync = true
+        });
+        data.Interfaces.Add(new InterfaceDeclaration("load",
+            new List<InterfaceParameter>(),
+            InterfaceType.Void, 1, 0, isAsync: true));
+
+        var code = PlayscriptRegistryEmitter.Generate(data);
+        Assert.Contains("using System.Threading.Tasks;", code);
+    }
 }

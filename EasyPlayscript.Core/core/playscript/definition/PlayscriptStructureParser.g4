@@ -8,7 +8,7 @@ playscript  : topLevelStatement* EOF ;
 
 topLevelStatement
     : blockType IDENTIFIER LBRACKET RAW_CONTENT RBRACKET
-    | INTERFACE IDENTIFIER LPAREN paramList? RPAREN COLON typeSpec
+    | ASYNC? INTERFACE IDENTIFIER LPAREN paramList? RPAREN COLON typeSpec
     ;
 
 blockType   : SCRIPT | TEXT ;

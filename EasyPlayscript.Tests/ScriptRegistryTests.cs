@@ -196,6 +196,13 @@ public class ScriptRegistryTests
         return scriptFile.GetText().ToString();
     }
 
+    private static string GetTextSource()
+    {
+        var runResult = RunGenerator();
+        var textFile = runResult.GeneratedTrees.Single(t => t.FilePath.EndsWith("Text.g.cs"));
+        return textFile.GetText().ToString();
+    }
+
     [Fact]
     public void GeneratesScript_WithNavigatorDelegation()
     {
@@ -364,5 +371,74 @@ public class ScriptRegistryTests
         Assert.Contains("public void JumpTo(ScriptPointer pointer)", source);
         Assert.Contains("public void Reset()", source);
         Assert.Contains("public ScriptPointer Pointer", source);
+    }
+
+    // ─── Async Script/Text Methods ───────────────────────────────────────────
+
+    [Fact]
+    public void GeneratedScript_HasRenderNextLineAsync()
+    {
+        var source = GetScriptSource();
+        Assert.Contains("public async Task<string?> RenderNextLineAsync()", source);
+    }
+
+    [Fact]
+    public void GeneratedScript_HasRenderNextParagraphAsync()
+    {
+        var source = GetScriptSource();
+        Assert.Contains("public async Task<string?> RenderNextParagraphAsync()", source);
+    }
+
+    [Fact]
+    public void GeneratedScript_HasRenderNextPageAsync()
+    {
+        var source = GetScriptSource();
+        Assert.Contains("public async Task<string?> RenderNextPageAsync()", source);
+    }
+
+    [Fact]
+    public void GeneratedScript_HasRunAsync()
+    {
+        var source = GetScriptSource();
+        Assert.Contains("public async Task RunAsync()", source);
+    }
+
+    [Fact]
+    public void GeneratedScript_HasRenderLineAsync()
+    {
+        var source = GetScriptSource();
+        Assert.Contains("private async Task<string> RenderLineAsync(Line line)", source);
+        Assert.Contains("await Runtime.DispatchCallAsync(call)", source);
+    }
+
+    [Fact]
+    public void GeneratedScript_RenderLineStillSyncDispatch()
+    {
+        var source = GetScriptSource();
+        Assert.Contains("private string RenderLine(Line line)", source);
+        Assert.Contains("Runtime.DispatchCall(call);", source);
+    }
+
+    [Fact]
+    public void GeneratedScript_UsesUsingTask()
+    {
+        var source = GetScriptSource();
+        Assert.Contains("using System.Threading.Tasks;", source);
+    }
+
+    [Fact]
+    public void GeneratedText_HasRenderAsync()
+    {
+        var source = GetTextSource();
+        Assert.Contains("public async Task<string> RenderAsync(PlayscriptRegistry registry, PlayscriptRuntimeSession session)", source);
+        Assert.Contains("public async Task<string> RenderAsync(PlayscriptRuntimeSession session)", source);
+        Assert.Contains("public async Task<string> RenderAsync()", source);
+    }
+
+    [Fact]
+    public void GeneratedText_UsesUsingTask()
+    {
+        var source = GetTextSource();
+        Assert.Contains("using System.Threading.Tasks;", source);
     }
 }

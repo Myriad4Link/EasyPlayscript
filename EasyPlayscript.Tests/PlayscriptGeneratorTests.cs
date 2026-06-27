@@ -922,4 +922,224 @@ public class PlayscriptGeneratorTests
         Assert.DoesNotContain("_globals", code);
         Assert.DoesNotContain("context.Get", code);
     }
+
+    // ─── Async Full Pipeline Tests ───────────────────────────────────────────
+
+    private static ImmutableArray<Diagnostic> GenerateDiagnosticsWithSource(
+        string sourceCode, params (string name, string content)[] files)
+    {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ("build_property.PlayscriptOutputPath", TestOutputPath),
+            ("build_property.PlayscriptAesKey", TestAesKey));
+
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            optionsProvider: optionsProvider);
+
+        var additionalFiles = files
+            .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
+            .ToImmutableArray<AdditionalText>();
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
+
+        var tree = CSharpSyntaxTree.ParseText(sourceCode);
+        var references = new[]
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location)
+        };
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests), [tree], references);
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out var diagnostics);
+
+        return diagnostics;
+    }
+
+    private static string GenerateRuntimeCodeWithSource(
+        string sourceCode, params (string name, string content)[] files)
+    {
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ("build_property.PlayscriptOutputPath", TestOutputPath),
+            ("build_property.PlayscriptAesKey", TestAesKey));
+
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            optionsProvider: optionsProvider);
+
+        var additionalFiles = files
+            .Select(f => new TestAdditionalFile($"./{f.name}.scpt", f.content))
+            .ToImmutableArray<AdditionalText>();
+
+        driver = driver.AddAdditionalTexts(additionalFiles);
+
+        var tree = CSharpSyntaxTree.ParseText(sourceCode);
+        var references = new[]
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location)
+        };
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests), [tree], references);
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out var diagnostics);
+
+        var generatedFile = newCompilation.SyntaxTrees
+            .SingleOrDefault(t => Path.GetFileName(t.FilePath) == "PlayscriptRuntime.g.cs");
+
+        if (generatedFile == null)
+        {
+            var diagMessages = string.Join("\n", diagnostics.Select(d => $"{d.Id}: {d.GetMessage()}"));
+            throw new InvalidOperationException(
+                $"PlayscriptRuntime.g.cs was not generated. Diagnostics:\n{diagMessages}");
+        }
+
+        return generatedFile.GetText().ToString();
+    }
+
+    [Fact]
+    public void FullPipeline_AsyncInterface_AsyncImpl_NoErrors()
+    {
+        var scpt = "async interface load(id: int) : string\n\nscript s[\n@load(1)\n]";
+        var source = ImplementationAttributeSource + """
+                                                     namespace Game
+                                                     {
+                                                         public class DataService
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public async System.Threading.Tasks.Task<string> load(int id) => "x";
+                                                         }
+                                                     }
+                                                     """;
+
+        var diagnostics = GenerateDiagnosticsWithSource(source, ("test", scpt));
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void FullPipeline_AsyncInterface_SyncImpl_ReportsSCPT012()
+    {
+        var scpt = "async interface load(id: int) : string\n\nscript s[\n@load(1)\n]";
+        var source = ImplementationAttributeSource + """
+                                                     namespace Game
+                                                     {
+                                                         public class DataService
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public string load(int id) => "x";
+                                                         }
+                                                     }
+                                                     """;
+
+        var diagnostics = GenerateDiagnosticsWithSource(source, ("test", scpt));
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.AsyncSyncMismatch);
+    }
+
+    [Fact]
+    public void FullPipeline_SyncInterface_AsyncImpl_ReportsSCPT013()
+    {
+        var scpt = "interface play(s: string) : void\n\nscript s[\n@play(\"x\")\n]";
+        var source = ImplementationAttributeSource + """
+                                                     namespace Game
+                                                     {
+                                                         public class Audio
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public async System.Threading.Tasks.Task play(string s) { }
+                                                         }
+                                                     }
+                                                     """;
+
+        var diagnostics = GenerateDiagnosticsWithSource(source, ("test", scpt));
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.SyncAsyncMismatch);
+    }
+
+    [Fact]
+    public void FullPipeline_AsyncAndSync_Coexist_NoErrors()
+    {
+        var scpt = """
+                   interface play(s: string) : void
+                   async interface load(id: int) : string
+
+                   script s[
+                   @play("bgm")
+                   @load(1)
+                   ]
+                   """;
+
+        var source = ImplementationAttributeSource + """
+                                                     namespace Game
+                                                     {
+                                                         public class Audio
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public void play(string s) { }
+                                                         }
+                                                         public class Data
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public async System.Threading.Tasks.Task<string> load(int id) => "x";
+                                                         }
+                                                     }
+                                                     """;
+
+        var diagnostics = GenerateDiagnosticsWithSource(source, ("test", scpt));
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void FullPipeline_AsyncInterface_RegistryContainsDispatchCallAsync()
+    {
+        var scpt = "async interface load(id: int) : string\n\nscript s[\n@load(1)\n]";
+        var source = ImplementationAttributeSource + """
+                                                     namespace Game
+                                                     {
+                                                         public class Data
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public async System.Threading.Tasks.Task<string> load(int id) => "x";
+                                                         }
+                                                     }
+                                                     """;
+
+        var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
+        Assert.Contains("DispatchCallAsync", code);
+        Assert.Contains("await", code);
+    }
+
+    [Fact]
+    public void FullPipeline_AsyncInterface_RuntimeContainsDispatchCallAsync()
+    {
+        var scpt = "async interface load(id: int) : string\n\nscript s[\n@load(1)\n]";
+        var source = ImplementationAttributeSource + """
+                                                     namespace Game
+                                                     {
+                                                         public class Data
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public async System.Threading.Tasks.Task<string> load(int id) => "x";
+                                                         }
+                                                     }
+                                                     """;
+
+        var code = GenerateRuntimeCodeWithSource(source, ("test", scpt));
+        Assert.Contains("DispatchCallAsync", code);
+    }
+
+    [Fact]
+    public void FullPipeline_AsyncInterface_RegistryContainsFireAndForget()
+    {
+        var scpt = "async interface load(id: int) : string\n\nscript s[\n@load(1)\n]";
+        var source = ImplementationAttributeSource + """
+                                                     namespace Game
+                                                     {
+                                                         public class Data
+                                                         {
+                                                             [EasyPlayscript.Runtime.Implementation]
+                                                             public async System.Threading.Tasks.Task<string> load(int id) => "x";
+                                                         }
+                                                     }
+                                                     """;
+
+        var code = GenerateRegistryCodeWithSource(source, ("test", scpt));
+        Assert.Contains("_ = _data.load(", code);
+    }
 }

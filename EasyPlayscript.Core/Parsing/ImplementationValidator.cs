@@ -9,16 +9,35 @@ public static class ImplementationValidator
     {
         var errors = new List<ValidationDiagnostic>();
 
-        var implLookup = new HashSet<string>(
-            data.Implementations.Select(i => $"{i.EffectiveName}:{i.ParameterTypeNames.Count}"));
+        var implLookup = new Dictionary<string, ImplementationInfo>();
+        foreach (var impl in data.Implementations)
+        {
+            var key = $"{impl.EffectiveName}:{impl.ParameterTypeNames.Count}";
+            if (!implLookup.ContainsKey(key))
+                implLookup[key] = impl;
+        }
 
         foreach (var iface in data.Interfaces)
         {
             var key = $"{iface.Name}:{iface.Parameters.Count}";
-            if (!implLookup.Contains(key))
+            if (!implLookup.TryGetValue(key, out var impl))
+            {
                 errors.Add(new ValidationDiagnostic(DiagnosticCodes.MissingImplementation,
                     DiagnosticCodes.MissingImplementationFormat,
                     iface.FilePath, iface.Line, iface.Col, iface.Name));
+            }
+            else if (iface.IsAsync && !impl.IsAsync)
+            {
+                errors.Add(new ValidationDiagnostic(DiagnosticCodes.AsyncSyncMismatch,
+                    DiagnosticCodes.AsyncSyncMismatchFormat,
+                    iface.FilePath, iface.Line, iface.Col, iface.Name));
+            }
+            else if (!iface.IsAsync && impl.IsAsync)
+            {
+                errors.Add(new ValidationDiagnostic(DiagnosticCodes.SyncAsyncMismatch,
+                    DiagnosticCodes.SyncAsyncMismatchFormat,
+                    iface.FilePath, iface.Line, iface.Col, iface.Name));
+            }
         }
 
         return errors;

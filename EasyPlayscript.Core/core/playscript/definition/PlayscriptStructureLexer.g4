@@ -4,6 +4,7 @@ lexer grammar PlayscriptStructureLexer;
 
 SCRIPT      : 'script' ;
 TEXT        : 'text' ;
+ASYNC       : 'async' ;
 INTERFACE   : 'interface' ;
 
 LBRACKET    : '[' -> pushMode(IN_RAW) ;

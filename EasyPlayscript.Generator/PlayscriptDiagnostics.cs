@@ -28,6 +28,7 @@ internal static class PlayscriptDiagnostics
         DiagnosticSeverity.Error,
         true);
 
+    // ReSharper disable once MemberCanBePrivate.Global
     internal static readonly DiagnosticDescriptor DuplicateScriptName = new(
         DiagnosticCodes.DuplicateScriptName,
         "Duplicate script/text name",
@@ -92,6 +93,22 @@ internal static class PlayscriptDiagnostics
         DiagnosticSeverity.Warning,
         true);
 
+    private static readonly DiagnosticDescriptor AsyncSyncMismatch = new(
+        DiagnosticCodes.AsyncSyncMismatch,
+        "Async/sync mismatch",
+        DiagnosticCodes.AsyncSyncMismatchFormat,
+        Category,
+        DiagnosticSeverity.Error,
+        true);
+
+    private static readonly DiagnosticDescriptor SyncAsyncMismatch = new(
+        DiagnosticCodes.SyncAsyncMismatch,
+        "Sync/async mismatch",
+        DiagnosticCodes.SyncAsyncMismatchFormat,
+        Category,
+        DiagnosticSeverity.Error,
+        true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> ByCodeMap = new()
     {
         [DiagnosticCodes.UnexpectedToken] = UnexpectedToken,
@@ -103,7 +120,9 @@ internal static class PlayscriptDiagnostics
         [DiagnosticCodes.ArgumentCountMismatch] = ArgumentCountMismatch,
         [DiagnosticCodes.MissingImplementation] = MissingImplementation,
         [DiagnosticCodes.DuplicateImplementation] = DuplicateImplementation,
-        [DiagnosticCodes.UnusedImplementation] = UnusedImplementation
+        [DiagnosticCodes.UnusedImplementation] = UnusedImplementation,
+        [DiagnosticCodes.AsyncSyncMismatch] = AsyncSyncMismatch,
+        [DiagnosticCodes.SyncAsyncMismatch] = SyncAsyncMismatch
     };
 
     internal static DiagnosticDescriptor GetDescriptor(string code)

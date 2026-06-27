@@ -98,8 +98,9 @@ public class PlayscriptGenerator : IIncrementalGenerator
             var registryCode = PlayscriptRegistryEmitter.Generate(ctx.Data);
             spc.AddSource("PlayscriptRegistry.g.cs", SourceText.From(registryCode, Encoding.UTF8));
 
+            var hasAsync = ctx.Data.Interfaces.Any(i => i.IsAsync);
             var runtimeCode = PlayscriptRuntimeEmitter.Generate(
-                ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey);
+                ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey, hasAsync);
             spc.AddSource("PlayscriptRuntime.g.cs", SourceText.From(runtimeCode, Encoding.UTF8));
         });
     }
@@ -122,7 +123,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         ct.ThrowIfCancellationRequested();
         var (structureResult, structureErrors) = PlayscriptStructureHelper.ParseStructureWithErrors(content);
 
-        var result = new SingleFileResult { FilePath = filePath };
+        var result = new SingleFileResult();
 
         AppendContentDiagnostics(result.Diagnostics, structureErrors, filePath, ct);
 
@@ -208,6 +209,5 @@ public class PlayscriptGenerator : IIncrementalGenerator
     {
         public PlayscriptCompilationData Data { get; } = new();
         public List<Diagnostic> Diagnostics { get; } = [];
-        public string FilePath { get; set; } = string.Empty;
     }
 }

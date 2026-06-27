@@ -80,6 +80,7 @@ public static class PlayscriptStructureHelper
                 var nameSymbol = nameNode.Symbol;
                 var line = nameSymbol.Line;
                 var col = nameSymbol.Column;
+                var isAsync = context.ASYNC() != null;
 
                 var parameters = new List<InterfaceParameter>();
                 var paramListCtx = context.paramList();
@@ -91,7 +92,7 @@ public static class PlayscriptStructureHelper
 
                 var returnType = MapTypeSpec(typeSpecCtx);
 
-                Interfaces.Add(new InterfaceDeclaration(nameNode.GetText(), parameters, returnType, line, col));
+                Interfaces.Add(new InterfaceDeclaration(nameNode.GetText(), parameters, returnType, line, col, isAsync));
             }
 
             return string.Empty;

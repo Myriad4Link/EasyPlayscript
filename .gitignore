@@ -71,6 +71,10 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+# Build output
+**/bin/
+**/obj/
+
 # Local NuGet feed
 nuget-local/
 

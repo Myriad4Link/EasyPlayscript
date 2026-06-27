@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using EasyPlayscript.Generated;
+using EasyPlayscript.Runtime;
 
 namespace EasyPlayscript.Sample;
 
@@ -42,7 +43,7 @@ public static class Program
         Console.OutputEncoding = Encoding.UTF8;
 
         Console.WriteLine("╔══════════════════════════════════════════════════════╗");
-        Console.WriteLine("║  EasyPlayscript: Parent-Child Session Demo          ║");
+        Console.WriteLine("║      EasyPlayscript: Parent-Child Session Demo       ║");
         Console.WriteLine("╚══════════════════════════════════════════════════════╝");
 
         // ── Global session: shared services for the entire game ──

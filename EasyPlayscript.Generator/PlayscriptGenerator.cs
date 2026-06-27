@@ -29,7 +29,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
         var allFilesProvider = scptProvider.Collect();
 
         var implProvider = context.SyntaxProvider
-            .ForAttributeWithMetadataName("EasyPlayscript.ImplementationAttribute",
+            .ForAttributeWithMetadataName("EasyPlayscript.Runtime.ImplementationAttribute",
                 static (node, _) => node is MethodDeclarationSyntax,
                 static (ctx, ct) => ImplementationScanner.Extract(ctx, ct))
             .Collect();

@@ -1,4 +1,5 @@
 using System.Linq;
+using EasyPlayscript.DataModel;
 using EasyPlayscript.Parsing;
 using Xunit;
 

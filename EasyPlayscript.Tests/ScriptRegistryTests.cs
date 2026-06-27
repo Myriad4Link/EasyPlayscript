@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using EasyPlayscript.DataModel;
 using EasyPlayscript.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -285,7 +286,7 @@ public class ScriptRegistryTests
     {
         var testDir = Path.GetDirectoryName(testFilePath)!;
         var solutionDir = Path.GetFullPath(Path.Combine(testDir, ".."));
-        return File.ReadAllText(Path.Combine(solutionDir, "EasyPlayscript.Core", "ScriptNavigator.cs"));
+        return File.ReadAllText(Path.Combine(solutionDir, "EasyPlayscript.Core", "Runtime", "ScriptNavigator.cs"));
     }
 
     private static HashSet<string> GetPublicMembers(string source, string className)

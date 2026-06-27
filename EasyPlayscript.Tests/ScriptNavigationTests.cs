@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using EasyPlayscript.DataModel;
+using EasyPlayscript.Runtime;
 using Xunit;
 
 namespace EasyPlayscript.Tests;

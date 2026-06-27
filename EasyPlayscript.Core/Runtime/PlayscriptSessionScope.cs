@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Runtime;
 
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class PlayscriptSessionScope
@@ -15,7 +15,7 @@ public class PlayscriptSessionScope
     }
 
     // ReSharper disable once MemberCanBePrivate.Global
-    internal PlayscriptSessionScope(PlayscriptSessionScope? parent)
+    protected PlayscriptSessionScope(PlayscriptSessionScope? parent)
     {
         Parent = parent;
     }

@@ -32,6 +32,8 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("#nullable enable");
         indented.WriteLine();
         indented.WriteLine("using EasyPlayscript;");
+        indented.WriteLine("using EasyPlayscript.DataModel;");
+        indented.WriteLine("using EasyPlayscript.Runtime;");
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
@@ -177,6 +179,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("#nullable enable");
         indented.WriteLine();
         indented.WriteLine("using EasyPlayscript;");
+        indented.WriteLine("using EasyPlayscript.DataModel;");
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();

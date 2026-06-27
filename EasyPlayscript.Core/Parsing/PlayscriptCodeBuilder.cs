@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Threading;
 using Antlr4.Runtime.Tree;
+using EasyPlayscript.DataModel;
 
 namespace EasyPlayscript.Parsing;
 

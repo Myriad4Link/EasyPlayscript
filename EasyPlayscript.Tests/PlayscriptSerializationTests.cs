@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using EasyPlayscript.DataModel;
 using MessagePack;
 using Xunit;
 

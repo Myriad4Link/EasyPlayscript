@@ -37,7 +37,7 @@ public class PlayscriptGeneratorTests
     private const string TestAesKey = "test-key-1234567";
 
     private const string ImplementationAttributeSource = """
-                                                         namespace EasyPlayscript
+                                                         namespace EasyPlayscript.Runtime
                                                          {
                                                              [System.AttributeUsage(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
                                                              public sealed class ImplementationAttribute : System.Attribute
@@ -733,7 +733,7 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class Effects
                                                          {
-                                                             [EasyPlayscript.Implementation]
+                                                             [EasyPlayscript.Runtime.Implementation]
                                                              public void fade() { }
                                                          }
                                                      }
@@ -752,7 +752,7 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class Effects
                                                          {
-                                                             [EasyPlayscript.Implementation]
+                                                             [EasyPlayscript.Runtime.Implementation]
                                                              public void fade(string type) { }
                                                          }
                                                      }
@@ -770,7 +770,7 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class Effects
                                                          {
-                                                             [EasyPlayscript.Implementation]
+                                                             [EasyPlayscript.Runtime.Implementation]
                                                              public void config(string name, int count, double volume, bool enabled) { }
                                                          }
                                                      }
@@ -792,7 +792,7 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class Effects
                                                          {
-                                                             [EasyPlayscript.Implementation]
+                                                             [EasyPlayscript.Runtime.Implementation]
                                                              public string get_name() => "test";
                                                          }
                                                      }
@@ -810,7 +810,7 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class Effects
                                                          {
-                                                             [EasyPlayscript.Implementation("fade")]
+                                                              [EasyPlayscript.Runtime.Implementation("fade")]
                                                              public void DoFade() { }
                                                          }
                                                      }
@@ -831,7 +831,7 @@ public class PlayscriptGeneratorTests
                                                          {
                                                              public class Inner
                                                              {
-                                                                 [EasyPlayscript.Implementation]
+                                                                 [EasyPlayscript.Runtime.Implementation]
                                                                  public void fade() { }
                                                              }
                                                          }
@@ -848,7 +848,7 @@ public class PlayscriptGeneratorTests
         var source = ImplementationAttributeSource + """
                                                      public class GlobalEffects
                                                      {
-                                                         [EasyPlayscript.Implementation]
+                                                         [EasyPlayscript.Runtime.Implementation]
                                                          public void fade() { }
                                                      }
                                                      """;
@@ -875,7 +875,7 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class Transitioner
                                                          {
-                                                             [EasyPlayscript.Implementation]
+                                                             [EasyPlayscript.Runtime.Implementation]
                                                              public void transition(string type) { }
                                                          }
                                                      }
@@ -904,12 +904,12 @@ public class PlayscriptGeneratorTests
                                                      {
                                                          public class AudioSystem
                                                          {
-                                                             [EasyPlayscript.Implementation]
+                                                             [EasyPlayscript.Runtime.Implementation]
                                                              public void play(string sound, double volume) { }
                                                          }
                                                          public class Transitioner
                                                          {
-                                                             [EasyPlayscript.Implementation]
+                                                             [EasyPlayscript.Runtime.Implementation]
                                                              public void transition(string type) { }
                                                          }
                                                      }

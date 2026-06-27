@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using MessagePack;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.DataModel;
 
 [MessagePackObject]
 public class TextBlock

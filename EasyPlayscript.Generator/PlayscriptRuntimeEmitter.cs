@@ -3,6 +3,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using EasyPlayscript.DataModel;
 
 namespace EasyPlayscript.Generator;
 
@@ -38,10 +39,12 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("using System;");
         indented.WriteLine("using System.Collections.Generic;");
         indented.WriteLine("using EasyPlayscript;");
+        indented.WriteLine("using EasyPlayscript.DataModel;");
+        indented.WriteLine("using EasyPlayscript.Runtime;");
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
-        indented.WriteLine("public class PlayscriptRuntimeSession : global::EasyPlayscript.PlayscriptSessionScope");
+        indented.WriteLine("public class PlayscriptRuntimeSession : global::EasyPlayscript.Runtime.PlayscriptSessionScope");
         indented.WriteLine("{");
         indented.Indent++;
 

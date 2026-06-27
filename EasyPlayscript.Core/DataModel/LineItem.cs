@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.DataModel;
 
 [MessagePackObject]
 [Union(0, typeof(TextItem))]

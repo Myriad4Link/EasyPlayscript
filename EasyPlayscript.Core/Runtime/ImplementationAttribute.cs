@@ -1,7 +1,7 @@
 using System;
 using JetBrains.Annotations;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Runtime;
 
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 [UsedImplicitly]

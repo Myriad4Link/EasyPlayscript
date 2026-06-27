@@ -1,7 +1,8 @@
 using System;
 using System.Text;
+using EasyPlayscript.DataModel;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Runtime;
 
 public class ScriptNavigator(ScriptBlock block)
 {

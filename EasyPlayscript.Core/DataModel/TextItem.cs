@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.DataModel;
 
 [MessagePackObject]
 public class TextItem(string text) : LineItem

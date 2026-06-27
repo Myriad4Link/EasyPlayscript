@@ -11,34 +11,23 @@ public enum InterfaceType
     Void
 }
 
-public readonly struct InterfaceParameter
+public readonly struct InterfaceParameter(string name, InterfaceType type)
 {
-    public string Name { get; }
-    public InterfaceType Type { get; }
-
-    public InterfaceParameter(string name, InterfaceType type)
-    {
-        Name = name;
-        Type = type;
-    }
+    public string Name { get; } = name;
+    public InterfaceType Type { get; } = type;
 }
 
-public class InterfaceDeclaration
+public class InterfaceDeclaration(
+    string name,
+    List<InterfaceParameter> parameters,
+    InterfaceType returnType,
+    int line,
+    int col)
 {
-    public InterfaceDeclaration(string name, List<InterfaceParameter> parameters,
-        InterfaceType returnType, int line, int col)
-    {
-        Name = name;
-        Parameters = parameters;
-        ReturnType = returnType;
-        Line = line;
-        Col = col;
-    }
-
-    public string Name { get; }
-    public List<InterfaceParameter> Parameters { get; }
-    public InterfaceType ReturnType { get; }
-    public int Line { get; }
-    public int Col { get; }
+    public string Name { get; } = name;
+    public List<InterfaceParameter> Parameters { get; } = parameters;
+    public InterfaceType ReturnType { get; } = returnType;
+    public int Line { get; } = line;
+    public int Col { get; } = col;
     public string FilePath { get; set; } = string.Empty;
 }

@@ -1,6 +1,6 @@
 using System;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.Runtime;
 
 public readonly struct ScriptPointer(int pageIndex, int paragraphIndex, int lineIndex)
     : IEquatable<ScriptPointer>

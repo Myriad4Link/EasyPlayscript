@@ -1,3 +1,4 @@
+using EasyPlayscript.DataModel;
 using EasyPlayscript.Parsing;
 using Xunit;
 

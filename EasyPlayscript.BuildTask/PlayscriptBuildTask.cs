@@ -1,4 +1,5 @@
 using System.IO;
+using EasyPlayscript.DataModel;
 using EasyPlayscript.Parsing;
 using JetBrains.Annotations;
 using MessagePack;

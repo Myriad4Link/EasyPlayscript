@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using MessagePack;
 
-namespace EasyPlayscript;
+namespace EasyPlayscript.DataModel;
 
 public static class PlayscriptLoader
 {

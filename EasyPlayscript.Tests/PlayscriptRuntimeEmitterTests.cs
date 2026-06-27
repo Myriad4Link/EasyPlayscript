@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EasyPlayscript.DataModel;
 using EasyPlayscript.Generator;
 using EasyPlayscript.Parsing;
 using Xunit;
@@ -28,7 +29,7 @@ public class PlayscriptRuntimeEmitterTests
     public void Generate_InheritsFromBase()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains(": global::EasyPlayscript.PlayscriptSessionScope", code);
+        Assert.Contains(": global::EasyPlayscript.Runtime.PlayscriptSessionScope", code);
     }
 
     [Fact]

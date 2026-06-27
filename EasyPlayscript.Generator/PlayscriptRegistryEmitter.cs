@@ -19,6 +19,7 @@ public static class PlayscriptRegistryEmitter
         indented.WriteLine();
         indented.WriteLine("using System;");
         indented.WriteLine("using EasyPlayscript;");
+        indented.WriteLine("using EasyPlayscript.DataModel;");
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();

@@ -10,6 +10,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPlayscript.Sample", "Ea
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPlayscript.Tests", "EasyPlayscript.Tests\EasyPlayscript.Tests.csproj", "{4E5D9DCC-38CB-4D07-A1BC-1CDD68DC46D3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPlayscript.LSP", "EasyPlayscript.LSP\EasyPlayscript.LSP.csproj", "{FCCABD9C-2BAA-40AE-AF6C-4D09B9FBC95C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyPlayscript.LSP.Tests", "EasyPlayscript.LSP.Tests\EasyPlayscript.LSP.Tests.csproj", "{A3270CD0-9756-481D-9848-3BA2723DB56C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,13 @@ Global
 		{4E5D9DCC-38CB-4D07-A1BC-1CDD68DC46D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E5D9DCC-38CB-4D07-A1BC-1CDD68DC46D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E5D9DCC-38CB-4D07-A1BC-1CDD68DC46D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCCABD9C-2BAA-40AE-AF6C-4D09B9FBC95C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCCABD9C-2BAA-40AE-AF6C-4D09B9FBC95C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCCABD9C-2BAA-40AE-AF6C-4D09B9FBC95C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCCABD9C-2BAA-40AE-AF6C-4D09B9FBC95C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3270CD0-9756-481D-9848-3BA2723DB56C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3270CD0-9756-481D-9848-3BA2723DB56C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3270CD0-9756-481D-9848-3BA2723DB56C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3270CD0-9756-481D-9848-3BA2723DB56C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

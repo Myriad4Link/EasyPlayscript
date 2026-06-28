@@ -2,16 +2,10 @@ using System.Collections.Generic;
 
 namespace EasyPlayscript.Parsing;
 
-public class StructureParseResult
+public class StructureParseResult(List<StructureResult> results, List<InterfaceDeclaration> interfaces)
 {
-    public StructureParseResult(List<StructureResult> results, List<InterfaceDeclaration> interfaces)
-    {
-        Results = results;
-        Interfaces = interfaces;
-    }
-
-    public List<StructureResult> Results { get; }
-    public List<InterfaceDeclaration> Interfaces { get; }
+    public List<StructureResult> Results { get; } = results;
+    public List<InterfaceDeclaration> Interfaces { get; } = interfaces;
 }
 
 /// <summary>

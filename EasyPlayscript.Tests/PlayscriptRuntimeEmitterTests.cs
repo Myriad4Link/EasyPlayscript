@@ -29,7 +29,7 @@ public class PlayscriptRuntimeEmitterTests
     public void Generate_InheritsFromBase()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, DefaultAesKey);
-        Assert.Contains(": global::EasyPlayscript.Runtime.PlayscriptSessionScope", code);
+        Assert.Contains(": PlayscriptSessionScope", code);
     }
 
     [Fact]

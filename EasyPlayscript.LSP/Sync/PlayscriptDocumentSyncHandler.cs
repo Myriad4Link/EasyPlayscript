@@ -21,7 +21,7 @@ internal class PlayscriptDocumentSyncHandler(
     );
 
     private static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(300);
-    private readonly ConcurrentDictionary<DocumentUri, string> _pending = new();
+    private readonly ConcurrentDictionary<DocumentUri, IReadOnlyList<TextDocumentContentChangeEvent>> _pending = new();
 
     private readonly ConcurrentDictionary<DocumentUri, Timer> _timers = new();
 
@@ -31,7 +31,7 @@ internal class PlayscriptDocumentSyncHandler(
         return new TextDocumentSyncRegistrationOptions
         {
             DocumentSelector = Selector,
-            Change = TextDocumentSyncKind.Full,
+            Change = TextDocumentSyncKind.Incremental,
             Save = new SaveOptions { IncludeText = false }
         };
     }
@@ -56,11 +56,11 @@ internal class PlayscriptDocumentSyncHandler(
     {
         if (token.IsCancellationRequested) return Unit.Task;
 
-        var text = notification.ContentChanges.FirstOrDefault()?.Text;
-        if (text is null) return Unit.Task;
+        var changes = notification.ContentChanges.ToList();
+        if (changes.Count == 0) return Unit.Task;
 
         var uri = notification.TextDocument.Uri;
-        _pending[uri] = text;
+        _pending.AddOrUpdate(uri, changes, (_, existing) => existing.Concat(changes).ToList());
 
         if (_timers.TryGetValue(uri, out var existing))
         {
@@ -98,10 +98,10 @@ internal class PlayscriptDocumentSyncHandler(
     private void OnDebounceElapsed(object? state)
     {
         var uri = (DocumentUri)state!;
-        if (!_pending.TryRemove(uri, out var text)) return;
+        if (!_pending.TryRemove(uri, out var changes)) return;
 
         _timers.TryRemove(uri, out _);
-        store.OpenOrUpdate(uri, text);
+        store.ApplyChanges(uri, changes);
         PublishDiagnostics(uri, CancellationToken.None);
     }
 

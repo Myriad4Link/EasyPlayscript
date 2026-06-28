@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A custom scripting language (`.scpt` files) with a two-pass ANTLR parser, Roslyn source generator, and MSBuild integration. The generator produces `PlayscriptRegistry.g.cs`, `PlayscriptRuntime.g.cs`, `Script.g.cs`, and `Text.g.cs` at compile time.
+A custom scripting language (`.scpt` files) with a two-pass ANTLR parser, Roslyn source generator, and MSBuild integration. The generator produces `PlayscriptRegistry.g.cs`, `PlayscriptRuntime.g.cs`, `Script.g.cs`, and `Text.g.cs` at compile time. An LSP server provides editor support.
 
 ## Project Structure
 
@@ -11,7 +11,9 @@ A custom scripting language (`.scpt` files) with a two-pass ANTLR parser, Roslyn
 | `EasyPlayscript.Core` | netstandard2.0 | ANTLR parsers, data models, validation |
 | `EasyPlayscript.Generator` | netstandard2.0 | Roslyn `IIncrementalGenerator` |
 | `EasyPlayscript.BuildTask` | netstandard2.0 | MSBuild task for binary compilation |
-| `EasyPlayscript.Tests` | net9.0 | xUnit tests |
+| `EasyPlayscript.LSP` | net10.0 | LSP server (OmniSharp), references Core |
+| `EasyPlayscript.Tests` | net9.0 | xUnit tests for Core + Generator |
+| `EasyPlayscript.LSP.Tests` | net10.0 | xUnit tests for LSP |
 | `EasyPlayscript.Sample` | net9.0 | Demo app with `.scpt` files in `scripts/` |
 
 **Key**: `EasyPlayscript.Core` has `RootNamespace` = `EasyPlayscript` (not `EasyPlayscript.Core`).
@@ -19,12 +21,16 @@ A custom scripting language (`.scpt` files) with a two-pass ANTLR parser, Roslyn
 ## Commands
 
 ```bash
-dotnet build                    # Build entire solution
-dotnet test                     # Run all tests (xUnit)
+dotnet build                              # Build entire solution
+dotnet test                               # Run all tests (xUnit)
 dotnet test --filter "PlayscriptGeneratorTests"  # Run specific test class
-dotnet run --project EasyPlayscript.Sample        # Run sample app
-./pack-local.ps1                # Rebuild & repack all NuGet packages into nuget-local/
+dotnet test EasyPlayscript.Tests          # Run only Core/Generator tests
+dotnet test EasyPlayscript.LSP.Tests      # Run only LSP tests
+dotnet run --project EasyPlayscript.Sample       # Run sample app
+./pack-local.ps1                          # Rebuild & repack NuGet packages into nuget-local/
 ```
+
+**Note**: `dotnet test` takes the project path as a positional argument, not `--project`. Use `dotnet test EasyPlayscript.LSP.Tests`, not `dotnet test --project EasyPlayscript.LSP.Tests`.
 
 **SDK**: .NET 10.0.301 required (`global.json` with `rollForward: latestMinor`).
 
@@ -152,6 +158,17 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 
 `ScriptRegistryTests` uses `CSharpGeneratorDriver` with the `ScriptRegistry` generator (post-initialization, no .scpt files needed).
 
+## LSP Server
+
+`EasyPlayscript.LSP` is an executable targeting net10.0 using `OmniSharp.Extensions.LanguageServer`. It references Core (not Generator). Key components:
+
+- `PlayscriptDocumentParser` — parses `.scpt` files into `ParsedDocument`; `ParseIncremental()` reuses cached block tokens when content is unchanged
+- `PlayscriptDocumentSyncHandler` — open/change/close sync with **incremental** changes (`TextDocumentSyncKind.Incremental`), debounced at 300ms
+- `PlayscriptSemanticTokensHandler` — semantic token highlighting
+- `PositionMapper` — ANTLR ↔ LSP position conversion (ANTLR 1-based lines → LSP 0-based)
+- `DocumentStore` — tracks open documents, stores current text, applies incremental edits via `TextEditApplier`
+- `TextEditApplier` — applies `TextDocumentContentChangeEvent` range-based edits to a string
+
 ## Key Files
 
 - `EasyPlayscript.Core/Parsing/PlayscriptPipeline.cs` — orchestrates validation
@@ -169,7 +186,6 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `EasyPlayscript.Core/Parsing/ImplementationInfo.cs` — `ImplementationInfo` with `IsAsync` property
 - `EasyPlayscript.Generator/ImplementationScanner.cs` — extracts `[Implementation]` methods, detects async via `INamedTypeSymbol`
 - `EasyPlayscript.Sample/scripts/*.scpt` — example `.scpt` files
-- `LSP-PLAN.md` — in-progress plan for an LSP server (not yet implemented)
 
 ## Gotchas
 
@@ -185,3 +201,5 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `ScriptNavigator` also has async variants (`RenderNextLineAsync`, etc.) taking `Func<Line, Task<string>>`. The generated Script passes `RenderLineAsync` (which uses `await Runtime.DispatchCallAsync(call)`) as that callback
 - The generated `PlayscriptRuntimeSession` inherits from `PlayscriptSessionScope` (Core). The base holds the service dictionary and parent chain; the generated class adds `Registry`, `DispatchCall`, `CreateChild` override, and script/text loading
 - `CreateChild()` returns `PlayscriptRuntimeSession` (covariant return). The child shares the same `Registry` instance as the parent
+- `EasyPlayscript.LSP` targets net10.0 (not netstandard2.0 like Core/Generator) — it's an executable, not a library
+- LSP uses incremental sync (`TextDocumentSyncKind.Incremental`). The client sends range-based edits, not full document text. `DocumentStore.ApplyChanges()` applies edits to the stored text, then calls `ParseIncremental()` which reuses cached block tokens when a block's `RawContent` is unchanged

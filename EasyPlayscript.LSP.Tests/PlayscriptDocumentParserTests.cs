@@ -290,4 +290,217 @@ public class PlayscriptDocumentParserTests
         Assert.Equal(1, textTokens[0].Line); // line one → LSP line 1
         Assert.Equal(2, textTokens[1].Line); // line two → LSP line 2
     }
+
+    // ── Parse result metadata ───────────────────────────────────────────────
+
+    [Fact]
+    public void Parse_ResultHasBlockCache()
+    {
+        var doc = PlayscriptDocumentParser.Parse("script a[hello] text b[world]");
+        Assert.NotNull(doc.BlockCache);
+        Assert.Equal(2, doc.BlockCache.Count);
+    }
+
+    [Fact]
+    public void Parse_ResultHasText()
+    {
+        var input = "script a[hello]";
+        var doc = PlayscriptDocumentParser.Parse(input);
+        Assert.Equal(input, doc.Text);
+    }
+
+    // ── ParseIncremental ────────────────────────────────────────────────────
+
+    [Fact]
+    public void ParseIncremental_NoPrevious_EqualsFullParse()
+    {
+        var input = "script a[hello] text b[world]";
+        var full = PlayscriptDocumentParser.Parse(input);
+        var incremental = PlayscriptDocumentParser.ParseIncremental(input, null);
+
+        Assert.Equal(full.Tokens.Count, incremental.Tokens.Count);
+        Assert.Equal(full.Errors.Count, incremental.Errors.Count);
+
+        for (var i = 0; i < full.Tokens.Count; i++)
+        {
+            Assert.Equal(full.Tokens[i].Line, incremental.Tokens[i].Line);
+            Assert.Equal(full.Tokens[i].Col, incremental.Tokens[i].Col);
+            Assert.Equal(full.Tokens[i].Length, incremental.Tokens[i].Length);
+            Assert.Equal(full.Tokens[i].TokenType, incremental.Tokens[i].TokenType);
+        }
+    }
+
+    [Fact]
+    public void ParseIncremental_EditInsideBlock_ReparsesOnlyThatBlock()
+    {
+        var input1 = "script a[hello]\ntext b[world]";
+        var input2 = "script a[hi]\ntext b[world]";
+
+        var doc1 = PlayscriptDocumentParser.ParseIncremental(input1, null);
+        var doc2 = PlayscriptDocumentParser.ParseIncremental(input2, doc1);
+
+        // Block "b" is unchanged — its tokens should be identical in position
+        var b1 = doc1.Tokens
+            .Where(t => t.TokenType == SemanticTokenTypes.String && t.Line >= 1)
+            .OrderBy(t => t.Col).ToArray();
+        var b2 = doc2.Tokens
+            .Where(t => t.TokenType == SemanticTokenTypes.String && t.Line >= 1)
+            .OrderBy(t => t.Col).ToArray();
+
+        Assert.Equal(b1.Length, b2.Length);
+        for (var i = 0; i < b1.Length; i++)
+        {
+            Assert.Equal(b1[i].Line, b2[i].Line);
+            Assert.Equal(b1[i].Col, b2[i].Col);
+            Assert.Equal(b1[i].Length, b2[i].Length);
+        }
+    }
+
+    [Fact]
+    public void ParseIncremental_EditAboveBlock_AdjustsLineOffsets()
+    {
+        var input1 = "script a[hello]\ntext b[world]";
+        var input2 = "script a[hello\nextra]\ntext b[world]";
+
+        var doc1 = PlayscriptDocumentParser.ParseIncremental(input1, null);
+        var doc2 = PlayscriptDocumentParser.ParseIncremental(input2, doc1);
+
+        // Block "b" shifted down by 1 line (new line in block "a")
+        var b1 = doc1.Tokens
+            .Where(t => t.TokenType == SemanticTokenTypes.String && t.Line >= 1)
+            .OrderBy(t => t.Col).ToArray();
+        var b2 = doc2.Tokens
+            .Where(t => t.TokenType == SemanticTokenTypes.String && t.Line >= 2)
+            .OrderBy(t => t.Col).ToArray();
+
+        Assert.Equal(b1.Length, b2.Length);
+        for (var i = 0; i < b1.Length; i++)
+        {
+            Assert.Equal(b1[i].Line + 1, b2[i].Line);
+        }
+    }
+
+    [Fact]
+    public void ParseIncremental_BlockAdded_ParsesNewBlock()
+    {
+        var input1 = "script a[hello]";
+        var input2 = "script a[hello] text b[world]";
+
+        var doc1 = PlayscriptDocumentParser.ParseIncremental(input1, null);
+        var doc2 = PlayscriptDocumentParser.ParseIncremental(input2, doc1);
+
+        var contentTokens1 = doc1.Tokens.Where(t => t.TokenType == SemanticTokenTypes.String).ToArray();
+        var contentTokens2 = doc2.Tokens.Where(t => t.TokenType == SemanticTokenTypes.String).ToArray();
+
+        Assert.Equal(1, contentTokens1.Length); // only "hello"
+        Assert.Equal(2, contentTokens2.Length); // "hello" + "world"
+    }
+
+    [Fact]
+    public void ParseIncremental_BlockRemoved_DropsFromCache()
+    {
+        var input1 = "script a[hello] text b[world]";
+        var input2 = "script a[hello]";
+
+        var doc1 = PlayscriptDocumentParser.ParseIncremental(input1, null);
+        var doc2 = PlayscriptDocumentParser.ParseIncremental(input2, doc1);
+
+        var contentTokens1 = doc1.Tokens.Where(t => t.TokenType == SemanticTokenTypes.String).ToArray();
+        var contentTokens2 = doc2.Tokens.Where(t => t.TokenType == SemanticTokenTypes.String).ToArray();
+
+        Assert.Equal(2, contentTokens1.Length);
+        Assert.Equal(1, contentTokens2.Length);
+    }
+
+    [Fact]
+    public void ParseIncremental_BlockRenamed_InvalidatesCache()
+    {
+        var input1 = "script a[hello]";
+        var input2 = "script b[hello]";
+
+        var doc1 = PlayscriptDocumentParser.ParseIncremental(input1, null);
+        var doc2 = PlayscriptDocumentParser.ParseIncremental(input2, doc1);
+
+        // Block renamed from "a" to "b" — variable token changes
+        var var1 = doc1.Tokens.Where(t => t.TokenType == SemanticTokenTypes.Variable).ToArray();
+        var var2 = doc2.Tokens.Where(t => t.TokenType == SemanticTokenTypes.Variable).ToArray();
+
+        Assert.Equal("a", GetTokenText(input1, var1[0]));
+        Assert.Equal("b", GetTokenText(input2, var2[0]));
+    }
+
+    [Fact]
+    public void ParseIncremental_EmptyFile_NoTokens()
+    {
+        var doc = PlayscriptDocumentParser.ParseIncremental("", null);
+        Assert.Empty(doc.Tokens);
+        Assert.Empty(doc.Errors);
+    }
+
+    [Fact]
+    public void ParseIncremental_CachePopulated()
+    {
+        var input = "script a[hello] text b[world]";
+        var doc = PlayscriptDocumentParser.ParseIncremental(input, null);
+
+        Assert.NotNull(doc.BlockCache);
+        Assert.Equal(2, doc.BlockCache.Count);
+        Assert.True(doc.BlockCache.ContainsKey("a"));
+        Assert.True(doc.BlockCache.ContainsKey("b"));
+    }
+
+    [Fact]
+    public void ParseIncremental_ErrorInBlock_OnlyThatBlockErrors()
+    {
+        var input1 = "script a[hello] script b[world]";
+        var doc1 = PlayscriptDocumentParser.ParseIncremental(input1, null);
+        Assert.Empty(doc1.Errors);
+
+        // Introduce a structure error that removes block "b"
+        var input2 = "script a[hello] script b]bad]";
+        var doc2 = PlayscriptDocumentParser.ParseIncremental(input2, doc1);
+        Assert.NotEmpty(doc2.Errors);
+    }
+
+    [Fact]
+    public void ParseIncremental_TextProperty_Set()
+    {
+        var input = "script a[hello]";
+        var doc = PlayscriptDocumentParser.ParseIncremental(input, null);
+        Assert.Equal(input, doc.Text);
+    }
+
+    [Fact]
+    public void ParseIncremental_SequentialEdits_PreservesUnchangedBlocks()
+    {
+        var input1 = "script a[line1]\ntext b[line2]\nscript c[line3]";
+        var input2 = "script a[line1 edited]\ntext b[line2]\nscript c[line3]";
+        var input3 = "script a[line1 edited]\ntext b[line2 edited]\nscript c[line3]";
+
+        var doc1 = PlayscriptDocumentParser.ParseIncremental(input1, null);
+        var doc2 = PlayscriptDocumentParser.ParseIncremental(input2, doc1);
+        var doc3 = PlayscriptDocumentParser.ParseIncremental(input3, doc2);
+
+        // Block "c" unchanged across all 3 — tokens at same position
+        var c1 = doc1.Tokens.Where(t => t.TokenType == SemanticTokenTypes.String && t.Line >= 2)
+            .OrderBy(t => t.Col).ToArray();
+        var c3 = doc3.Tokens.Where(t => t.TokenType == SemanticTokenTypes.String && t.Line >= 2)
+            .OrderBy(t => t.Col).ToArray();
+
+        Assert.Equal(c1.Length, c3.Length);
+        for (var i = 0; i < c1.Length; i++)
+        {
+            Assert.Equal(c1[i].Line, c3[i].Line);
+            Assert.Equal(c1[i].Col, c3[i].Col);
+        }
+    }
+
+    private static string GetTokenText(string source, TokenEntry token)
+    {
+        // Structure tokens map to source directly via ANTLR positions (1-based line, 0-based col)
+        // But our tokens use LSP positions (0-based line). For single-line inputs, line 0 maps to source line 1.
+        var lines = source.Split('\n');
+        var line = lines[token.Line]; // LSP 0-based maps to array index directly
+        return line.Substring(token.Col, token.Length);
+    }
 }

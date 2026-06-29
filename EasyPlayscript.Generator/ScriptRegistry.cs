@@ -141,7 +141,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine();
 
         // ── RenderNext* (sync) ──
-        indented.WriteLine("public string? RenderNextLine()");
+        indented.WriteLine("public LineRenderResult? RenderNextLine()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
@@ -152,7 +152,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
-        indented.WriteLine("public string? RenderNextParagraph()");
+        indented.WriteLine("public ParagraphRenderResult? RenderNextParagraph()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
@@ -163,7 +163,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
-        indented.WriteLine("public string? RenderNextPage()");
+        indented.WriteLine("public PageRenderResult? RenderNextPage()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
@@ -176,7 +176,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine();
 
         // ── RenderNext*Async (async) ──
-        indented.WriteLine("public async Task<string?> RenderNextLineAsync()");
+        indented.WriteLine("public async Task<LineRenderResult?> RenderNextLineAsync()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
@@ -187,7 +187,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
-        indented.WriteLine("public async Task<string?> RenderNextParagraphAsync()");
+        indented.WriteLine("public async Task<ParagraphRenderResult?> RenderNextParagraphAsync()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
@@ -198,7 +198,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
-        indented.WriteLine("public async Task<string?> RenderNextPageAsync()");
+        indented.WriteLine("public async Task<PageRenderResult?> RenderNextPageAsync()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");

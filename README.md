@@ -35,6 +35,55 @@ then content (consumer calls, text). This enables incremental LSP editing and fa
 
 ## Before Quick Start ...
 
+### Script
+
+A **script** is a block of paged narrative content — dialogue, cutscenes, event sequences. The content inside a script is organized in three layers:
+
+- **Line** — a single unit of text. This is what `RenderNextLine()` returns (as a `LineRenderResult`).
+- **Paragraph** — a group of consecutive lines, separated by a blank line. `RenderNextParagraph()` returns all lines in a paragraph joined by newlines.
+- **Page** — a group of paragraphs, separated by `/`. `RenderNextPage()` returns all paragraphs on a page.
+
+<p align="center">
+  <img src="assets/umineko-paragraph-demo.png" alt="Umineko paragraph demo" width="600"/>
+  <br/>
+  <em>An example of "paged narrative content".</em>
+</p>
+
+```
+script act_i_scene_i [
+    When shall we three meet again?           // Pg 0, Para 0, Line 0
+    In thunder, lightning, or in rain?        // Pg 0, Para 0, Line 1
+
+    When the hurly-burly's done,              // Pg 0, Para 1, Line 0
+    When the battle's lost and won.           // Pg 0, Para 1, Line 1
+    /                                         // --- page break ---
+                                              
+    That will be ere the set of sun.          // Pg 1, Para 0, Line 0
+
+    Where the place?                          // Pg 1, Para 1, Line 0
+    Upon the heath.                           // Pg 1, Para 1, Line 1
+    There to meet with Macbeth.               // Pg 1, Para 1, Line 2
+    /                                         // --- page break ---
+                                              
+    Fair is foul, and foul is fair;           // Pg 2, Para 0, Line 0
+    Hover through the fog and filthy air.     // Pg 2, Para 0, Line 1
+]
+```
+
+Page 0 is the opening exchange. Page 1 continues the prophecy. Page 2 climaxes with "Fair is foul."
+
+Scripts are compiled to MessagePack at build time. At runtime, you can navigate them step by step:
+
+```csharp
+var script = session.GetScript(PlayscriptRuntimeSession.ScriptKey.act_i_scene_i);
+script.RenderNextLine()!.Text        // "When shall we three meet again?"
+script.RenderNextLine()!.Text        // "In thunder, lightning, or in rain?"
+script.RenderNextParagraph()!.Text   // "When the hurly-burly's done,\nWhen the battle's lost and won."
+script.RenderNextPage()!.Text        // from "That will be ere the set of sun." to "There to meet with Macbeth."
+```
+
+Or just run everything at once with `script.Run()`.
+
 ### Interface
 
 An **interface** is a function signature declared at the top of a `.scpt` file. It defines *what* the script can call, but not *how* — the actual logic lives in C#.
@@ -82,50 +131,6 @@ At compile time, every consumer call is validated against declared interfaces:
 - Wrong argument types → error (SCPT007)
 
 This means script writers get the same safety net as writing C# code — typos and mismatches are caught before the game ever runs.
-
-### Script
-
-A **script** is a block of paged narrative content — dialogue, cutscenes, event sequences. It supports paragraphs (separated by blank lines) and pages (separated by `/`).
-
-```
-script act_i_scene_i[
-@effect("thunder", 1.0)
-@enter("Thunder and Lightning. Enter three Witches.")
-
-When shall we three meet again?
-In thunder, lightning, or in rain?
-
-When the hurly-burly's done,
-When the battle's lost and won.
-/
-
-That will be ere the set of sun.
-
-Where the place?
-Upon the heath.
-There to meet with Macbeth.
-/
-
-Fair is foul, and foul is fair;
-Hover through the fog and filthy air.
-
-@exit("They exit.")
-]
-```
-
-The first `/` ends page 1 (the witches' opening exchange); page 2 continues the prophecy; page 3 climaxes with "Fair is foul."
-
-Scripts are compiled to MessagePack at build time. At runtime, you can navigate them step by step:
-
-```csharp
-var script = session.GetScript(PlayscriptRuntimeSession.ScriptKey.act_i_scene_i);
-script.RenderNextLine()        // "When shall we three meet again?"
-script.RenderNextLine()        // "In thunder, lightning, or in rain?"
-script.RenderNextParagraph()   // "When the hurly-burly's done,\nWhen the battle's lost and won."
-script.RenderNextPage()        // "That will be ere the set of sun."  (skips to page 2)
-```
-
-Or just run everything at once with `script.Run()`.
 
 ### Text
 
@@ -217,7 +222,7 @@ The **source generator** is a Roslyn `IIncrementalGenerator` that runs at compil
 |----------------|----------|
 | `PlayscriptRegistry.g.cs` | `DispatchCall()` — switch that routes consumer calls to implementations |
 | `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeSession` class, enums for script/text keys, lazy loader |
-| `Script.g.cs` | `Script` class with `Run()`, `RenderNextLine()`, navigation |
+| `Script.g.cs` | `Script` class with `Run()`, `RenderNextLine()` returning `LineRenderResult?`, navigation |
 | `Text.g.cs` | `Text` class with `Render()` |
 
 You never see or touch these files — they're generated fresh every build.
@@ -300,7 +305,7 @@ session.Register(new StageSystem());
 
 var script = session.GetScript(PlayscriptRuntimeSession.ScriptKey.act_i_scene_i);
 while (script.RenderNextLine() is { } line)
-    Console.WriteLine(line);
+    Console.WriteLine(line.Text);
 ```
 
 Output:
@@ -433,13 +438,26 @@ global.GetScript(key).Run();      // still uses the original
 ```csharp
 var script = session.GetScript(key);
 
-script.RenderNextLine()          // returns string? — dispatches calls + returns text
-script.RenderNextParagraph()     // lines joined by newline
-script.RenderNextPage()          // paragraphs joined by blank line
+var result = script.RenderNextLine();    // LineRenderResult? — null at end of script
+if (result is { } r)
+{
+    r.Text                                // "When shall we three meet again?"
+    r.Pointer                             // ScriptPointer(0, 0, 0)
+    r.IsLastLineOfParagraph               // false
+    r.IsLastPage                          // false
+}
+
+script.RenderNextParagraph()              // ParagraphRenderResult? — lines joined by newline
+script.RenderNextPage()                   // PageRenderResult? — paragraphs joined by blank line
 script.JumpTo(new ScriptPointer(page, paragraph, line))
-script.Reset()                   // rewinds to (0,0,0)
-script.IsLastLineOfPage          // bool
+script.Reset()                            // rewinds to (0,0,0)
+script.IsLastLineOfPage                   // bool (live navigator state)
 ```
+
+- Each `Render*` method returns a different sealed type — `LineRenderResult`, `ParagraphRenderResult`, or `PageRenderResult`
+- Use `is LineRenderResult` pattern matching to access type-specific flags
+- Flags are captured **before** the pointer advances
+- `RenderNextLine` includes all 6 boundary flags; `RenderNextParagraph` includes paragraph/page flags; `RenderNextPage` includes only `IsLastPage`
 
 ### Async interfaces
 
@@ -457,7 +475,7 @@ public async Task<string> fetch_character(string name)
 
 // Use async render to properly await
 while (await script.RenderNextLineAsync() is { } line)
-    Console.WriteLine(line);
+    Console.WriteLine(line.Text);
 ```
 
 ## License

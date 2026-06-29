@@ -140,11 +140,12 @@ public static class Program
             Console.WriteLine($"\n  [{key}] jumping to page 2:");
             script.JumpTo(new ScriptPointer(1, 0, 0));
             while (script.RenderNextLine() is { } line)
-                Console.WriteLine($"    {line}");
+                Console.WriteLine($"    {line.Text}");
 
             Console.WriteLine("    Resetting...");
             script.Reset();
-            Console.WriteLine($"    First line again: {script.RenderNextLine()}");
+            var first = script.RenderNextLine();
+            Console.WriteLine($"    First line again: {first?.Text}");
         }
 
         // ── Async demo: async render (properly awaits async calls) ──
@@ -156,8 +157,8 @@ public static class Program
             Console.WriteLine($"\n  [async_demo] RenderNextLineAsync():");
             while (await script.RenderNextLineAsync() is { } line)
             {
-                var at = script.Pointer;
-                Console.WriteLine($"    ({at.PageIndex},{at.ParagraphIndex},{at.LineIndex}) {line}");
+                var at = line.Pointer;
+                Console.WriteLine($"    ({at.PageIndex},{at.ParagraphIndex},{at.LineIndex}) {line.Text}");
             }
         }
     }
@@ -172,9 +173,9 @@ public static class Program
 
             while (script.RenderNextLine() is { } line)
             {
-                var at = script.Pointer;
-                var tag = script.IsLastLineOfScript ? " [last]" : "";
-                Console.WriteLine($"    ({at.PageIndex},{at.ParagraphIndex},{at.LineIndex}) {line}{tag}");
+                var at = line.Pointer;
+                var tag = line.IsLastLineOfScript ? " [last]" : "";
+                Console.WriteLine($"    ({at.PageIndex},{at.ParagraphIndex},{at.LineIndex}) {line.Text}{tag}");
             }
         }
     }

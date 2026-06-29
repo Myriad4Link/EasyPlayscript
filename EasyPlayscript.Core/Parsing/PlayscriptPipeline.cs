@@ -23,64 +23,14 @@ public static class PlayscriptPipeline
             var trimmedContent = rawContent.Trim('\r', '\n');
             if (string.IsNullOrEmpty(trimmedContent)) continue;
 
-            var (parser, contentErrors) = identifier == BlockType.Script
-                ? PlayscriptContentHelper.ParseScript(trimmedContent)
-                : PlayscriptContentHelper.ParseText(trimmedContent);
+            var blockDiagnostics = ProcessBlock(identifier, trimmedContent, filePath, cancellationToken,
+                out var builder, out var contentFailed);
 
-            IParseTree tree = identifier == BlockType.Script
-                ? parser.scriptContent()
-                : parser.textContent();
+            diagnostics.AddRange(blockDiagnostics);
 
-            diagnostics.AddRange(contentErrors.Select(error =>
-                ValidationDiagnostic.CreateRaw(
-                    error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg,
-                    filePath, error.Line,
-                    error.Col)));
+            if (contentFailed || builder is null) continue;
 
-            if (contentErrors.Count > 0) continue;
-            if (tree == null) continue;
-
-            var builder = new PlayscriptCodeBuilder(cancellationToken);
-            builder.Build(identifier, tree);
-
-            diagnostics.AddRange(builder.Errors.Select(error =>
-                ValidationDiagnostic.CreateRaw(
-                    error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg,
-                    filePath, error.Line,
-                    error.Col)));
-
-            if (builder.Errors.Count > 0) continue;
-
-            if (identifier == BlockType.Script)
-            {
-                if (data.Scripts.ContainsKey(name))
-                {
-                    var loc = data.ScriptLocations[name];
-                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
-                        DiagnosticCodes.DuplicateScriptNameFormat,
-                        loc.filePath, loc.line, loc.col, "script", name));
-                }
-                else
-                {
-                    data.ScriptLocations[name] = (filePath, line, col);
-                    data.Scripts[name] = builder.ContentResult;
-                }
-            }
-            else
-            {
-                if (data.Texts.ContainsKey(name))
-                {
-                    var loc = data.TextLocations[name];
-                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
-                        DiagnosticCodes.DuplicateScriptNameFormat,
-                        loc.filePath, loc.line, loc.col, "text", name));
-                }
-                else
-                {
-                    data.TextLocations[name] = (filePath, line, col);
-                    data.Texts[name] = builder.TextResult;
-                }
-            }
+            RegisterBlock(data, identifier, name, builder, filePath, line, col, diagnostics);
         }
 
         foreach (var iface in structureResult.Interfaces)
@@ -88,6 +38,93 @@ public static class PlayscriptPipeline
         data.Interfaces.AddRange(structureResult.Interfaces);
 
         return diagnostics;
+    }
+
+    private static List<ValidationDiagnostic> ProcessBlock(
+        BlockType identifier,
+        string trimmedContent,
+        string filePath,
+        CancellationToken cancellationToken,
+        out PlayscriptCodeBuilder? builder,
+        out bool contentFailed)
+    {
+        var diagnostics = new List<ValidationDiagnostic>();
+        builder = null;
+        contentFailed = false;
+
+        var (parser, contentErrors) = identifier == BlockType.Script
+            ? PlayscriptContentHelper.ParseScript(trimmedContent)
+            : PlayscriptContentHelper.ParseText(trimmedContent);
+
+        IParseTree tree = identifier == BlockType.Script
+            ? parser.scriptContent()
+            : parser.textContent();
+
+        diagnostics.AddRange(ToDiagnostics(contentErrors, filePath));
+
+        if (contentErrors.Count > 0) { contentFailed = true; return diagnostics; }
+        if (tree == null) { contentFailed = true; return diagnostics; }
+
+        builder = new PlayscriptCodeBuilder(cancellationToken);
+        builder.Build(identifier, tree);
+
+        diagnostics.AddRange(ToDiagnostics(builder.Errors, filePath));
+
+        if (builder.Errors.Count > 0) { contentFailed = true; builder = null; }
+
+        return diagnostics;
+    }
+
+    private static void RegisterBlock(
+        PlayscriptCompilationData data,
+        BlockType identifier,
+        string name,
+        PlayscriptCodeBuilder builder,
+        string filePath,
+        int line,
+        int col,
+        List<ValidationDiagnostic> diagnostics)
+    {
+        if (identifier == BlockType.Script)
+        {
+            if (data.Scripts.ContainsKey(name))
+            {
+                var loc = data.ScriptLocations[name];
+                diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                    DiagnosticCodes.DuplicateScriptNameFormat,
+                    loc.filePath, loc.line, loc.col, "script", name));
+            }
+            else
+            {
+                data.ScriptLocations[name] = (filePath, line, col);
+                data.Scripts[name] = builder.ContentResult;
+            }
+        }
+        else
+        {
+            if (data.Texts.ContainsKey(name))
+            {
+                var loc = data.TextLocations[name];
+                diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                    DiagnosticCodes.DuplicateScriptNameFormat,
+                    loc.filePath, loc.line, loc.col, "text", name));
+            }
+            else
+            {
+                data.TextLocations[name] = (filePath, line, col);
+                data.Texts[name] = builder.TextResult;
+            }
+        }
+    }
+
+    private static List<ValidationDiagnostic> ToDiagnostics(
+        IReadOnlyList<PlayscriptError> errors, string filePath)
+    {
+        return errors.Select(error =>
+            ValidationDiagnostic.CreateRaw(
+                error.IsLexer ? DiagnosticCodes.UnexpectedToken : DiagnosticCodes.MismatchedInput, error.Msg,
+                filePath, error.Line,
+                error.Col)).ToList();
     }
 
     public static List<ValidationDiagnostic> Validate(PlayscriptCompilationData data)

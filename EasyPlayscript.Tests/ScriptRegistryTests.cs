@@ -243,7 +243,7 @@ public class ScriptRegistryTests
     {
         var source = GetScriptSource();
 
-        Assert.Contains("public string? RenderNextLine()", source);
+        Assert.Contains("public LineRenderResult? RenderNextLine()", source);
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public class ScriptRegistryTests
     {
         var source = GetScriptSource();
 
-        Assert.Contains("public string? RenderNextParagraph()", source);
+        Assert.Contains("public ParagraphRenderResult? RenderNextParagraph()", source);
     }
 
     [Fact]
@@ -259,7 +259,7 @@ public class ScriptRegistryTests
     {
         var source = GetScriptSource();
 
-        Assert.Contains("public string? RenderNextPage()", source);
+        Assert.Contains("public PageRenderResult? RenderNextPage()", source);
     }
 
     [Fact]
@@ -364,9 +364,9 @@ public class ScriptRegistryTests
     {
         var source = GetScriptSource();
 
-        Assert.Contains("public string? RenderNextLine()", source);
-        Assert.Contains("public string? RenderNextParagraph()", source);
-        Assert.Contains("public string? RenderNextPage()", source);
+        Assert.Contains("public LineRenderResult? RenderNextLine()", source);
+        Assert.Contains("public ParagraphRenderResult? RenderNextParagraph()", source);
+        Assert.Contains("public PageRenderResult? RenderNextPage()", source);
         Assert.Contains("public void Run()", source);
         Assert.Contains("public void JumpTo(ScriptPointer pointer)", source);
         Assert.Contains("public void Reset()", source);
@@ -379,21 +379,21 @@ public class ScriptRegistryTests
     public void GeneratedScript_HasRenderNextLineAsync()
     {
         var source = GetScriptSource();
-        Assert.Contains("public async Task<string?> RenderNextLineAsync()", source);
+        Assert.Contains("public async Task<LineRenderResult?> RenderNextLineAsync()", source);
     }
 
     [Fact]
     public void GeneratedScript_HasRenderNextParagraphAsync()
     {
         var source = GetScriptSource();
-        Assert.Contains("public async Task<string?> RenderNextParagraphAsync()", source);
+        Assert.Contains("public async Task<ParagraphRenderResult?> RenderNextParagraphAsync()", source);
     }
 
     [Fact]
     public void GeneratedScript_HasRenderNextPageAsync()
     {
         var source = GetScriptSource();
-        Assert.Contains("public async Task<string?> RenderNextPageAsync()", source);
+        Assert.Contains("public async Task<PageRenderResult?> RenderNextPageAsync()", source);
     }
 
     [Fact]

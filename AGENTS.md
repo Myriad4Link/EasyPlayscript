@@ -91,19 +91,25 @@ The generated `Script` class supports pointer-based step-by-step navigation. Nav
 var script = session.GetScript(key);
 
 script.Pointer                        // ScriptPointer(0,0,0)
-script.RenderNextLine()               // string? — dispatches consumer calls + returns text
-script.RenderNextParagraph()          // string? — lines joined by newline
-script.RenderNextPage()               // string? — paragraphs joined by blank line
+script.RenderNextLine()               // LineRenderResult? — text + all 6 flags + pointer, or null at end
+script.RenderNextParagraph()          // ParagraphRenderResult? — text + paragraph/page flags
+script.RenderNextPage()               // PageRenderResult? — text + IsLastPage flag only
 script.IsLastLineOfParagraph          // bool (also: IsLastLineOfPage, IsLastLineOfScript, etc.)
 script.JumpTo(pointer)                // void — validates bounds
 script.Reset()                        // void — rewinds to (0,0,0)
 ```
 
-- `Render*` methods return `null` when the pointer is past the end.
-- `IsLast*` properties return `true` for empty scripts and when the pointer is past the end.
-- `Run()` is unaffected by the pointer — it always dispatches everything.
-- Async variants: `RenderNextLineAsync()`, `RenderNextParagraphAsync()`, `RenderNextPageAsync()`, `RunAsync()` — properly await async implementations.
-- `Text` has `RenderAsync()` overloads mirroring sync `Render()`.
+- `Render*` methods return sealed subtypes of `RenderResult` — `null` when the pointer is past the end:
+  - `LineRenderResult`: all 6 flags (`IsLastLineOfParagraph`, `IsLastLineOfPage`, `IsLastLineOfScript`, `IsLastParagraphOfPage`, `IsLastParagraphOfScript`, `IsLastPage`)
+  - `ParagraphRenderResult`: `IsLastParagraphOfPage`, `IsLastParagraphOfScript`, `IsLastPage`
+  - `PageRenderResult`: only `IsLastPage`
+- Base class `RenderResult` (abstract) has `Text`, `Pointer`, `IsLastPage` — shared across all subtypes
+- Use `is LineRenderResult` / `is ParagraphRenderResult` pattern matching to access subtype-specific flags
+- Flags are captured **before** the pointer advances (they describe the rendered unit, not the next position)
+- `IsLast*` properties on `Script` reflect live navigator state (post-advance); use `RenderResult` flags for pre-advance state
+- `Run()` is unaffected by the pointer — it always dispatches everything
+- Async variants: `RenderNextLineAsync()`, `RenderNextParagraphAsync()`, `RenderNextPageAsync()`, `RunAsync()` — properly await async implementations
+- `Text` has `RenderAsync()` overloads mirroring sync `Render()`
 
 ### Service Dispatch (Parent-Child Chain)
 
@@ -122,7 +128,7 @@ The generated `PlayscriptRegistry.DispatchCall(call, session)` calls `session.Ge
 |------|-----------|----------|
 | `PlayscriptRegistry.g.cs` | `PlayscriptRegistryEmitter` | `DispatchCall()` switch using `session.Get<T>()`; `DispatchCallAsync()` with `await` for async impls |
 | `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeEmitter` | `PlayscriptRuntimeSession` class (extends `PlayscriptSessionScope`), `Registry`, `CreateChild()`, enums, lazy loader |
-| `Script.g.cs` | `ScriptRegistry` | `Script` class with `Run()`, `RunAsync()` + pointer-based navigation (session-aware) |
+| `Script.g.cs` | `ScriptRegistry` | `Script` class with `Run()`, `RunAsync()` + pointer-based navigation returning `RenderResult?` subtypes (session-aware) |
 | `Text.g.cs` | `ScriptRegistry` | `Text` class with `Render()`, `RenderAsync()` (session-aware) |
 
 `Script.Run()` and `Text.Render()` (parameterless) throw if `Runtime` is null — they only work when created via `session.GetScript()`/`session.GetText()`.
@@ -181,6 +187,7 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `EasyPlayscript.Core/PlayscriptSessionScope.cs` — base class with `ConcurrentDictionary` services, parent chain, `Register<T>`, `Get<T>`, `CreateChild`
 - `EasyPlayscript.Core/ScriptNavigator.cs` — pointer-based navigation for Script (RenderNext*, IsLast*, JumpTo, Reset)
 - `EasyPlayscript.Core/ScriptPointer.cs` — immutable value type for script position (pageIndex, paragraphIndex, lineIndex)
+- `EasyPlayscript.Core/Runtime/RenderResult.cs` — abstract `RenderResult` base + sealed `LineRenderResult`, `ParagraphRenderResult`, `PageRenderResult` subtypes
 - `EasyPlayscript.Core/ImplementationAttribute.cs` — `[Implementation]` attribute (no scope — all services use parent-child chain)
 - `EasyPlayscript.Core/Parsing/InterfaceDeclaration.cs` — `InterfaceDeclaration` with `IsAsync` property; `InterfaceType` enum
 - `EasyPlayscript.Core/Parsing/ImplementationInfo.cs` — `ImplementationInfo` with `IsAsync` property
@@ -199,6 +206,7 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `PlayscriptRegistry.DispatchCall` switch cases use `{ }` blocks to scope local variables — C# switch cases share scope without blocks
 - `ScriptNavigator` (Core) owns all pointer state; the generated `Script` class delegates to it. The navigator takes a `Func<Line, string>` render callback so it can be tested without a runtime. The generated Script passes its own `RenderLine` method (which dispatches consumer calls) as that callback
 - `ScriptNavigator` also has async variants (`RenderNextLineAsync`, etc.) taking `Func<Line, Task<string>>`. The generated Script passes `RenderLineAsync` (which uses `await Runtime.DispatchCallAsync(call)`) as that callback
+- `ScriptNavigator` returns `RenderResult?` subtypes from all `RenderNext*` methods (`LineRenderResult?`, `ParagraphRenderResult?`, `PageRenderResult?`). The callback still returns `string` — the navigator wraps it in the appropriate subtype with the pointer and boundary flags captured before advancing
 - The generated `PlayscriptRuntimeSession` inherits from `PlayscriptSessionScope` (Core). The base holds the service dictionary and parent chain; the generated class adds `Registry`, `DispatchCall`, `CreateChild` override, and script/text loading
 - `CreateChild()` returns `PlayscriptRuntimeSession` (covariant return). The child shares the same `Registry` instance as the parent
 - `EasyPlayscript.LSP` targets net10.0 (not netstandard2.0 like Core/Generator) — it's an executable, not a library

@@ -72,7 +72,7 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("Hello"))))));
 
-        Assert.Equal("Hello", nav.RenderNextLine(RenderLine));
+        Assert.Equal("Hello", nav.RenderNextLine(RenderLine)!.Text);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("A"), T("B"))))));
 
-        Assert.Equal("AB", nav.RenderNextLine(RenderLine));
+        Assert.Equal("AB", nav.RenderNextLine(RenderLine)!.Text);
     }
 
     [Fact]
@@ -91,8 +91,8 @@ public class ScriptNavigationTests
 
         var result = nav.RenderNextLine(RenderLine)!;
 
-        Assert.Contains("[get_name]", result);
-        Assert.Equal("Hi, [get_name]!", result);
+        Assert.Contains("[get_name]", result.Text);
+        Assert.Equal("Hi, [get_name]!", result.Text);
     }
 
     [Fact]
@@ -142,6 +142,116 @@ public class ScriptNavigationTests
         Assert.Null(nav.RenderNextLine(RenderLine));
     }
 
+    // ─── RenderNextLine: Result Flags ───────────────────────────────────────────
+
+    [Fact]
+    public void RenderNextLine_Result_PointerMatchesPreAdvancePosition()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("A")), Li(T("B"))))));
+
+        var r1 = nav.RenderNextLine(RenderLine)!;
+        var r2 = nav.RenderNextLine(RenderLine)!;
+
+        Assert.Equal(new ScriptPointer(0, 0, 0), r1.Pointer);
+        Assert.Equal(new ScriptPointer(0, 0, 1), r2.Pointer);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_IsLastLineOfParagraph_TrueAtBoundary()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("A")), Li(T("B"))))));
+
+        var r1 = nav.RenderNextLine(RenderLine)!;
+        var r2 = nav.RenderNextLine(RenderLine)!;
+
+        Assert.False(r1.IsLastLineOfParagraph);
+        Assert.True(r2.IsLastLineOfParagraph);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_IsLastLineOfParagraph_FalseWhenNotAtBoundary()
+    {
+        var nav = CreateMultiLevelNav();
+
+        var r = nav.RenderNextLine(RenderLine)!;
+
+        Assert.False(r.IsLastLineOfParagraph);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_IsLastLineOfPage_TrueAtPageBoundary()
+    {
+        var nav = CreateMultiLevelNav();
+
+        // p0p0l0, p0p0l1, p0p1l0 (last line of page 0)
+        nav.RenderNextLine(RenderLine);
+        nav.RenderNextLine(RenderLine);
+        var r = nav.RenderNextLine(RenderLine)!;
+
+        Assert.True(r.IsLastLineOfPage);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_IsLastLineOfScript_TrueAtEnd()
+    {
+        var nav = CreateMultiLevelNav();
+
+        // Skip to last line
+        nav.JumpTo(new ScriptPointer(1, 0, 0));
+        var r = nav.RenderNextLine(RenderLine)!;
+
+        Assert.True(r.IsLastLineOfScript);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_IsLastPage_TrueOnLastPage()
+    {
+        var nav = CreateMultiLevelNav();
+
+        nav.JumpTo(new ScriptPointer(1, 0, 0));
+        var r = nav.RenderNextLine(RenderLine)!;
+
+        Assert.True(r.IsLastPage);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_AllFlagsFalseOnFirstLine()
+    {
+        var nav = CreateMultiLevelNav();
+
+        var r = nav.RenderNextLine(RenderLine)!;
+
+        Assert.False(r.IsLastLineOfParagraph);
+        Assert.False(r.IsLastParagraphOfPage);
+        Assert.False(r.IsLastPage);
+        Assert.False(r.IsLastLineOfPage);
+        Assert.False(r.IsLastLineOfScript);
+        Assert.False(r.IsLastParagraphOfScript);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_IsLastParagraphOfPage_TrueAtBoundary()
+    {
+        var nav = CreateMultiLevelNav();
+
+        // p0p1l0 — last paragraph of page 0
+        nav.JumpTo(new ScriptPointer(0, 1, 0));
+        var r = nav.RenderNextLine(RenderLine)!;
+
+        Assert.True(r.IsLastParagraphOfPage);
+    }
+
+    [Fact]
+    public void RenderNextLine_Result_IsLastParagraphOfScript_TrueAtEnd()
+    {
+        var nav = CreateMultiLevelNav();
+
+        nav.JumpTo(new ScriptPointer(1, 0, 0));
+        var r = nav.RenderNextLine(RenderLine)!;
+
+        Assert.True(r.IsLastParagraphOfScript);
+    }
+
     // ─── Phase 4: RenderNextParagraph ───────────────────────────────────────────
 
     [Fact]
@@ -157,7 +267,7 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("Hello"))))));
 
-        Assert.Equal("Hello", nav.RenderNextParagraph(RenderLine));
+        Assert.Equal("Hello", nav.RenderNextParagraph(RenderLine)!.Text);
     }
 
     [Fact]
@@ -165,7 +275,7 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("line1")), Li(T("line2")), Li(T("line3"))))));
 
-        var result = nav.RenderNextParagraph(RenderLine)!;
+        var result = nav.RenderNextParagraph(RenderLine)!.Text;
 
         var lines = result.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
         Assert.Equal(3, lines.Length);
@@ -180,7 +290,7 @@ public class ScriptNavigationTests
         var call = new ConsumerCallItem("get_name", new List<ArgumentValue>());
         var nav = CreateNav(Block(Pg(Para(Li(T("Hi "), call)))));
 
-        var result = nav.RenderNextParagraph(RenderLine)!;
+        var result = nav.RenderNextParagraph(RenderLine)!.Text;
 
         Assert.Contains("[get_name]", result);
     }
@@ -221,6 +331,56 @@ public class ScriptNavigationTests
         Assert.Null(nav.RenderNextParagraph(RenderLine));
     }
 
+    // ─── RenderNextParagraph: Result Flags ──────────────────────────────────────
+
+    [Fact]
+    public void RenderNextParagraph_Result_HasParagraphAndPageFlags()
+    {
+        var nav = CreateMultiLevelNav();
+
+        // First paragraph: not last of page, not last of script, not last page
+        var r1 = nav.RenderNextParagraph(RenderLine)!;
+        Assert.False(r1.IsLastParagraphOfPage);
+        Assert.False(r1.IsLastParagraphOfScript);
+        Assert.False(r1.IsLastPage);
+
+        // Second paragraph of page 0: last paragraph of page, not last of script
+        var r2 = nav.RenderNextParagraph(RenderLine)!;
+        Assert.True(r2.IsLastParagraphOfPage);
+        Assert.False(r2.IsLastParagraphOfScript);
+        Assert.False(r2.IsLastPage);
+
+        // First (only) paragraph of page 1: last page
+        var r3 = nav.RenderNextParagraph(RenderLine)!;
+        Assert.True(r3.IsLastParagraphOfPage);
+        Assert.True(r3.IsLastParagraphOfScript);
+        Assert.True(r3.IsLastPage);
+    }
+
+    [Fact]
+    public void RenderNextParagraph_Result_IsNotLineResult()
+    {
+        var nav = CreateMultiLevelNav();
+
+        var r = nav.RenderNextParagraph(RenderLine)!;
+
+        // Paragraph result is its own type — line-specific flags are not on this type
+        Assert.IsType<ParagraphRenderResult>(r);
+        Assert.IsNotType<LineRenderResult>(r);
+    }
+
+    [Fact]
+    public void RenderNextParagraph_Result_PointerIsPreAdvance()
+    {
+        var nav = CreateMultiLevelNav();
+
+        var r1 = nav.RenderNextParagraph(RenderLine)!;
+        Assert.Equal(new ScriptPointer(0, 0, 0), r1.Pointer);
+
+        var r2 = nav.RenderNextParagraph(RenderLine)!;
+        Assert.Equal(new ScriptPointer(0, 1, 0), r2.Pointer);
+    }
+
     // ─── Phase 5: RenderNextPage ────────────────────────────────────────────────
 
     [Fact]
@@ -236,7 +396,7 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("Hello"))))));
 
-        Assert.Equal("Hello", nav.RenderNextPage(RenderLine));
+        Assert.Equal("Hello", nav.RenderNextPage(RenderLine)!.Text);
     }
 
     [Fact]
@@ -247,7 +407,7 @@ public class ScriptNavigationTests
             Para(Li(T("para2line1")))
         )));
 
-        var result = nav.RenderNextPage(RenderLine)!;
+        var result = nav.RenderNextPage(RenderLine)!.Text;
 
         var paragraphs = result.Split(new[] { Environment.NewLine + Environment.NewLine }, StringSplitOptions.None);
         Assert.Equal(2, paragraphs.Length);
@@ -262,7 +422,7 @@ public class ScriptNavigationTests
         var call = new ConsumerCallItem("get_name", new List<ArgumentValue>());
         var nav = CreateNav(Block(Pg(Para(Li(T("Hi "), call)))));
 
-        var result = nav.RenderNextPage(RenderLine)!;
+        var result = nav.RenderNextPage(RenderLine)!.Text;
 
         Assert.Contains("[get_name]", result);
     }
@@ -288,6 +448,37 @@ public class ScriptNavigationTests
         nav.RenderNextPage(RenderLine);
 
         Assert.Null(nav.RenderNextPage(RenderLine));
+    }
+
+    // ─── RenderNextPage: Result Flags ───────────────────────────────────────────
+
+    [Fact]
+    public void RenderNextPage_Result_IsNotLineOrParagraphResult()
+    {
+        var nav = CreateMultiLevelNav();
+
+        // Page 0: not last page
+        var r1 = nav.RenderNextPage(RenderLine)!;
+        Assert.IsType<PageRenderResult>(r1);
+        Assert.IsNotType<LineRenderResult>(r1);
+        Assert.IsNotType<ParagraphRenderResult>(r1);
+        Assert.False(r1.IsLastPage);
+
+        // Page 1: last page
+        var r2 = nav.RenderNextPage(RenderLine)!;
+        Assert.True(r2.IsLastPage);
+    }
+
+    [Fact]
+    public void RenderNextPage_Result_PointerIsPreAdvance()
+    {
+        var nav = CreateMultiLevelNav();
+
+        var r1 = nav.RenderNextPage(RenderLine)!;
+        Assert.Equal(new ScriptPointer(0, 0, 0), r1.Pointer);
+
+        var r2 = nav.RenderNextPage(RenderLine)!;
+        Assert.Equal(new ScriptPointer(1, 0, 0), r2.Pointer);
     }
 
     // ─── Phase 6: IsLast* Boundary Checks ──────────────────────────────────────
@@ -491,7 +682,7 @@ public class ScriptNavigationTests
         nav.JumpTo(new ScriptPointer(1, 0, 0));
         var result = nav.RenderNextLine(RenderLine);
 
-        Assert.Equal("p1p0l0", result);
+        Assert.Equal("p1p0l0", result!.Text);
     }
 
     [Fact]
@@ -504,7 +695,7 @@ public class ScriptNavigationTests
         nav.Reset();
 
         Assert.Equal(new ScriptPointer(0, 0, 0), nav.Pointer);
-        Assert.Equal("p0p0l0", nav.RenderNextLine(RenderLine));
+        Assert.Equal("p0p0l0", nav.RenderNextLine(RenderLine)!.Text);
     }
 
     [Fact]
@@ -525,15 +716,15 @@ public class ScriptNavigationTests
     {
         var nav = CreateMultiLevelNav();
 
-        var results = new List<string>();
+        var results = new List<LineRenderResult>();
         while (nav.RenderNextLine(RenderLine) is { } line)
             results.Add(line);
 
         Assert.Equal(4, results.Count);
-        Assert.Equal("p0p0l0", results[0]);
-        Assert.Equal("p0p0l1", results[1]);
-        Assert.Equal("p0p1l0", results[2]);
-        Assert.Equal("p1p0l0", results[3]);
+        Assert.Equal("p0p0l0", results[0].Text);
+        Assert.Equal("p0p0l1", results[1].Text);
+        Assert.Equal("p0p1l0", results[2].Text);
+        Assert.Equal("p1p0l0", results[3].Text);
     }
 
     [Fact]
@@ -541,15 +732,15 @@ public class ScriptNavigationTests
     {
         var nav = CreateMultiLevelNav();
 
-        var results = new List<string>();
+        var results = new List<ParagraphRenderResult>();
         while (nav.RenderNextParagraph(RenderLine) is { } para)
             results.Add(para);
 
         Assert.Equal(3, results.Count);
-        Assert.Contains("p0p0l0", results[0]);
-        Assert.Contains("p0p0l1", results[0]);
-        Assert.Equal("p0p1l0", results[1]);
-        Assert.Equal("p1p0l0", results[2]);
+        Assert.Contains("p0p0l0", results[0].Text);
+        Assert.Contains("p0p0l1", results[0].Text);
+        Assert.Equal("p0p1l0", results[1].Text);
+        Assert.Equal("p1p0l0", results[2].Text);
     }
 
     [Fact]
@@ -557,14 +748,51 @@ public class ScriptNavigationTests
     {
         var nav = CreateMultiLevelNav();
 
-        var results = new List<string>();
+        var results = new List<PageRenderResult>();
         while (nav.RenderNextPage(RenderLine) is { } page)
             results.Add(page);
 
         Assert.Equal(2, results.Count);
-        Assert.Contains("p0p0l0", results[0]);
-        Assert.Contains("p0p1l0", results[0]);
-        Assert.Equal("p1p0l0", results[1]);
+        Assert.Contains("p0p0l0", results[0].Text);
+        Assert.Contains("p0p1l0", results[0].Text);
+        Assert.Equal("p1p0l0", results[1].Text);
+    }
+
+    [Fact]
+    public void FullSequence_RenderAllLines_FlagsAreCorrectAtEachStep()
+    {
+        var nav = CreateMultiLevelNav();
+
+        var results = new List<LineRenderResult>();
+        while (nav.RenderNextLine(RenderLine) is { } line)
+            results.Add(line);
+
+        // p0p0l0 — first line, first paragraph, first page
+        Assert.Equal(new ScriptPointer(0, 0, 0), results[0].Pointer);
+        Assert.False(results[0].IsLastLineOfParagraph);
+        Assert.False(results[0].IsLastPage);
+
+        // p0p0l1 — last line of paragraph 0
+        Assert.Equal(new ScriptPointer(0, 0, 1), results[1].Pointer);
+        Assert.True(results[1].IsLastLineOfParagraph);
+        Assert.False(results[1].IsLastParagraphOfPage);
+        Assert.False(results[1].IsLastPage);
+
+        // p0p1l0 — last line of page 0
+        Assert.Equal(new ScriptPointer(0, 1, 0), results[2].Pointer);
+        Assert.True(results[2].IsLastLineOfParagraph);
+        Assert.True(results[2].IsLastParagraphOfPage);
+        Assert.True(results[2].IsLastLineOfPage);
+        Assert.False(results[2].IsLastPage);
+
+        // p1p0l0 — last line of script
+        Assert.Equal(new ScriptPointer(1, 0, 0), results[3].Pointer);
+        Assert.True(results[3].IsLastLineOfParagraph);
+        Assert.True(results[3].IsLastParagraphOfPage);
+        Assert.True(results[3].IsLastPage);
+        Assert.True(results[3].IsLastLineOfPage);
+        Assert.True(results[3].IsLastLineOfScript);
+        Assert.True(results[3].IsLastParagraphOfScript);
     }
 
     // ─── Async Navigation Tests ──────────────────────────────────────────────
@@ -585,14 +813,14 @@ public class ScriptNavigationTests
     public async Task RenderNextLineAsync_SingleTextItem_ReturnsText()
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("Hello"))))));
-        Assert.Equal("Hello", await nav.RenderNextLineAsync(RenderLineAsync));
+        Assert.Equal("Hello", (await nav.RenderNextLineAsync(RenderLineAsync))!.Text);
     }
 
     [Fact]
     public async Task RenderNextLineAsync_MultipleItems_Concatenates()
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("A"), T("B"))))));
-        Assert.Equal("AB", await nav.RenderNextLineAsync(RenderLineAsync));
+        Assert.Equal("AB", (await nav.RenderNextLineAsync(RenderLineAsync))!.Text);
     }
 
     [Fact]
@@ -608,8 +836,8 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("Line1")), Li(T("Line2"))))));
         var result = await nav.RenderNextParagraphAsync(RenderLineAsync);
-        Assert.Contains("Line1", result);
-        Assert.Contains("Line2", result);
+        Assert.Contains("Line1", result!.Text);
+        Assert.Contains("Line2", result.Text);
     }
 
     [Fact]
@@ -617,8 +845,8 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("P1"))), Para(Li(T("P2"))))));
         var result = await nav.RenderNextPageAsync(RenderLineAsync);
-        Assert.Contains("P1", result);
-        Assert.Contains("P2", result);
+        Assert.Contains("P1", result!.Text);
+        Assert.Contains("P2", result.Text);
     }
 
     [Fact]
@@ -637,13 +865,36 @@ public class ScriptNavigationTests
 
         var syncResults = new List<string>();
         while (syncNav.RenderNextLine(RenderLine) is { } line)
-            syncResults.Add(line);
+            syncResults.Add(line.Text);
 
         var asyncResults = new List<string>();
         while (await asyncNav.RenderNextLineAsync(RenderLineAsync) is { } line)
-            asyncResults.Add(line);
+            asyncResults.Add(line.Text);
 
         Assert.Equal(syncResults, asyncResults);
+    }
+
+    [Fact]
+    public async Task RenderNextLineAsync_Result_FlagsMatchSync()
+    {
+        var syncNav = CreateMultiLevelNav();
+        var asyncNav = CreateMultiLevelNav();
+
+        while (true)
+        {
+            var syncResult = syncNav.RenderNextLine(RenderLine);
+            var asyncResult = await asyncNav.RenderNextLineAsync(RenderLineAsync);
+
+            if (syncResult is null)
+            {
+                Assert.Null(asyncResult);
+                break;
+            }
+
+            Assert.Equal(syncResult.IsLastLineOfParagraph, asyncResult!.IsLastLineOfParagraph);
+            Assert.Equal(syncResult.IsLastPage, asyncResult.IsLastPage);
+            Assert.Equal(syncResult.Pointer, asyncResult.Pointer);
+        }
     }
 
     [Fact]
@@ -651,6 +902,6 @@ public class ScriptNavigationTests
     {
         var nav = CreateNav(Block(Pg(Para(Li(T("First")), Li(T("Second"))))));
         nav.JumpTo(new ScriptPointer(0, 0, 1));
-        Assert.Equal("Second", await nav.RenderNextLineAsync(RenderLineAsync));
+        Assert.Equal("Second", (await nav.RenderNextLineAsync(RenderLineAsync))!.Text);
     }
 }

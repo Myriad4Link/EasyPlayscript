@@ -65,18 +65,31 @@ public class ScriptNavigator(ScriptBlock block)
     /// <summary>True if the current paragraph is the last in the entire script.</summary>
     public bool IsLastParagraphOfScript => IsLastParagraphOfPage && IsLastPage;
 
-    public string? RenderNextLine(Func<Line, string> renderLine)
+    public LineRenderResult? RenderNextLine(Func<Line, string> renderLine)
     {
         if (IsEnd()) return null;
-        var line = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines[_lineIndex];
-        var result = renderLine(line);
+        var pointer = Pointer;
+        var result = new LineRenderResult(
+            renderLine(Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines[_lineIndex]),
+            pointer,
+            IsLastLineOfParagraph,
+            IsLastParagraphOfPage,
+            IsLastPage,
+            IsLastLineOfPage,
+            IsLastLineOfScript,
+            IsLastParagraphOfScript);
         AdvanceLine();
         return result;
     }
 
-    public string? RenderNextParagraph(Func<Line, string> renderLine)
+    public ParagraphRenderResult? RenderNextParagraph(Func<Line, string> renderLine)
     {
         if (IsEnd()) return null;
+        var pointer = Pointer;
+        var isLastParagraphOfPage = IsLastParagraphOfPage;
+        var isLastParagraphOfScript = IsLastParagraphOfScript;
+        var isLastPageVal = IsLastPage;
+
         var sb = new StringBuilder();
         var paragraph = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex];
         for (var i = 0; i < paragraph.Lines.Count; i++)
@@ -93,12 +106,16 @@ public class ScriptNavigator(ScriptBlock block)
         }
 
         _lineIndex = 0;
-        return sb.ToString();
+        return new ParagraphRenderResult(sb.ToString(), pointer,
+            isLastParagraphOfPage, isLastPageVal, isLastParagraphOfScript);
     }
 
-    public string? RenderNextPage(Func<Line, string> renderLine)
+    public PageRenderResult? RenderNextPage(Func<Line, string> renderLine)
     {
         if (IsEnd()) return null;
+        var pointer = Pointer;
+        var isLastPageVal = IsLastPage;
+
         var sb = new StringBuilder();
         var page = Block.Pages[_pageIndex];
         for (var pi = 0; pi < page.Paragraphs.Count; pi++)
@@ -120,21 +137,41 @@ public class ScriptNavigator(ScriptBlock block)
         _pageIndex++;
         _paragraphIndex = 0;
         _lineIndex = 0;
-        return sb.ToString();
+        return new PageRenderResult(sb.ToString(), pointer, isLastPageVal);
     }
 
-    public async Task<string?> RenderNextLineAsync(Func<Line, Task<string>> renderLine)
+    public async Task<LineRenderResult?> RenderNextLineAsync(Func<Line, Task<string>> renderLine)
     {
         if (IsEnd()) return null;
-        var line = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines[_lineIndex];
-        var result = await renderLine(line);
+        var pointer = Pointer;
+        var isLastLineOfParagraph = IsLastLineOfParagraph;
+        var isLastParagraphOfPage = IsLastParagraphOfPage;
+        var isLastPageVal = IsLastPage;
+        var isLastLineOfPage = IsLastLineOfPage;
+        var isLastLineOfScript = IsLastLineOfScript;
+        var isLastParagraphOfScript = IsLastParagraphOfScript;
+        var text = await renderLine(Block.Pages[_pageIndex].Paragraphs[_paragraphIndex].Lines[_lineIndex]);
+        var result = new LineRenderResult(
+            text,
+            pointer,
+            isLastLineOfParagraph,
+            isLastParagraphOfPage,
+            isLastPageVal,
+            isLastLineOfPage,
+            isLastLineOfScript,
+            isLastParagraphOfScript);
         AdvanceLine();
         return result;
     }
 
-    public async Task<string?> RenderNextParagraphAsync(Func<Line, Task<string>> renderLine)
+    public async Task<ParagraphRenderResult?> RenderNextParagraphAsync(Func<Line, Task<string>> renderLine)
     {
         if (IsEnd()) return null;
+        var pointer = Pointer;
+        var isLastParagraphOfPage = IsLastParagraphOfPage;
+        var isLastParagraphOfScript = IsLastParagraphOfScript;
+        var isLastPageVal = IsLastPage;
+
         var sb = new StringBuilder();
         var paragraph = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex];
         for (var i = 0; i < paragraph.Lines.Count; i++)
@@ -151,12 +188,16 @@ public class ScriptNavigator(ScriptBlock block)
         }
 
         _lineIndex = 0;
-        return sb.ToString();
+        return new ParagraphRenderResult(sb.ToString(), pointer,
+            isLastParagraphOfPage, isLastPageVal, isLastParagraphOfScript);
     }
 
-    public async Task<string?> RenderNextPageAsync(Func<Line, Task<string>> renderLine)
+    public async Task<PageRenderResult?> RenderNextPageAsync(Func<Line, Task<string>> renderLine)
     {
         if (IsEnd()) return null;
+        var pointer = Pointer;
+        var isLastPageVal = IsLastPage;
+
         var sb = new StringBuilder();
         var page = Block.Pages[_pageIndex];
         for (var pi = 0; pi < page.Paragraphs.Count; pi++)
@@ -178,7 +219,7 @@ public class ScriptNavigator(ScriptBlock block)
         _pageIndex++;
         _paragraphIndex = 0;
         _lineIndex = 0;
-        return sb.ToString();
+        return new PageRenderResult(sb.ToString(), pointer, isLastPageVal);
     }
 
     private bool IsEnd() => _pageIndex >= Block.Pages.Count;

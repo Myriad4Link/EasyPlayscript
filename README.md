@@ -21,7 +21,9 @@
 
 ## Overview
 
-EasyPlayscript lets you write game dialogue, UI text, and event scripts in a human-readable `.scpt` format while keeping everything type-safe at compile time. A Roslyn source generator reads your scripts and generates the C# wiring — service dispatch, registry, navigation — so you never hand-write boilerplate.
+EasyPlayscript lets you write game dialogue, UI text, and event scripts in a human-readable `.scpt` format (sorry AppleScript, wasn't knowing ya at the time I selected the extension) while keeping everything type-safe at compile time. A Roslyn source generator reads your scripts and generates the C# wiring — service dispatch, registry, navigation — so you never hand-write boilerplate.
+
+The core philosophy is simple: EasyPlayscript focuses on playscript and text writing, while the C# side provides type-safe contracts. You describe and call functions in your `.scpt` files just like you would call interfaces in code — `@play("bgm", 0.8)` maps directly to a real method. The actual business logic is delegated to and lives in C#, keeping scripts clean and focused on narrative flow.
 
 The two-pass ANTLR parser extracts structure first (blocks, pages, paragraphs), then content (consumer calls, text). This enables incremental LSP editing and fast rebuilds.
 

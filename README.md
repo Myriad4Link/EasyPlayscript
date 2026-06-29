@@ -25,7 +25,8 @@ EasyPlayscript lets you write game dialogue, UI text, and event scripts in a hum
 
 EasyPlayscript focuses on playscript and text writing,
 while the C# side provides type-safe contracts.
-You describe and call functions in your `.scpt` files just like you would call interfaces in code. 
+You describe and call functions in your `.scpt` files just like you would call interfaces in code —
+`@effect("thunder", 1.0)` maps to a real C# method.
 The actual business logic is delegated to and lives in C#, keeping scripts clean and focused on narrative flow.
 
 At build time, `.scpt` files are compiled to MessagePack for efficient runtime loading, with optional AES encryption to protect script content.
@@ -33,36 +34,255 @@ At build time, `.scpt` files are compiled to MessagePack for efficient runtime l
 The two-pass ANTLR parser extracts structure first (blocks & interface definitions), 
 then content (consumer calls, text). This enables incremental LSP editing and fast rebuilds.
 
-## Features
+## Before Quick Start ...
 
-- **Type-safe consumer calls** — `@play("bgm", 0.8)` maps to a real C# method; mismatches are caught at compile time
-- **Roslyn source generator** — generates `DispatchCall`, `Script`, `Text`, and `PlayscriptRuntimeSession` from `.scpt` files
-- **MSBuild integration** — `.scpt` files are compiled to MessagePack at build time, with optional AES encryption
-- **Async interface support** — `async interface fetch_user_name(...)` generates `Task<T>` dispatch with proper `await`
-- **Parent-child service scoping** — child sessions inherit and can override services from parents
-- **Pointer-based script navigation** — `RenderNextLine()`, `JumpTo()`, `Reset()`, `IsLastLineOfPage`, etc.
-- **LSP server** — OmniSharp-based language server with incremental sync, semantic tokens, and diagnostics
-- **Two-pass parsing** — structure extraction for fast incremental re-parsing when only content changes
+### Interface
+
+An **interface** is a function signature declared at the top of a `.scpt` file. It defines *what* the script can call, but not *how* — the actual logic lives in C#.
+
+```
+interface enter(description: string) : void
+interface exit(description: string) : void
+interface effect(name: string, intensity: decimal) : void
+interface set_music(track: string) : void
+```
+
+Think of it as a contract between the script writer and the programmer. The script writer says "I need an `effect` function that takes a name and intensity," and the C# side provides it. Parameters and return types are type-checked at compile time.
+
+The `async` variant requires the C# implementation to return `Task<T>` (or `Task` for `void`). Async interfaces are properly awaited when using `RunAsync()` / `RenderNextLineAsync()`.
+
+### Consumer call
+
+A **consumer call** is how a script invokes an interface. It's written with an `@` prefix inside a script or text block:
+
+```
+script act_i_scene_i[
+@effect("thunder", 1.0)
+@enter("Thunder and Lightning. Enter three Witches.")
+
+FIRST WITCH
+When shall we three meet again?
+In thunder, lightning, or in rain?
+
+SECOND WITCH
+When the hurly-burly's done,
+When the battle's lost and won.
+
+THIRD WITCH
+That will be ere the set of sun.
+
+ALL
+Fair is foul, and foul is fair;
+Hover through the fog and filthy air.
+
+@exit("They exit.")
+]
+```
+
+Notice how the dialogue is just plain text — no quotes, no `@`. This is what the player sees. The `@` calls (`@effect`, `@enter`, `@exit`) are side effects handled by the game engine — playing thunder sounds, animating stage entrances, triggering transitions. The script stays focused on narrative; the C# side handles everything else.
+
+At compile time, every consumer call is validated against declared interfaces:
+- Wrong name → error (SCPT005: undeclared consumer call)
+- Wrong argument count → error (SCPT008)
+- Wrong argument types → error (SCPT007)
+
+This means script writers get the same safety net as writing C# code — typos and mismatches are caught before the game ever runs.
+
+### Script
+
+A **script** is a block of paged narrative content — dialogue, cutscenes, event sequences. It supports paragraphs (separated by blank lines) and pages (separated by `/`).
+
+```
+script act_i_scene_i[
+@effect("thunder", 1.0)
+@enter("Thunder and Lightning. Enter three Witches.")
+
+FIRST WITCH
+When shall we three meet again?
+In thunder, lightning, or in rain?
+
+SECOND WITCH
+When the hurly-burly's done,
+When the battle's lost and won.
+/
+
+THIRD WITCH
+That will be ere the set of sun.
+
+FIRST WITCH
+Where the place?
+
+SECOND WITCH
+Upon the heath.
+
+THIRD WITCH
+There to meet with Macbeth.
+/
+
+ALL
+Fair is foul, and foul is fair;
+Hover through the fog and filthy air.
+
+@exit("They exit.")
+]
+```
+
+The first `/` ends page 1 (the witches' opening exchange); page 2 continues the prophecy; page 3 climaxes with "Fair is foul."
+
+Scripts are compiled to MessagePack at build time. At runtime, you can navigate them step by step:
+
+```csharp
+var script = session.GetScript(PlayscriptRuntimeSession.ScriptKey.act_i_scene_i);
+script.RenderNextLine()        // "FIRST WITCH"
+script.RenderNextLine()        // "When shall we three meet again?"
+script.RenderNextParagraph()   // "In thunder, lightning, or in rain?\n\nSECOND WITCH\nWhen the hurly-burly's done,"
+script.RenderNextPage()        // "THIRD WITCH\nThat will be ere the set of sun."  (skips to page 2)
+```
+
+Or just run everything at once with `script.Run()`.
+
+### Text
+
+A **text** block is for static content — play titles, credits, UI labels — anything that isn't paged dialogue.
+
+```
+text playbill[
+The Tragedie of Macbeth
+by William Shakespeare
+]
+
+text act_header[
+Act I
+]
+```
+
+Texts support consumer calls but have no pages or paragraphs. They're rendered in one call:
+
+```csharp
+string title = session.GetText(PlayscriptRuntimeSession.TextKey.playbill).Render();
+```
+
+### Implementation
+
+An **implementation** is a C# method decorated with `[Implementation]` that provides the body for an interface declared in a `.scpt` file.
+
+```csharp
+public class StageSystem
+{
+    [Implementation]
+    public void enter(string description)
+    {
+        Console.WriteLine($"  [stage] {description}");
+        // animate characters onto stage
+    }
+
+    [Implementation]
+    public void exit(string description)
+    {
+        Console.WriteLine($"  [stage] {description}");
+        // animate characters off stage
+    }
+
+    [Implementation]
+    public void effect(string name, double intensity)
+    {
+        Console.WriteLine($"  [effect] {name} (intensity: {intensity})");
+        // play thunder, lightning, fog, etc.
+    }
+
+    [Implementation]
+    public void set_music(string track)
+    {
+        Console.WriteLine($"  [music] now playing: {track}");
+        // crossfade to new track
+    }
+}
+```
+
+The source generator wires every consumer call `@effect("thunder", 1.0)` in your scripts to the matching `[Implementation]` method. If an interface has no implementation, you get a compile-time error (SCPT009).
+
+### Session
+
+A **session** (`PlayscriptRuntimeSession`) is the runtime entry point. It holds your registered implementations and provides access to scripts and texts.
+
+```csharp
+var session = new PlayscriptRuntimeSession();
+session.Register(new StageSystem());
+
+session.GetScript(PlayscriptRuntimeSession.ScriptKey.act_i_scene_i).Run();
+string title = session.GetText(PlayscriptRuntimeSession.TextKey.playbill).Render();
+```
+
+Sessions support **parent-child scoping**. A child session inherits all services from its parent and can override specific ones — useful for scene-specific behavior without duplicating registration:
+
+```csharp
+var global = new PlayscriptRuntimeSession();
+global.Register(new StageSystem());
+
+var actV = global.CreateChild();
+actV.Register(new StageSystem()); // same type, different instance — e.g. with different music state
+```
+
+### Source generator
+
+The **source generator** is a Roslyn `IIncrementalGenerator` that runs at compile time. It reads your `.scpt` files and emits C# code:
+
+| Generated file | Contents |
+|----------------|----------|
+| `PlayscriptRegistry.g.cs` | `DispatchCall()` — switch that routes consumer calls to implementations |
+| `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeSession` class, enums for script/text keys, lazy loader |
+| `Script.g.cs` | `Script` class with `Run()`, `RenderNextLine()`, navigation |
+| `Text.g.cs` | `Text` class with `Render()` |
+
+You never see or touch these files — they're generated fresh every build.
+
+### Two-pass parser
+
+The ANTLR parser processes `.scpt` files in two passes:
+
+1. **Pass 1 (structure)** — extracts block types, names, page/paragraph boundaries, interface declarations
+2. **Pass 2 (content)** — parses the actual script/text content inside `[...]` blocks
+
+This split exists for performance. The LSP server can re-parse only the blocks whose content changed, skipping the structure pass entirely for unaffected blocks.
 
 ## Quick Start
 
 ### 1. Write a `.scpt` file
 
 ```
-interface transition(type: string) : void
-interface play(sound: string, volume: decimal) : void
-interface get_name() : string
+interface enter(description: string) : void
+interface exit(description: string) : void
+interface effect(name: string, intensity: decimal) : void
 
-script intro[
-@transition("fade_in")
-从前有座山，山里有座庙。
+script act_i_scene_i[
+@effect("thunder", 1.0)
+@enter("Thunder and Lightning. Enter three Witches.")
 
-庙里有个老和尚，在给小和尚讲故事。
-@play("sfx_page_turn", 1.0)
-/
+FIRST WITCH
+When shall we three meet again?
+In thunder, lightning, or in rain?
 
-讲什么故事呢？
-@get_name()，欢迎来到这个世界。
+SECOND WITCH
+When the hurly-burly's done,
+When the battle's lost and won.
+
+THIRD WITCH
+That will be ere the set of sun.
+
+FIRST WITCH
+Where the place?
+
+SECOND WITCH
+Upon the heath.
+
+THIRD WITCH
+There to meet with Macbeth.
+
+ALL
+Fair is foul, and foul is fair;
+Hover through the fog and filthy air.
+
+@exit("They exit.")
 ]
 ```
 
@@ -71,24 +291,24 @@ script intro[
 ```csharp
 using EasyPlayscript.Runtime;
 
-public class AudioSystem
+public class StageSystem
 {
     [Implementation]
-    public void play(string sound, double volume)
+    public void enter(string description)
     {
-        // play the sound
+        Console.WriteLine($"  [stage] {description}");
     }
 
     [Implementation]
-    public string get_name() => "旅行者";
-}
-
-public class UiSystem
-{
-    [Implementation]
-    public void transition(string type)
+    public void exit(string description)
     {
-        // run the transition
+        Console.WriteLine($"  [stage] {description}");
+    }
+
+    [Implementation]
+    public void effect(string name, double intensity)
+    {
+        Console.WriteLine($"  [effect] {name} (intensity: {intensity})");
     }
 }
 ```
@@ -99,12 +319,31 @@ public class UiSystem
 using EasyPlayscript.Generated;
 
 var session = new PlayscriptRuntimeSession();
-session.Register(new AudioSystem());
-session.Register(new UiSystem());
+session.Register(new StageSystem());
 
-var script = session.GetScript(PlayscriptRuntimeSession.ScriptKey.intro);
+var script = session.GetScript(PlayscriptRuntimeSession.ScriptKey.act_i_scene_i);
 while (script.RenderNextLine() is { } line)
     Console.WriteLine(line);
+```
+
+Output:
+
+```
+  [effect] thunder (intensity: 1)
+  [stage] Thunder and Lightning. Enter three Witches.
+FIRST WITCH
+When shall we three meet again?
+In thunder, lightning, or in rain?
+SECOND WITCH
+When the hurly-burly's done,
+When the battle's lost and won.
+THIRD WITCH
+That will be ere the set of sun.
+...
+ALL
+Fair is foul, and foul is fair;
+Hover through the fog and filthy air.
+  [stage] They exit.
 ```
 
 ## `.scpt` Syntax
@@ -112,9 +351,10 @@ while (script.RenderNextLine() is { } line)
 ### Interfaces
 
 ```
-interface play(sound: string, volume: decimal) : void
-interface get_name() : string
-async interface fetch_user_name(user_id: int) : string
+interface enter(description: string) : void
+interface effect(name: string, intensity: decimal) : void
+interface set_music(track: string) : void
+async interface fetch_character(name: string) : string
 ```
 
 - Declares consumer calls the script can invoke via `@name(args)`
@@ -123,27 +363,35 @@ async interface fetch_user_name(user_id: int) : string
 ### Scripts
 
 ```
-script my_script[
-  First line of text.
+script act_i_scene_i[
+@effect("thunder", 1.0)
+@enter("Thunder and Lightning. Enter three Witches.")
 
-  Second paragraph (separated by blank line).
-  @play("sfx", 1.0)
-  /
+FIRST WITCH
+When shall we three meet again?
 
-  This is page 2 (separated by `/`).
+SECOND WITCH
+When the hurly-burly's done,
+When the battle's lost and won.
+/
+
+THIRD WITCH
+That will be ere the set of sun.
+@exit("They exit.")
 ]
 ```
 
 - `@name(args)` — consumer call dispatched to a registered `[Implementation]` method
+- Plain text — dialogue and stage directions visible to the player
 - Blank line — paragraph separator
 - `/` — page separator
 
 ### Text blocks
 
 ```
-text welcome[
-  Hello, welcome!
-  @get_name(), enjoy your stay.
+text playbill[
+The Tragedie of Macbeth
+by William Shakespeare
 ]
 ```
 
@@ -202,12 +450,12 @@ dotnet run --project EasyPlayscript.Sample
 
 ```csharp
 var global = new PlayscriptRuntimeSession();
-global.Register(new AudioSystem());
+global.Register(new StageSystem());
 
-var combatScene = global.CreateChild();
-combatScene.Register(new CombatAudio()); // overrides AudioSystem in this scope
-combatScene.GetScript(key).Run();        // uses CombatAudio
-global.GetScript(key).Run();             // still uses original AudioSystem
+var actV = global.CreateChild();
+actV.Register(new StageSystem()); // override for Act V's different mood/music
+actV.GetScript(key).Run();        // uses Act V's StageSystem
+global.GetScript(key).Run();      // still uses the original
 ```
 
 ### Script navigation
@@ -226,15 +474,15 @@ script.IsLastLineOfPage          // bool
 ### Async interfaces
 
 ```
-async interface fetch_user_name(user_id: int) : string
+async interface fetch_character(name: string) : string
 ```
 
 ```csharp
 // Implementation must return Task<T>
 [Implementation]
-public async Task<string> fetch_user_name(int user_id)
+public async Task<string> fetch_character(string name)
 {
-    return await _db.GetUserNameAsync(user_id);
+    return await _db.GetCharacterBioAsync(name);
 }
 
 // Use async render to properly await

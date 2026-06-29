@@ -23,15 +23,21 @@
 
 EasyPlayscript lets you write game dialogue, UI text, and event scripts in a human-readable `.scpt` format (sorry AppleScript, wasn't knowing ya at the time I selected the extension) while keeping everything type-safe at compile time. A Roslyn source generator reads your scripts and generates the C# wiring — service dispatch, registry, navigation — so you never hand-write boilerplate.
 
-The core philosophy is simple: EasyPlayscript focuses on playscript and text writing, while the C# side provides type-safe contracts. You describe and call functions in your `.scpt` files just like you would call interfaces in code — `@play("bgm", 0.8)` maps directly to a real method. The actual business logic is delegated to and lives in C#, keeping scripts clean and focused on narrative flow.
+EasyPlayscript focuses on playscript and text writing,
+while the C# side provides type-safe contracts.
+You describe and call functions in your `.scpt` files just like you would call interfaces in code. 
+The actual business logic is delegated to and lives in C#, keeping scripts clean and focused on narrative flow.
 
-The two-pass ANTLR parser extracts structure first (blocks, pages, paragraphs), then content (consumer calls, text). This enables incremental LSP editing and fast rebuilds.
+At build time, `.scpt` files are compiled to MessagePack for efficient runtime loading, with optional AES encryption to protect script content.
+
+The two-pass ANTLR parser extracts structure first (blocks & interface definitions), 
+then content (consumer calls, text). This enables incremental LSP editing and fast rebuilds.
 
 ## Features
 
 - **Type-safe consumer calls** — `@play("bgm", 0.8)` maps to a real C# method; mismatches are caught at compile time
 - **Roslyn source generator** — generates `DispatchCall`, `Script`, `Text`, and `PlayscriptRuntimeSession` from `.scpt` files
-- **MSBuild integration** — `.scpt` files are compiled to binary (optional AES encryption) at build time
+- **MSBuild integration** — `.scpt` files are compiled to MessagePack at build time, with optional AES encryption
 - **Async interface support** — `async interface fetch_user_name(...)` generates `Task<T>` dispatch with proper `await`
 - **Parent-child service scoping** — child sessions inherit and can override services from parents
 - **Pointer-based script navigation** — `RenderNextLine()`, `JumpTo()`, `Reset()`, `IsLastLineOfPage`, etc.

@@ -25,8 +25,7 @@ EasyPlayscript lets you write game dialogue, UI text, and event scripts in a hum
 
 EasyPlayscript focuses on playscript and text writing,
 while the C# side provides type-safe contracts.
-You describe and call functions in your `.scpt` files just like you would call interfaces in code —
-`@effect("thunder", 1.0)` maps to a real C# method.
+You describe and call functions in your `.scpt` files just like you would call interfaces in code.
 The actual business logic is delegated to and lives in C#, keeping scripts clean and focused on narrative flow.
 
 At build time, `.scpt` files are compiled to MessagePack for efficient runtime loading, with optional AES encryption to protect script content.
@@ -60,18 +59,14 @@ script act_i_scene_i[
 @effect("thunder", 1.0)
 @enter("Thunder and Lightning. Enter three Witches.")
 
-FIRST WITCH
 When shall we three meet again?
 In thunder, lightning, or in rain?
 
-SECOND WITCH
 When the hurly-burly's done,
 When the battle's lost and won.
 
-THIRD WITCH
 That will be ere the set of sun.
 
-ALL
 Fair is foul, and foul is fair;
 Hover through the fog and filthy air.
 
@@ -97,29 +92,20 @@ script act_i_scene_i[
 @effect("thunder", 1.0)
 @enter("Thunder and Lightning. Enter three Witches.")
 
-FIRST WITCH
 When shall we three meet again?
 In thunder, lightning, or in rain?
 
-SECOND WITCH
 When the hurly-burly's done,
 When the battle's lost and won.
 /
 
-THIRD WITCH
 That will be ere the set of sun.
 
-FIRST WITCH
 Where the place?
-
-SECOND WITCH
 Upon the heath.
-
-THIRD WITCH
 There to meet with Macbeth.
 /
 
-ALL
 Fair is foul, and foul is fair;
 Hover through the fog and filthy air.
 
@@ -133,10 +119,10 @@ Scripts are compiled to MessagePack at build time. At runtime, you can navigate 
 
 ```csharp
 var script = session.GetScript(PlayscriptRuntimeSession.ScriptKey.act_i_scene_i);
-script.RenderNextLine()        // "FIRST WITCH"
 script.RenderNextLine()        // "When shall we three meet again?"
-script.RenderNextParagraph()   // "In thunder, lightning, or in rain?\n\nSECOND WITCH\nWhen the hurly-burly's done,"
-script.RenderNextPage()        // "THIRD WITCH\nThat will be ere the set of sun."  (skips to page 2)
+script.RenderNextLine()        // "In thunder, lightning, or in rain?"
+script.RenderNextParagraph()   // "When the hurly-burly's done,\nWhen the battle's lost and won."
+script.RenderNextPage()        // "That will be ere the set of sun."  (skips to page 2)
 ```
 
 Or just run everything at once with `script.Run()`.
@@ -258,27 +244,18 @@ script act_i_scene_i[
 @effect("thunder", 1.0)
 @enter("Thunder and Lightning. Enter three Witches.")
 
-FIRST WITCH
 When shall we three meet again?
 In thunder, lightning, or in rain?
 
-SECOND WITCH
 When the hurly-burly's done,
 When the battle's lost and won.
 
-THIRD WITCH
 That will be ere the set of sun.
 
-FIRST WITCH
 Where the place?
-
-SECOND WITCH
 Upon the heath.
-
-THIRD WITCH
 There to meet with Macbeth.
 
-ALL
 Fair is foul, and foul is fair;
 Hover through the fog and filthy air.
 
@@ -331,16 +308,12 @@ Output:
 ```
   [effect] thunder (intensity: 1)
   [stage] Thunder and Lightning. Enter three Witches.
-FIRST WITCH
 When shall we three meet again?
 In thunder, lightning, or in rain?
-SECOND WITCH
 When the hurly-burly's done,
 When the battle's lost and won.
-THIRD WITCH
 That will be ere the set of sun.
 ...
-ALL
 Fair is foul, and foul is fair;
 Hover through the fog and filthy air.
   [stage] They exit.
@@ -367,15 +340,12 @@ script act_i_scene_i[
 @effect("thunder", 1.0)
 @enter("Thunder and Lightning. Enter three Witches.")
 
-FIRST WITCH
 When shall we three meet again?
 
-SECOND WITCH
 When the hurly-burly's done,
 When the battle's lost and won.
 /
 
-THIRD WITCH
 That will be ere the set of sun.
 @exit("They exit.")
 ]

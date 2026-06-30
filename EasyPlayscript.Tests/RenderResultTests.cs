@@ -105,11 +105,74 @@ public class RenderResultTests
         Assert.True(typeof(LineRenderResult).IsSealed);
         Assert.True(typeof(ParagraphRenderResult).IsSealed);
         Assert.True(typeof(PageRenderResult).IsSealed);
+        Assert.True(typeof(SegmentRenderResult).IsSealed);
     }
 
     [Fact]
     public void BaseRenderResult_IsAbstract()
     {
         Assert.True(typeof(RenderResult).IsAbstract);
+    }
+
+    // ─── SegmentRenderResult ────────────────────────────────────────────────
+
+    [Fact]
+    public void SegmentRenderResult_SetsText()
+    {
+        var result = new SegmentRenderResult("Hello", default, false, false, false, false, false);
+
+        Assert.Equal("Hello", result.Text);
+    }
+
+    [Fact]
+    public void SegmentRenderResult_SetsPointer()
+    {
+        var pointer = new ScriptPointer(1, 2, 3);
+        var result = new SegmentRenderResult("text", pointer, false, false, false, false, false);
+
+        Assert.Equal(pointer, result.Pointer);
+    }
+
+    [Fact]
+    public void SegmentRenderResult_SetsIsLastPage()
+    {
+        var result = new SegmentRenderResult("text", default, isLastPage: true, false, false, false, false);
+
+        Assert.True(result.IsLastPage);
+    }
+
+    [Fact]
+    public void SegmentRenderResult_SetsSegmentFlags_AllTrue()
+    {
+        var result = new SegmentRenderResult("text", default,
+            isLastPage: true,
+            isLastSegmentOfLine: true,
+            isLastSegmentOfParagraph: true,
+            isLastSegmentOfPage: true,
+            isLastSegmentOfScript: true);
+
+        Assert.True(result.IsLastSegmentOfLine);
+        Assert.True(result.IsLastSegmentOfParagraph);
+        Assert.True(result.IsLastSegmentOfPage);
+        Assert.True(result.IsLastSegmentOfScript);
+    }
+
+    [Fact]
+    public void SegmentRenderResult_SegmentFlags_AllFalse()
+    {
+        var result = new SegmentRenderResult("text", default, false, false, false, false, false);
+
+        Assert.False(result.IsLastSegmentOfLine);
+        Assert.False(result.IsLastSegmentOfParagraph);
+        Assert.False(result.IsLastSegmentOfPage);
+        Assert.False(result.IsLastSegmentOfScript);
+    }
+
+    [Fact]
+    public void SegmentRenderResult_IsRenderResult()
+    {
+        var result = new SegmentRenderResult("text", default, false, false, false, false, false);
+
+        Assert.IsAssignableFrom<RenderResult>(result);
     }
 }

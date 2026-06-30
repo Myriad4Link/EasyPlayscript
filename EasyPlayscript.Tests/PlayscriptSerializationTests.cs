@@ -35,11 +35,17 @@ public class PlayscriptSerializationTests
                             {
                                 new()
                                 {
-                                    Items = new List<LineItem>
+                                    Segments = new List<Segment>
                                     {
-                                        new TextItem("Hello"),
-                                        new ConsumerCallItem("transition",
-                                            new List<ArgumentValue> { new StringArgument("fade") })
+                                        new()
+                                        {
+                                            Items = new List<LineItem>
+                                            {
+                                                new TextItem("Hello"),
+                                                new ConsumerCallItem("transition",
+                                                    new List<ArgumentValue> { new StringArgument("fade") })
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -51,14 +57,14 @@ public class PlayscriptSerializationTests
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<ScriptBlock>(bytes);
         Assert.Single(deserialized.Pages);
-        Assert.Equal("Hello", ((TextItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("Hello", ((TextItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
         Assert.Equal("transition",
-            ((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Identifier);
-        Assert.Single(((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Arguments);
-        Assert.IsType<StringArgument>(((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1])
+            ((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[1]).Identifier);
+        Assert.Single(((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[1]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[1])
             .Arguments[0]);
         Assert.Equal("fade",
-            ((StringArgument)((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[1]).Arguments[0])
+            ((StringArgument)((ConsumerCallItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[1]).Arguments[0])
             .Value);
     }
 
@@ -77,7 +83,7 @@ public class PlayscriptSerializationTests
                         {
                             Lines = new List<Line>
                             {
-                                new() { Items = new List<LineItem> { new TextItem("page 1") } }
+                                new() { Segments = new List<Segment> { new() { Items = new List<LineItem> { new TextItem("page 1") } } } }
                             }
                         }
                     }
@@ -90,7 +96,7 @@ public class PlayscriptSerializationTests
                         {
                             Lines = new List<Line>
                             {
-                                new() { Items = new List<LineItem> { new TextItem("page 2") } }
+                                new() { Segments = new List<Segment> { new() { Items = new List<LineItem> { new TextItem("page 2") } } } }
                             }
                         }
                     }
@@ -100,8 +106,8 @@ public class PlayscriptSerializationTests
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<ScriptBlock>(bytes);
         Assert.Equal(2, deserialized.Pages.Count);
-        Assert.Equal("page 1", ((TextItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("page 2", ((TextItem)deserialized.Pages[1].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("page 1", ((TextItem)deserialized.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("page 2", ((TextItem)deserialized.Pages[1].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -123,7 +129,7 @@ public class PlayscriptSerializationTests
                                 {
                                     Lines = new List<Line>
                                     {
-                                        new() { Items = new List<LineItem> { new TextItem("Hello") } }
+                                        new() { Segments = new List<Segment> { new() { Items = new List<LineItem> { new TextItem("Hello") } } } }
                                     }
                                 }
                             }
@@ -137,7 +143,7 @@ public class PlayscriptSerializationTests
                 {
                     Lines = new List<Line>
                     {
-                        new() { Items = new List<LineItem> { new TextItem("Welcome") } }
+                        new() { Segments = new List<Segment> { new() { Items = new List<LineItem> { new TextItem("Welcome") } } } }
                     }
                 }
             }
@@ -146,8 +152,8 @@ public class PlayscriptSerializationTests
         var deserialized = MessagePackSerializer.Deserialize<PlayscriptData>(bytes);
         Assert.Single(deserialized.Scripts);
         Assert.Single(deserialized.Texts);
-        Assert.Equal("Hello", ((TextItem)deserialized.Scripts["test"].Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("Welcome", ((TextItem)deserialized.Texts["intro"].Lines[0].Items[0]).Text);
+        Assert.Equal("Hello", ((TextItem)deserialized.Scripts["test"].Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("Welcome", ((TextItem)deserialized.Texts["intro"].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -174,9 +180,7 @@ public class PlayscriptSerializationTests
     {
         var original = Encoding.UTF8.GetBytes("Hello world");
         var encrypted = PlayscriptLoader.AesEncrypt(original, "test-key");
-        // AES block size is 16 bytes, IV is prepended
         Assert.True(encrypted.Length > 16);
-        // The encrypted data should be different from original
         Assert.NotEqual(original, encrypted);
     }
 
@@ -233,12 +237,18 @@ public class PlayscriptSerializationTests
                                     {
                                         new()
                                         {
-                                            Items = new List<LineItem>
+                                            Segments = new List<Segment>
                                             {
-                                                new TextItem("Hello "),
-                                                new ConsumerCallItem("transition",
-                                                    new List<ArgumentValue> { new StringArgument("fade_out") }),
-                                                new TextItem(" world")
+                                                new()
+                                                {
+                                                    Items = new List<LineItem>
+                                                    {
+                                                        new TextItem("Hello "),
+                                                        new ConsumerCallItem("transition",
+                                                            new List<ArgumentValue> { new StringArgument("fade_out") }),
+                                                        new TextItem(" world")
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -260,7 +270,7 @@ public class PlayscriptSerializationTests
         Assert.Single(deserialized.Scripts);
         Assert.Empty(deserialized.Texts);
 
-        var items = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Items;
+        var items = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
         Assert.Equal(3, items.Count);
         Assert.Equal("Hello ", ((TextItem)items[0]).Text);
         Assert.Equal("transition", ((ConsumerCallItem)items[1]).Identifier);
@@ -291,12 +301,18 @@ public class PlayscriptSerializationTests
                                     {
                                         new()
                                         {
-                                            Items = new List<LineItem>
+                                            Segments = new List<Segment>
                                             {
-                                                new TextItem("Hello "),
-                                                new ConsumerCallItem("transition",
-                                                    new List<ArgumentValue> { new StringArgument("fade_out") }),
-                                                new TextItem(" world")
+                                                new()
+                                                {
+                                                    Items = new List<LineItem>
+                                                    {
+                                                        new TextItem("Hello "),
+                                                        new ConsumerCallItem("transition",
+                                                            new List<ArgumentValue> { new StringArgument("fade_out") }),
+                                                        new TextItem(" world")
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -314,14 +330,13 @@ public class PlayscriptSerializationTests
         var decrypted = PlayscriptLoader.AesDecrypt(encrypted, "");
         var deserialized = MessagePackSerializer.Deserialize<PlayscriptData>(decrypted);
 
-        // With empty key, data should pass through unchanged
         Assert.Same(bytes, encrypted);
         Assert.Same(encrypted, decrypted);
 
         Assert.Single(deserialized.Scripts);
         Assert.Empty(deserialized.Texts);
 
-        var items = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Items;
+        var items = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
         Assert.Equal(3, items.Count);
         Assert.Equal("Hello ", ((TextItem)items[0]).Text);
         Assert.Equal("transition", ((ConsumerCallItem)items[1]).Identifier);
@@ -343,11 +358,17 @@ public class PlayscriptSerializationTests
                     {
                         new()
                         {
-                            Items = new List<LineItem>
+                            Segments = new List<Segment>
                             {
-                                new TextItem("Welcome, "),
-                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                                new TextItem("!")
+                                new()
+                                {
+                                    Items = new List<LineItem>
+                                    {
+                                        new TextItem("Welcome, "),
+                                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                        new TextItem("!")
+                                    }
+                                }
                             }
                         }
                     }
@@ -355,7 +376,6 @@ public class PlayscriptSerializationTests
             }
         };
 
-        // Write raw MessagePack bytes (no encryption)
         var bytes = MessagePackSerializer.Serialize(data);
         var tempPath = Path.GetTempFileName();
         try
@@ -367,10 +387,10 @@ public class PlayscriptSerializationTests
             Assert.IsType<TextBlock>(result["intro"]);
             var lines = result["intro"].Lines;
             Assert.Single(lines);
-            Assert.Equal(3, lines[0].Items.Count);
-            Assert.Equal("Welcome, ", ((TextItem)lines[0].Items[0]).Text);
-            Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Items[1]).Identifier);
-            Assert.Equal("!", ((TextItem)lines[0].Items[2]).Text);
+            Assert.Equal(3, lines[0].Segments[0].Items.Count);
+            Assert.Equal("Welcome, ", ((TextItem)lines[0].Segments[0].Items[0]).Text);
+            Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Segments[0].Items[1]).Identifier);
+            Assert.Equal("!", ((TextItem)lines[0].Segments[0].Items[2]).Text);
         }
         finally
         {
@@ -391,12 +411,12 @@ public class PlayscriptSerializationTests
     public void TextBlock_RoundTrip_SingleLine()
     {
         var block = new TextBlock
-            { Lines = new List<Line> { new() { Items = new List<LineItem> { new TextItem("Hello") } } } };
+            { Lines = new List<Line> { new() { Segments = new List<Segment> { new() { Items = new List<LineItem> { new TextItem("Hello") } } } } } };
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
         Assert.Single(deserialized.Lines);
-        Assert.Single(deserialized.Lines[0].Items);
-        Assert.Equal("Hello", ((TextItem)deserialized.Lines[0].Items[0]).Text);
+        Assert.Single(deserialized.Lines[0].Segments[0].Items);
+        Assert.Equal("Hello", ((TextItem)deserialized.Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -406,15 +426,15 @@ public class PlayscriptSerializationTests
         {
             Lines = new List<Line>
             {
-                new() { Items = new List<LineItem> { new TextItem("Hello ") } },
-                new() { Items = new List<LineItem> { new TextItem("World") } }
+                new() { Segments = new List<Segment> { new() { Items = new List<LineItem> { new TextItem("Hello ") } } } },
+                new() { Segments = new List<Segment> { new() { Items = new List<LineItem> { new TextItem("World") } } } }
             }
         };
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
         Assert.Equal(2, deserialized.Lines.Count);
-        Assert.Equal("Hello ", ((TextItem)deserialized.Lines[0].Items[0]).Text);
-        Assert.Equal("World", ((TextItem)deserialized.Lines[1].Items[0]).Text);
+        Assert.Equal("Hello ", ((TextItem)deserialized.Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("World", ((TextItem)deserialized.Lines[1].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -426,11 +446,17 @@ public class PlayscriptSerializationTests
             {
                 new()
                 {
-                    Items = new List<LineItem>
+                    Segments = new List<Segment>
                     {
-                        new TextItem("Hi, "),
-                        new ConsumerCallItem("get_name", new List<ArgumentValue> { new StringArgument("test") }),
-                        new TextItem(".")
+                        new()
+                        {
+                            Items = new List<LineItem>
+                            {
+                                new TextItem("Hi, "),
+                                new ConsumerCallItem("get_name", new List<ArgumentValue> { new StringArgument("test") }),
+                                new TextItem(".")
+                            }
+                        }
                     }
                 }
             }
@@ -438,13 +464,13 @@ public class PlayscriptSerializationTests
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
         Assert.Single(deserialized.Lines);
-        Assert.Equal(3, deserialized.Lines[0].Items.Count);
-        Assert.Equal("Hi, ", ((TextItem)deserialized.Lines[0].Items[0]).Text);
-        Assert.Equal("get_name", ((ConsumerCallItem)deserialized.Lines[0].Items[1]).Identifier);
-        Assert.Single(((ConsumerCallItem)deserialized.Lines[0].Items[1]).Arguments);
-        Assert.IsType<StringArgument>(((ConsumerCallItem)deserialized.Lines[0].Items[1]).Arguments[0]);
-        Assert.Equal("test", ((StringArgument)((ConsumerCallItem)deserialized.Lines[0].Items[1]).Arguments[0]).Value);
-        Assert.Equal(".", ((TextItem)deserialized.Lines[0].Items[2]).Text);
+        Assert.Equal(3, deserialized.Lines[0].Segments[0].Items.Count);
+        Assert.Equal("Hi, ", ((TextItem)deserialized.Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("get_name", ((ConsumerCallItem)deserialized.Lines[0].Segments[0].Items[1]).Identifier);
+        Assert.Single(((ConsumerCallItem)deserialized.Lines[0].Segments[0].Items[1]).Arguments);
+        Assert.IsType<StringArgument>(((ConsumerCallItem)deserialized.Lines[0].Segments[0].Items[1]).Arguments[0]);
+        Assert.Equal("test", ((StringArgument)((ConsumerCallItem)deserialized.Lines[0].Segments[0].Items[1]).Arguments[0]).Value);
+        Assert.Equal(".", ((TextItem)deserialized.Lines[0].Segments[0].Items[2]).Text);
     }
 
     [Fact]
@@ -456,15 +482,21 @@ public class PlayscriptSerializationTests
             {
                 new()
                 {
-                    Items = new List<LineItem>
+                    Segments = new List<Segment>
                     {
-                        new ConsumerCallItem("do_thing", new List<ArgumentValue>
+                        new()
                         {
-                            new StringArgument("hello"),
-                            new IntArgument(42),
-                            new DoubleArgument(3.14),
-                            new BoolArgument(true)
-                        })
+                            Items = new List<LineItem>
+                            {
+                                new ConsumerCallItem("do_thing", new List<ArgumentValue>
+                                {
+                                    new StringArgument("hello"),
+                                    new IntArgument(42),
+                                    new DoubleArgument(3.14),
+                                    new BoolArgument(true)
+                                })
+                            }
+                        }
                     }
                 }
             }
@@ -472,8 +504,8 @@ public class PlayscriptSerializationTests
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<TextBlock>(bytes);
         Assert.Single(deserialized.Lines);
-        Assert.Single(deserialized.Lines[0].Items);
-        var call = (ConsumerCallItem)deserialized.Lines[0].Items[0];
+        Assert.Single(deserialized.Lines[0].Segments[0].Items);
+        var call = (ConsumerCallItem)deserialized.Lines[0].Segments[0].Items[0];
         Assert.Equal("do_thing", call.Identifier);
         Assert.Equal(4, call.Arguments.Count);
         Assert.IsType<StringArgument>(call.Arguments[0]);
@@ -500,11 +532,17 @@ public class PlayscriptSerializationTests
                     {
                         new()
                         {
-                            Items = new List<LineItem>
+                            Segments = new List<Segment>
                             {
-                                new TextItem("Welcome, "),
-                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                                new TextItem("!")
+                                new()
+                                {
+                                    Items = new List<LineItem>
+                                    {
+                                        new TextItem("Welcome, "),
+                                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                        new TextItem("!")
+                                    }
+                                }
                             }
                         }
                     }
@@ -525,10 +563,10 @@ public class PlayscriptSerializationTests
             Assert.IsType<TextBlock>(result["intro"]);
             var lines = result["intro"].Lines;
             Assert.Single(lines);
-            Assert.Equal(3, lines[0].Items.Count);
-            Assert.Equal("Welcome, ", ((TextItem)lines[0].Items[0]).Text);
-            Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Items[1]).Identifier);
-            Assert.Equal("!", ((TextItem)lines[0].Items[2]).Text);
+            Assert.Equal(3, lines[0].Segments[0].Items.Count);
+            Assert.Equal("Welcome, ", ((TextItem)lines[0].Segments[0].Items[0]).Text);
+            Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Segments[0].Items[1]).Identifier);
+            Assert.Equal("!", ((TextItem)lines[0].Segments[0].Items[2]).Text);
         }
         finally
         {
@@ -550,11 +588,17 @@ public class PlayscriptSerializationTests
                     {
                         new()
                         {
-                            Items = new List<LineItem>
+                            Segments = new List<Segment>
                             {
-                                new TextItem("Welcome, "),
-                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                                new TextItem("!")
+                                new()
+                                {
+                                    Items = new List<LineItem>
+                                    {
+                                        new TextItem("Welcome, "),
+                                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                        new TextItem("!")
+                                    }
+                                }
                             }
                         }
                     }
@@ -568,13 +612,11 @@ public class PlayscriptSerializationTests
         Assert.IsType<TextBlock>(deserialized.Texts["intro"]);
         var lines = deserialized.Texts["intro"].Lines;
         Assert.Single(lines);
-        Assert.Equal(3, lines[0].Items.Count);
-        Assert.Equal("Welcome, ", ((TextItem)lines[0].Items[0]).Text);
-        Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Items[1]).Identifier);
-        Assert.Equal("!", ((TextItem)lines[0].Items[2]).Text);
+        Assert.Equal(3, lines[0].Segments[0].Items.Count);
+        Assert.Equal("Welcome, ", ((TextItem)lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("get_name", ((ConsumerCallItem)lines[0].Segments[0].Items[1]).Identifier);
+        Assert.Equal("!", ((TextItem)lines[0].Segments[0].Items[2]).Text);
     }
-
-    // ─── Phase 10: Script Block Verification ────────────────────────────────
 
     [Fact]
     public void ScriptBlock_RoundTrip_UnchangedAfterTextBlockRefactor()
@@ -593,11 +635,17 @@ public class PlayscriptSerializationTests
                             {
                                 new()
                                 {
-                                    Items = new List<LineItem>
+                                    Segments = new List<Segment>
                                     {
-                                        new TextItem("Hello "),
-                                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                                        new TextItem(".")
+                                        new()
+                                        {
+                                            Items = new List<LineItem>
+                                            {
+                                                new TextItem("Hello "),
+                                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                                new TextItem(".")
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -609,7 +657,7 @@ public class PlayscriptSerializationTests
         var bytes = MessagePackSerializer.Serialize(block);
         var deserialized = MessagePackSerializer.Deserialize<ScriptBlock>(bytes);
         Assert.Single(deserialized.Pages);
-        var items = deserialized.Pages[0].Paragraphs[0].Lines[0].Items;
+        var items = deserialized.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
         Assert.Equal(3, items.Count);
         Assert.Equal("Hello ", ((TextItem)items[0]).Text);
         Assert.Equal("get_name", ((ConsumerCallItem)items[1]).Identifier);
@@ -638,11 +686,17 @@ public class PlayscriptSerializationTests
                                     {
                                         new()
                                         {
-                                            Items = new List<LineItem>
+                                            Segments = new List<Segment>
                                             {
-                                                new TextItem("Hello"),
-                                                new ConsumerCallItem("transition",
-                                                    new List<ArgumentValue> { new StringArgument("fade") })
+                                                new()
+                                                {
+                                                    Items = new List<LineItem>
+                                                    {
+                                                        new TextItem("Hello"),
+                                                        new ConsumerCallItem("transition",
+                                                            new List<ArgumentValue> { new StringArgument("fade") })
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -660,11 +714,17 @@ public class PlayscriptSerializationTests
                     {
                         new()
                         {
-                            Items = new List<LineItem>
+                            Segments = new List<Segment>
                             {
-                                new TextItem("Welcome, "),
-                                new ConsumerCallItem("get_name", new List<ArgumentValue>()),
-                                new TextItem("!")
+                                new()
+                                {
+                                    Items = new List<LineItem>
+                                    {
+                                        new TextItem("Welcome, "),
+                                        new ConsumerCallItem("get_name", new List<ArgumentValue>()),
+                                        new TextItem("!")
+                                    }
+                                }
                             }
                         }
                     }
@@ -676,7 +736,7 @@ public class PlayscriptSerializationTests
 
         Assert.Single(deserialized.Scripts);
         Assert.IsType<ScriptBlock>(deserialized.Scripts["greeting"]);
-        var scriptItems = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Items;
+        var scriptItems = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
         Assert.Equal("Hello", ((TextItem)scriptItems[0]).Text);
         Assert.Equal("transition", ((ConsumerCallItem)scriptItems[1]).Identifier);
 
@@ -684,8 +744,8 @@ public class PlayscriptSerializationTests
         Assert.IsType<TextBlock>(deserialized.Texts["intro"]);
         var textLines = deserialized.Texts["intro"].Lines;
         Assert.Single(textLines);
-        Assert.Equal("Welcome, ", ((TextItem)textLines[0].Items[0]).Text);
-        Assert.Equal("get_name", ((ConsumerCallItem)textLines[0].Items[1]).Identifier);
-        Assert.Equal("!", ((TextItem)textLines[0].Items[2]).Text);
+        Assert.Equal("Welcome, ", ((TextItem)textLines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("get_name", ((ConsumerCallItem)textLines[0].Segments[0].Items[1]).Identifier);
+        Assert.Equal("!", ((TextItem)textLines[0].Segments[0].Items[2]).Text);
     }
 }

@@ -15,13 +15,14 @@ public class ScriptNavigationTests
     private static ScriptBlock Block(params Page[] pages) => new() { Pages = new List<Page>(pages) };
     private static Page Pg(params Paragraph[] paragraphs) => new() { Paragraphs = new List<Paragraph>(paragraphs) };
     private static Paragraph Para(params Line[] lines) => new() { Lines = new List<Line>(lines) };
-    private static Line Li(params LineItem[] items) => new() { Items = new List<LineItem>(items) };
+    private static Line Li(params LineItem[] items) => new() { Segments = new List<Segment> { new() { Items = new List<LineItem>(items) } } };
     private static TextItem T(string text) => new(text);
 
     private static string RenderLine(Line line)
     {
         var sb = new System.Text.StringBuilder();
-        foreach (var item in line.Items)
+        foreach (var segment in line.Segments)
+        foreach (var item in segment.Items)
         {
             switch (item)
             {
@@ -903,5 +904,459 @@ public class ScriptNavigationTests
         var nav = CreateNav(Block(Pg(Para(Li(T("First")), Li(T("Second"))))));
         nav.JumpTo(new ScriptPointer(0, 0, 1));
         Assert.Equal("Second", (await nav.RenderNextLineAsync(RenderLineAsync))!.Text);
+    }
+
+    // ─── RenderNextLineSegment: Helpers ─────────────────────────────────────
+
+    private static Line MultiSeg(params Segment[] segments) => new() { Segments = new List<Segment>(segments) };
+    private static Segment Seg(params LineItem[] items) => new() { Items = new List<LineItem>(items) };
+
+    private static string RenderSegment(Segment segment)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var item in segment.Items)
+        {
+            switch (item)
+            {
+                case TextItem textItem:
+                    sb.Append(textItem.Text);
+                    break;
+                case ConsumerCallItem call:
+                    call.Result = $"[{call.Identifier}]";
+                    sb.Append(call.Result);
+                    break;
+            }
+        }
+        return sb.ToString();
+    }
+
+    private static Task<string> RenderSegmentAsync(Segment segment) => Task.FromResult(RenderSegment(segment));
+
+    // ─── RenderNextLineSegment: Basic Navigation ────────────────────────────
+
+    [Fact]
+    public void RenderNextLineSegment_EmptyScript_ReturnsNull()
+    {
+        var nav = CreateNav(Block());
+        Assert.Null(nav.RenderNextLineSegment(RenderSegment));
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_SingleSegment_ReturnsText()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("Hello"))))));
+        Assert.Equal("Hello", nav.RenderNextLineSegment(RenderSegment)!.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_SingleSegment_AdvancesOnNextCall()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("A")), Li(T("B"))))));
+        nav.RenderNextLineSegment(RenderSegment);
+        Assert.Equal(new ScriptPointer(0, 0, 0), nav.Pointer);
+        nav.RenderNextLineSegment(RenderSegment);
+        Assert.Equal(new ScriptPointer(0, 0, 1), nav.Pointer);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_TwoSegments_ReturnsFirst()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("Hello, ")), Seg(T("World!")))))));
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("Hello, ", result.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_TwoSegments_ReturnsSecond()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("Hello, ")), Seg(T("World!")))))));
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("World!", result.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_ThreeSegments_ReturnsAll()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("A")), Seg(T("B")), Seg(T("C")))))));
+        Assert.Equal("A", nav.RenderNextLineSegment(RenderSegment)!.Text);
+        Assert.Equal("B", nav.RenderNextLineSegment(RenderSegment)!.Text);
+        Assert.Equal("C", nav.RenderNextLineSegment(RenderSegment)!.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_CrossesLineBoundary()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A1")), Seg(T("A2"))),
+            Li(T("B"))
+        ))));
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("B", result.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_CrossesParagraphBoundary()
+    {
+        var nav = CreateNav(Block(Pg(
+            Para(MultiSeg(Seg(T("A1")), Seg(T("A2")))),
+            Para(Li(T("B")))
+        )));
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("B", result.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_CrossesPageBoundary()
+    {
+        var nav = CreateNav(Block(
+            Pg(Para(MultiSeg(Seg(T("A1")), Seg(T("A2"))))),
+            Pg(Para(Li(T("B"))))
+        ));
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("B", result.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_AtEndOfScript_ReturnsNull()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("only"))))));
+        nav.RenderNextLineSegment(RenderSegment);
+        Assert.Null(nav.RenderNextLineSegment(RenderSegment));
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_DispatchesConsumerCall()
+    {
+        var call = new ConsumerCallItem("get_name", new List<ArgumentValue>());
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("Hi, ")), Seg(call, T("!")))))));
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("[get_name]!", result.Text);
+    }
+
+    // ─── RenderNextLineSegment: Segment Flags ───────────────────────────────
+
+    [Fact]
+    public void RenderNextLineSegment_IsLastSegmentOfLine_TrueOnLastSegment()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("A")), Seg(T("B")))))));
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.True(result.IsLastSegmentOfLine);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_IsLastSegmentOfLine_FalseOnFirst()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("A")), Seg(T("B")))))));
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.False(result.IsLastSegmentOfLine);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_IsLastSegmentOfParagraph_TrueWhenLastSegOfLastLine()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            MultiSeg(Seg(T("C")), Seg(T("D")))
+        ))));
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.True(result.IsLastSegmentOfParagraph);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_IsLastSegmentOfPage_TrueAtPageEnd()
+    {
+        var nav = CreateNav(Block(
+            Pg(Para(MultiSeg(Seg(T("A")), Seg(T("B"))))),
+            Pg(Para(Li(T("C"))))
+        ));
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.True(result.IsLastSegmentOfPage);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_IsLastSegmentOfScript_TrueAtScriptEnd()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("A")), Seg(T("B")))))));
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.True(result.IsLastSegmentOfScript);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_AllFlags_SingleSegmentLine()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("only"))))));
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.True(result.IsLastSegmentOfLine);
+        Assert.True(result.IsLastSegmentOfParagraph);
+        Assert.True(result.IsLastSegmentOfPage);
+        Assert.True(result.IsLastSegmentOfScript);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_AllFlags_FullSequence()
+    {
+        var nav = CreateNav(Block(
+            Pg(
+                Para(MultiSeg(Seg(T("p0p0s0")), Seg(T("p0p0s1")))),
+                Para(Li(T("p0p1s0")))
+            ),
+            Pg(Para(Li(T("p1p0s0"))))
+        ));
+
+        var results = new List<SegmentRenderResult>();
+        while (nav.RenderNextLineSegment(RenderSegment) is { } seg)
+            results.Add(seg);
+
+        Assert.Equal(4, results.Count);
+
+        Assert.False(results[0].IsLastSegmentOfLine);
+        Assert.False(results[0].IsLastSegmentOfPage);
+
+        Assert.True(results[1].IsLastSegmentOfLine);
+        Assert.False(results[1].IsLastSegmentOfPage);
+
+        Assert.True(results[2].IsLastSegmentOfLine);
+        Assert.True(results[2].IsLastSegmentOfPage);
+        Assert.False(results[2].IsLastPage);
+
+        Assert.True(results[3].IsLastSegmentOfLine);
+        Assert.True(results[3].IsLastSegmentOfScript);
+        Assert.True(results[3].IsLastPage);
+    }
+
+    // ─── RenderNextLineSegment: Pointer ─────────────────────────────────────
+
+    [Fact]
+    public void RenderNextLineSegment_Pointer_IsLineLevel()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("A")), Seg(T("B")))))));
+        var r1 = nav.RenderNextLineSegment(RenderSegment)!;
+        var r2 = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal(new ScriptPointer(0, 0, 0), r1.Pointer);
+        Assert.Equal(new ScriptPointer(0, 0, 0), r2.Pointer);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_Pointer_AdvancesOnlyWhenLineChanges()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            Li(T("C"))
+        ))));
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal(new ScriptPointer(0, 0, 1), result.Pointer);
+    }
+
+    // ─── RenderNextLineSegment + RenderNextLine Interaction ─────────────────
+
+    [Fact]
+    public void RenderNextLineSegment_ThenRenderNextLine_ConcatenatesRemaining()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("Hello, ")), Seg(T("World!"))),
+            Li(T("Goodbye"))
+        ))));
+        nav.RenderNextLineSegment(RenderSegment);
+        var result = nav.RenderNextLine(RenderLine)!;
+        Assert.Equal("Hello, World!", result.Text);
+    }
+
+    [Fact]
+    public void RenderNextLine_ThenRenderNextLineSegment_NextLine()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            Li(T("First")),
+            MultiSeg(Seg(T("A")), Seg(T("B")))
+        ))));
+        nav.RenderNextLine(RenderLine);
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("A", result.Text);
+    }
+
+    // ─── JumpTo/Reset with Segments ─────────────────────────────────────────
+
+    [Fact]
+    public void JumpTo_ThenRenderNextLineSegment_StartsAtCorrectSegment()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            MultiSeg(Seg(T("C")), Seg(T("D")))
+        ))));
+        nav.JumpTo(new ScriptPointer(0, 0, 1));
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("C", result.Text);
+    }
+
+    [Fact]
+    public void Reset_ResetsSegmentIndex()
+    {
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("A")), Seg(T("B")))))));
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.RenderNextLineSegment(RenderSegment);
+        nav.Reset();
+        var result = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("A", result.Text);
+    }
+
+    // ─── RenderNextLineSegment: Async ───────────────────────────────────────
+
+    [Fact]
+    public async Task RenderNextLineSegmentAsync_EmptyScript_ReturnsNull()
+    {
+        var nav = CreateNav(Block());
+        Assert.Null(await nav.RenderNextLineSegmentAsync(RenderSegmentAsync));
+    }
+
+    [Fact]
+    public async Task RenderNextLineSegmentAsync_MatchesSync()
+    {
+        var syncNav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            Li(T("C"))
+        ))));
+        var asyncNav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            Li(T("C"))
+        ))));
+
+        var syncResults = new List<string>();
+        while (syncNav.RenderNextLineSegment(RenderSegment) is { } seg)
+            syncResults.Add(seg.Text);
+
+        var asyncResults = new List<string>();
+        while (await asyncNav.RenderNextLineSegmentAsync(RenderSegmentAsync) is { } seg)
+            asyncResults.Add(seg.Text);
+
+        Assert.Equal(syncResults, asyncResults);
+    }
+
+    [Fact]
+    public async Task RenderNextLineSegmentAsync_FlagsMatchSync()
+    {
+        var syncNav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            Li(T("C"))
+        ))));
+        var asyncNav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            Li(T("C"))
+        ))));
+
+        while (true)
+        {
+            var syncResult = syncNav.RenderNextLineSegment(RenderSegment);
+            var asyncResult = await asyncNav.RenderNextLineSegmentAsync(RenderSegmentAsync);
+
+            if (syncResult is null)
+            {
+                Assert.Null(asyncResult);
+                break;
+            }
+
+            Assert.Equal(syncResult.IsLastSegmentOfLine, asyncResult!.IsLastSegmentOfLine);
+            Assert.Equal(syncResult.IsLastSegmentOfParagraph, asyncResult.IsLastSegmentOfParagraph);
+            Assert.Equal(syncResult.IsLastPage, asyncResult.IsLastPage);
+            Assert.Equal(syncResult.Pointer, asyncResult.Pointer);
+        }
+    }
+
+    // ─── Integration: Mixed Segment Lines ───────────────────────────────────
+
+    [Fact]
+    public void FullSequence_MixedSegmentLines_RendersCorrectly()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("Hello, ")), Seg(T("World!"))),
+            Li(T("Goodbye")),
+            MultiSeg(Seg(T("A")), Seg(T("B")), Seg(T("C")))
+        ))));
+
+        var results = new List<string>();
+        while (nav.RenderNextLineSegment(RenderSegment) is { } seg)
+            results.Add(seg.Text);
+
+        Assert.Equal(6, results.Count);
+        Assert.Equal("Hello, ", results[0]);
+        Assert.Equal("World!", results[1]);
+        Assert.Equal("Goodbye", results[2]);
+        Assert.Equal("A", results[3]);
+        Assert.Equal("B", results[4]);
+        Assert.Equal("C", results[5]);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_SegmentWithOnlyConsumerCall()
+    {
+        var call = new ConsumerCallItem("get_name", new List<ArgumentValue>());
+        var nav = CreateNav(Block(Pg(Para(MultiSeg(Seg(T("Hi ")), Seg(call))))));
+
+        var r1 = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("Hi ", r1.Text);
+
+        var r2 = nav.RenderNextLineSegment(RenderSegment)!;
+        Assert.Equal("[get_name]", r2.Text);
+    }
+
+    [Fact]
+    public void RenderNextLineSegment_MixedWithRenderNextLine()
+    {
+        var nav = CreateNav(Block(Pg(Para(
+            MultiSeg(Seg(T("A")), Seg(T("B"))),
+            MultiSeg(Seg(T("C")), Seg(T("D")))
+        ))));
+
+        Assert.Equal("A", nav.RenderNextLineSegment(RenderSegment)!.Text);
+        var fullLine = nav.RenderNextLine(RenderLine)!;
+        Assert.Equal("AB", fullLine.Text);
+        Assert.Equal("C", nav.RenderNextLineSegment(RenderSegment)!.Text);
+    }
+
+    [Fact]
+    public void FullSequence_RenderAllSegments_FlagsAreCorrect()
+    {
+        var nav = CreateNav(Block(
+            Pg(
+                Para(MultiSeg(Seg(T("s0")), Seg(T("s1")))),
+                Para(Li(T("s2")))
+            ),
+            Pg(Para(Li(T("s3"))))
+        ));
+
+        var results = new List<SegmentRenderResult>();
+        while (nav.RenderNextLineSegment(RenderSegment) is { } seg)
+            results.Add(seg);
+
+        Assert.Equal(4, results.Count);
+
+        Assert.False(results[0].IsLastSegmentOfLine);
+        Assert.False(results[0].IsLastPage);
+
+        Assert.True(results[1].IsLastSegmentOfLine);
+        Assert.False(results[1].IsLastSegmentOfPage);
+        Assert.False(results[1].IsLastPage);
+
+        Assert.True(results[2].IsLastSegmentOfLine);
+        Assert.True(results[2].IsLastSegmentOfPage);
+        Assert.False(results[2].IsLastPage);
+
+        Assert.True(results[3].IsLastSegmentOfLine);
+        Assert.True(results[3].IsLastSegmentOfScript);
+        Assert.True(results[3].IsLastPage);
     }
 }

@@ -45,9 +45,33 @@ ANTLR grammars in `EasyPlayscript.Core/core/playscript/definition/`:
 - `PlayscriptStructureLexer.g4` + `PlayscriptStructureParser.g4` (Pass 1)
 - `PlayscriptContentLexer.g4` + `PlayscriptContentParser.g4` (Pass 2)
 
-**Regenerating ANTLR**: After editing `.g4` files, run the ANTLR tool **without** `-package` flag — the grammars use `@header { namespace ...; }` for file-scoped namespaces. Using `-package` adds a conflicting block namespace.
+**Regenerating ANTLR**: After editing `.g4` files, regenerate with:
+```bash
+java -jar antlr-4.13.2-complete.jar -Dlanguage=CSharp -visitor -no-listener <grammar.g4> -o EasyPlayscript.Core/Parsing/Visitor/Content
+```
+Run for both `PlayscriptContentLexer.g4` and `PlayscriptContentParser.g4`. Do the same for Structure grammars with `-o EasyPlayscript.Core/Parsing/Visitor/Structure`.
+
+- **No ANTLR tool is bundled** — download `antlr-4.13.2-complete.jar` from antlr.org. Match the version in generated file headers (currently 4.13.2).
+- **Never use `-package` flag** — the grammars use `@header { namespace ...; }` for file-scoped namespaces. `-package` adds a conflicting block namespace.
+- Java is required (`java -version` must work).
 
 **Position convention**: ANTLR uses 1-based lines, 0-based columns. LSP uses 0-based both.
+
+## Content Syntax (inside `[...]` blocks)
+
+**Script blocks**: lines separated by newlines; blank lines separate paragraphs; `/` on its own line separates pages.
+
+**Line segments**: `+` is an inline delimiter that splits a line into segments. Use `RenderNextLineSegment()` to iterate segment-by-segment; `RenderNextLine()` concatenates all segments.
+```
+script name [
+    Hello, +World!        # 2 segments: "Hello, " and "World!"
+    Goodbye, +Cruel World # 2 segments: "Goodbye, " and "Cruel World"
+]
+```
+
+**Escape characters**: `\@`, `\#`, `\/`, `\\`, `\"`, `\n`, `\+`. The `+` must be escaped as `\+` when used literally in a segment (since unescaped `+` is the segment delimiter). Unescape logic is in `PlayscriptCodeBuilder.Unescape()`.
+
+**Text blocks**: same syntax but `/` is literal content (not a page break), and `+` has no special meaning (not a segment delimiter).
 
 ## Async Interfaces
 
@@ -91,6 +115,7 @@ The generated `Script` class supports pointer-based step-by-step navigation. Nav
 var script = session.GetScript(key);
 
 script.Pointer                        // ScriptPointer(0,0,0)
+script.RenderNextLineSegment()        // SegmentRenderResult? — text + segment flags + pointer, or null at end
 script.RenderNextLine()               // LineRenderResult? — text + all 6 flags + pointer, or null at end
 script.RenderNextParagraph()          // ParagraphRenderResult? — text + paragraph/page flags
 script.RenderNextPage()               // PageRenderResult? — text + IsLastPage flag only
@@ -100,6 +125,7 @@ script.Reset()                        // void — rewinds to (0,0,0)
 ```
 
 - `Render*` methods return sealed subtypes of `RenderResult` — `null` when the pointer is past the end:
+  - `SegmentRenderResult`: `IsLastSegmentOfLine`, `IsLastSegmentOfParagraph`, `IsLastSegmentOfPage`, `IsLastSegmentOfScript`
   - `LineRenderResult`: all 6 flags (`IsLastLineOfParagraph`, `IsLastLineOfPage`, `IsLastLineOfScript`, `IsLastParagraphOfPage`, `IsLastParagraphOfScript`, `IsLastPage`)
   - `ParagraphRenderResult`: `IsLastParagraphOfPage`, `IsLastParagraphOfScript`, `IsLastPage`
   - `PageRenderResult`: only `IsLastPage`
@@ -108,7 +134,7 @@ script.Reset()                        // void — rewinds to (0,0,0)
 - Flags are captured **before** the pointer advances (they describe the rendered unit, not the next position)
 - `IsLast*` properties on `Script` reflect live navigator state (post-advance); use `RenderResult` flags for pre-advance state
 - `Run()` is unaffected by the pointer — it always dispatches everything
-- Async variants: `RenderNextLineAsync()`, `RenderNextParagraphAsync()`, `RenderNextPageAsync()`, `RunAsync()` — properly await async implementations
+- Async variants: `RenderNextLineSegmentAsync()`, `RenderNextLineAsync()`, `RenderNextParagraphAsync()`, `RenderNextPageAsync()`, `RunAsync()` — properly await async implementations
 - `Text` has `RenderAsync()` overloads mirroring sync `Render()`
 
 ### Service Dispatch (Parent-Child Chain)
@@ -187,7 +213,9 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `EasyPlayscript.Core/PlayscriptSessionScope.cs` — base class with `ConcurrentDictionary` services, parent chain, `Register<T>`, `Get<T>`, `CreateChild`
 - `EasyPlayscript.Core/ScriptNavigator.cs` — pointer-based navigation for Script (RenderNext*, IsLast*, JumpTo, Reset)
 - `EasyPlayscript.Core/ScriptPointer.cs` — immutable value type for script position (pageIndex, paragraphIndex, lineIndex)
-- `EasyPlayscript.Core/Runtime/RenderResult.cs` — abstract `RenderResult` base + sealed `LineRenderResult`, `ParagraphRenderResult`, `PageRenderResult` subtypes
+- `EasyPlayscript.Core/Runtime/RenderResult.cs` — abstract `RenderResult` base + sealed `SegmentRenderResult`, `LineRenderResult`, `ParagraphRenderResult`, `PageRenderResult` subtypes
+- `EasyPlayscript.Core/DataModel/Segment.cs` — `Segment` class with `Items` (a segment is one part of a line, delimited by `+`)
+- `EasyPlayscript.Core/DataModel/Line.cs` — `Line` class with `Segments` (a line contains one or more segments)
 - `EasyPlayscript.Core/ImplementationAttribute.cs` — `[Implementation]` attribute (no scope — all services use parent-child chain)
 - `EasyPlayscript.Core/Parsing/InterfaceDeclaration.cs` — `InterfaceDeclaration` with `IsAsync` property; `InterfaceType` enum
 - `EasyPlayscript.Core/Parsing/ImplementationInfo.cs` — `ImplementationInfo` with `IsAsync` property

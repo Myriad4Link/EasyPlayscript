@@ -39,7 +39,7 @@ then content (consumer calls, text). This enables incremental LSP editing and fa
 
 A **script** is a block of paged narrative content — dialogue, cutscenes, event sequences. The content inside a script is organized in three layers:
 
-- **Line** — a single unit of text. This is what `RenderNextLine()` returns (as a `LineRenderResult`).
+- **Line** — a single unit of text. This is what `RenderNextLine()` returns (as a `LineRenderResult`). Lines can be split into segments using `+` (see Line Segments below).
 - **Paragraph** — a group of consecutive lines, separated by a blank line. `RenderNextParagraph()` returns all lines in a paragraph joined by newlines.
 - **Page** — a group of paragraphs, separated by `/`. `RenderNextPage()` returns all paragraphs on a page.
 
@@ -71,6 +71,21 @@ script act_i_scene_i [
 ```
 
 Page 0 is the opening exchange. Page 1 continues the prophecy. Page 2 climaxes with "Fair is foul."
+
+#### Line Segments
+
+Lines can be split into segments using `+` as an inline delimiter. Each segment is a part of the line. Use `RenderNextLineSegment()` to iterate segment-by-segment; `RenderNextLine()` concatenates all segments.
+
+```
+script dialogue [
+    Hello, +World!
+    Goodbye, +Cruel World...
+]
+```
+
+`RenderNextLineSegment()` returns `"Hello, "`, then `"World!"`, then `"Goodbye, "`, then `"Cruel World..."`. `SegmentRenderResult` carries segment-level boundary flags: `IsLastSegmentOfLine`, `IsLastSegmentOfParagraph`, `IsLastSegmentOfPage`, `IsLastSegmentOfScript`.
+
+To use a literal `+` in a segment (not a delimiter), escape it: `\+`.
 
 Scripts are compiled to MessagePack at build time. At runtime, you can navigate them step by step:
 
@@ -222,7 +237,7 @@ The **source generator** is a Roslyn `IIncrementalGenerator` that runs at compil
 |----------------|----------|
 | `PlayscriptRegistry.g.cs` | `DispatchCall()` — switch that routes consumer calls to implementations |
 | `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeSession` class, enums for script/text keys, lazy loader |
-| `Script.g.cs` | `Script` class with `Run()`, `RenderNextLine()` returning `LineRenderResult?`, navigation |
+| `Script.g.cs` | `Script` class with `Run()`, `RenderNextLineSegment()`, `RenderNextLine()` returning render results, navigation |
 | `Text.g.cs` | `Text` class with `Render()` |
 
 You never see or touch these files — they're generated fresh every build.
@@ -358,6 +373,7 @@ That will be ere the set of sun.
 
 - `@name(args)` — consumer call dispatched to a registered `[Implementation]` method
 - Plain text — dialogue and stage directions visible to the player
+- `+` — segment delimiter (splits a line into segments; use `RenderNextLineSegment()` to iterate)
 - Blank line — paragraph separator
 - `/` — page separator
 
@@ -438,15 +454,16 @@ global.GetScript(key).Run();      // still uses the original
 ```csharp
 var script = session.GetScript(key);
 
-var result = script.RenderNextLine();    // LineRenderResult? — null at end of script
+var result = script.RenderNextLineSegment();  // SegmentRenderResult? — null at end of script
 if (result is { } r)
 {
-    r.Text                                // "When shall we three meet again?"
+    r.Text                                // "Hello, "
     r.Pointer                             // ScriptPointer(0, 0, 0)
-    r.IsLastLineOfParagraph               // false
+    r.IsLastSegmentOfLine                 // false
     r.IsLastPage                          // false
 }
 
+var lineResult = script.RenderNextLine();     // LineRenderResult? — all segments concatenated
 script.RenderNextParagraph()              // ParagraphRenderResult? — lines joined by newline
 script.RenderNextPage()                   // PageRenderResult? — paragraphs joined by blank line
 script.JumpTo(new ScriptPointer(page, paragraph, line))
@@ -454,10 +471,10 @@ script.Reset()                            // rewinds to (0,0,0)
 script.IsLastLineOfPage                   // bool (live navigator state)
 ```
 
-- Each `Render*` method returns a different sealed type — `LineRenderResult`, `ParagraphRenderResult`, or `PageRenderResult`
-- Use `is LineRenderResult` pattern matching to access type-specific flags
+- Each `Render*` method returns a different sealed type — `SegmentRenderResult`, `LineRenderResult`, `ParagraphRenderResult`, or `PageRenderResult`
+- Use `is SegmentRenderResult` pattern matching to access type-specific flags
 - Flags are captured **before** the pointer advances
-- `RenderNextLine` includes all 6 boundary flags; `RenderNextParagraph` includes paragraph/page flags; `RenderNextPage` includes only `IsLastPage`
+- `RenderNextLineSegment` includes 4 segment-level boundary flags; `RenderNextLine` includes all 6 line-level flags; `RenderNextParagraph` includes paragraph/page flags; `RenderNextPage` includes only `IsLastPage`
 
 ### Async interfaces
 

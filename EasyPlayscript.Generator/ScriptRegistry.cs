@@ -6,11 +6,6 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace EasyPlayscript.Generator;
 
-/// <summary>
-///     Source generator that emits data classes (<c>Script</c>, <c>Text</c>)
-///     via <see cref="IncrementalGeneratorInitializationContext.RegisterPostInitializationOutput" /> into the
-///     <c>EasyPlayscript.Generated</c> namespace.
-/// </summary>
 [Generator]
 public class ScriptRegistry : IIncrementalGenerator
 {
@@ -44,18 +39,14 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("{");
         indented.Indent++;
 
-        // ── Properties ──
         indented.WriteLine("public ScriptBlock Block { get; set; } = default!;");
         indented.WriteLine();
         indented.WriteLine("internal PlayscriptRuntimeSession? Runtime { get; set; }");
         indented.WriteLine();
-
-        // ── Navigator (single source of truth for all navigation state) ──
         indented.WriteLine("private ScriptNavigator? _navigator;");
         indented.WriteLine("private ScriptNavigator Navigator => _navigator ??= new ScriptNavigator(Block);");
         indented.WriteLine();
 
-        // ── Navigation: delegate to ScriptNavigator ──
         indented.WriteLine("public ScriptPointer Pointer => Navigator.Pointer;");
         indented.WriteLine();
         indented.WriteLine("public void JumpTo(ScriptPointer pointer) => Navigator.JumpTo(pointer);");
@@ -68,149 +59,65 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("public bool IsLastLineOfPage => Navigator.IsLastLineOfPage;");
         indented.WriteLine("public bool IsLastLineOfScript => Navigator.IsLastLineOfScript;");
         indented.WriteLine("public bool IsLastParagraphOfScript => Navigator.IsLastParagraphOfScript;");
+        indented.WriteLine("public bool IsLastSegmentOfLine => Navigator.IsLastSegmentOfLine;");
+        indented.WriteLine("public bool IsLastSegmentOfParagraph => Navigator.IsLastSegmentOfParagraph;");
+        indented.WriteLine("public bool IsLastSegmentOfPage => Navigator.IsLastSegmentOfPage;");
+        indented.WriteLine("public bool IsLastSegmentOfScript => Navigator.IsLastSegmentOfScript;");
         indented.WriteLine();
 
-        // ── RenderLine helper (sync: dispatches consumer calls via Runtime) ──
-        indented.WriteLine("private string RenderLine(Line line)");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("var sb = new StringBuilder();");
-        indented.WriteLine("foreach (var item in line.Items)");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("switch (item)");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("case TextItem textItem:");
-        indented.Indent++;
-        indented.WriteLine("sb.Append(textItem.Text);");
-        indented.WriteLine("break;");
-        indented.Indent--;
-        indented.WriteLine("case ConsumerCallItem call:");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderLine() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("Runtime.DispatchCall(call);");
-        indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
-        indented.WriteLine("break;");
-        indented.Indent--;
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.WriteLine("return sb.ToString();");
-        indented.Indent--;
-        indented.WriteLine("}");
+        // ── RenderSegment helper ──
+        EmitRenderSegment(indented, "RenderSegment", "Segment", false);
+        indented.WriteLine();
+        EmitRenderSegment(indented, "RenderSegmentAsync", "Segment", true);
         indented.WriteLine();
 
-        // ── RenderLineAsync helper (async: dispatches consumer calls via Runtime async) ──
-        indented.WriteLine("private async Task<string> RenderLineAsync(Line line)");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("var sb = new StringBuilder();");
-        indented.WriteLine("foreach (var item in line.Items)");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("switch (item)");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("case TextItem textItem:");
-        indented.Indent++;
-        indented.WriteLine("sb.Append(textItem.Text);");
-        indented.WriteLine("break;");
-        indented.Indent--;
-        indented.WriteLine("case ConsumerCallItem call:");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderLineAsync() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("await Runtime.DispatchCallAsync(call);");
-        indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
-        indented.WriteLine("break;");
-        indented.Indent--;
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.WriteLine("return sb.ToString();");
-        indented.Indent--;
-        indented.WriteLine("}");
+        // ── RenderLine helper (concatenates segments) ──
+        EmitRenderLine(indented, "RenderLine", "RenderSegment", false);
+        indented.WriteLine();
+        EmitRenderLine(indented, "RenderLineAsync", "RenderSegmentAsync", true);
         indented.WriteLine();
 
-        // ── RenderNext* (sync) ──
-        indented.WriteLine("public LineRenderResult? RenderNextLine()");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextLine() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("return Navigator.RenderNextLine(RenderLine);");
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.WriteLine();
-        indented.WriteLine("public ParagraphRenderResult? RenderNextParagraph()");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextParagraph() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("return Navigator.RenderNextParagraph(RenderLine);");
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.WriteLine();
-        indented.WriteLine("public PageRenderResult? RenderNextPage()");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextPage() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("return Navigator.RenderNextPage(RenderLine);");
-        indented.Indent--;
-        indented.WriteLine("}");
+        // ── RenderNextLineSegment (sync) ──
+        EmitRenderNextMethod(indented, "SegmentRenderResult", "RenderNextLineSegment",
+            "Navigator.RenderNextLineSegment(RenderSegment)", false);
         indented.WriteLine();
 
-        // ── RenderNext*Async (async) ──
-        indented.WriteLine("public async Task<LineRenderResult?> RenderNextLineAsync()");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextLineAsync() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("return await Navigator.RenderNextLineAsync(RenderLineAsync);");
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.WriteLine();
-        indented.WriteLine("public async Task<ParagraphRenderResult?> RenderNextParagraphAsync()");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextParagraphAsync() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("return await Navigator.RenderNextParagraphAsync(RenderLineAsync);");
-        indented.Indent--;
-        indented.WriteLine("}");
-        indented.WriteLine();
-        indented.WriteLine("public async Task<PageRenderResult?> RenderNextPageAsync()");
-        indented.WriteLine("{");
-        indented.Indent++;
-        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
-        indented.Indent++;
-        indented.WriteLine("\"Script.RenderNextPageAsync() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
-        indented.Indent--;
-        indented.WriteLine("return await Navigator.RenderNextPageAsync(RenderLineAsync);");
-        indented.Indent--;
-        indented.WriteLine("}");
+        // ── RenderNextLineSegment (async) ──
+        EmitRenderNextMethod(indented, "SegmentRenderResult", "RenderNextLineSegmentAsync",
+            "await Navigator.RenderNextLineSegmentAsync(RenderSegmentAsync)", true);
         indented.WriteLine();
 
-        // ── Run (sync — does not use navigator) ──
+        // ── RenderNextLine (sync) ──
+        EmitRenderNextMethod(indented, "LineRenderResult", "RenderNextLine",
+            "Navigator.RenderNextLine(RenderLine)", false);
+        indented.WriteLine();
+
+        // ── RenderNextLine (async) ──
+        EmitRenderNextMethod(indented, "LineRenderResult", "RenderNextLineAsync",
+            "await Navigator.RenderNextLineAsync(RenderLineAsync)", true);
+        indented.WriteLine();
+
+        // ── RenderNextParagraph (sync) ──
+        EmitRenderNextMethod(indented, "ParagraphRenderResult", "RenderNextParagraph",
+            "Navigator.RenderNextParagraph(RenderLine)", false);
+        indented.WriteLine();
+
+        // ── RenderNextParagraph (async) ──
+        EmitRenderNextMethod(indented, "ParagraphRenderResult", "RenderNextParagraphAsync",
+            "await Navigator.RenderNextParagraphAsync(RenderLineAsync)", true);
+        indented.WriteLine();
+
+        // ── RenderNextPage (sync) ──
+        EmitRenderNextMethod(indented, "PageRenderResult", "RenderNextPage",
+            "Navigator.RenderNextPage(RenderLine)", false);
+        indented.WriteLine();
+
+        // ── RenderNextPage (async) ──
+        EmitRenderNextMethod(indented, "PageRenderResult", "RenderNextPageAsync",
+            "await Navigator.RenderNextPageAsync(RenderLineAsync)", true);
+        indented.WriteLine();
+
+        // ── Run (sync) ──
         indented.WriteLine("public void Run()");
         indented.WriteLine("{");
         indented.Indent++;
@@ -224,7 +131,9 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("foreach (var line in paragraph.Lines)");
         indented.Indent++;
-        indented.WriteLine("foreach (var item in line.Items)");
+        indented.WriteLine("foreach (var segment in line.Segments)");
+        indented.Indent++;
+        indented.WriteLine("foreach (var item in segment.Items)");
         indented.Indent++;
         indented.WriteLine("if (item is ConsumerCallItem call)");
         indented.Indent++;
@@ -235,10 +144,11 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent--;
         indented.Indent--;
         indented.Indent--;
+        indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
 
-        // ── RunAsync (async — does not use navigator) ──
+        // ── RunAsync (async) ──
         indented.WriteLine("public async Task RunAsync()");
         indented.WriteLine("{");
         indented.Indent++;
@@ -252,11 +162,14 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine("foreach (var line in paragraph.Lines)");
         indented.Indent++;
-        indented.WriteLine("foreach (var item in line.Items)");
+        indented.WriteLine("foreach (var segment in line.Segments)");
+        indented.Indent++;
+        indented.WriteLine("foreach (var item in segment.Items)");
         indented.Indent++;
         indented.WriteLine("if (item is ConsumerCallItem call)");
         indented.Indent++;
         indented.WriteLine("await Runtime.DispatchCallAsync(call);");
+        indented.Indent--;
         indented.Indent--;
         indented.Indent--;
         indented.Indent--;
@@ -270,6 +183,83 @@ public class ScriptRegistry : IIncrementalGenerator
 
         indented.Flush();
         return writer.ToString();
+    }
+
+    private static void EmitRenderSegment(IndentedTextWriter indented, string methodName, string paramType, bool isAsync)
+    {
+        var asyncKeyword = isAsync ? "async Task<string>" : "string";
+        var awaitKeyword = isAsync ? "await " : "";
+        var runtimeCheck = isAsync
+            ? $"\"Script.{methodName}() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\""
+            : $"\"Script.{methodName}() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\"";
+
+        indented.WriteLine($"private {asyncKeyword} {methodName}({paramType} segment)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("var sb = new StringBuilder();");
+        indented.WriteLine("foreach (var item in segment.Items)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("switch (item)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("case TextItem textItem:");
+        indented.Indent++;
+        indented.WriteLine("sb.Append(textItem.Text);");
+        indented.WriteLine("break;");
+        indented.Indent--;
+        indented.WriteLine("case ConsumerCallItem call:");
+        indented.Indent++;
+        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
+        indented.Indent++;
+        indented.WriteLine(runtimeCheck + ");");
+        indented.Indent--;
+        indented.WriteLine($"{awaitKeyword}Runtime.DispatchCall{(isAsync ? "Async" : "")}(call);");
+        indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
+        indented.WriteLine("break;");
+        indented.Indent--;
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.Indent--;
+        indented.WriteLine("}");
+        indented.WriteLine("return sb.ToString();");
+        indented.Indent--;
+        indented.WriteLine("}");
+    }
+
+    private static void EmitRenderLine(IndentedTextWriter indented, string methodName, string renderSegmentMethod, bool isAsync)
+    {
+        var asyncKeyword = isAsync ? "async Task<string>" : "string";
+        var awaitKeyword = isAsync ? "await " : "";
+
+        indented.WriteLine($"private {asyncKeyword} {methodName}(Line line)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("var sb = new StringBuilder();");
+        indented.WriteLine("foreach (var segment in line.Segments)");
+        indented.Indent++;
+        indented.WriteLine($"sb.Append({awaitKeyword}{renderSegmentMethod}(segment));");
+        indented.Indent--;
+        indented.WriteLine("return sb.ToString();");
+        indented.Indent--;
+        indented.WriteLine("}");
+    }
+
+    private static void EmitRenderNextMethod(IndentedTextWriter indented, string returnType, string methodName, string delegateCall, bool isAsync)
+    {
+        var asyncKeyword = isAsync ? $"async Task<{returnType}?> " : $"{returnType}? ";
+        var awaitPrefix = isAsync ? "await " : "";
+
+        indented.WriteLine($"public {asyncKeyword}{methodName}()");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("if (Runtime == null) throw new InvalidOperationException(");
+        indented.Indent++;
+        indented.WriteLine($"\"Script.{methodName}() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
+        indented.Indent--;
+        indented.WriteLine($"return {awaitPrefix}{delegateCall};");
+        indented.Indent--;
+        indented.WriteLine("}");
     }
 
     private static string GenerateText()
@@ -305,7 +295,10 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (sb.Length > 0) sb.AppendLine();");
-        indented.WriteLine("foreach (var item in line.Items)");
+        indented.WriteLine("foreach (var segment in line.Segments)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("foreach (var item in segment.Items)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("switch (item)");
@@ -322,6 +315,8 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
         indented.WriteLine("break;");
         indented.Indent--;
+        indented.Indent--;
+        indented.WriteLine("}");
         indented.Indent--;
         indented.WriteLine("}");
         indented.Indent--;
@@ -356,7 +351,10 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("if (sb.Length > 0) sb.AppendLine();");
-        indented.WriteLine("foreach (var item in line.Items)");
+        indented.WriteLine("foreach (var segment in line.Segments)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("foreach (var item in segment.Items)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("switch (item)");
@@ -373,6 +371,8 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("if (call.Result != null) sb.Append(call.Result);");
         indented.WriteLine("break;");
         indented.Indent--;
+        indented.Indent--;
+        indented.WriteLine("}");
         indented.Indent--;
         indented.WriteLine("}");
         indented.Indent--;

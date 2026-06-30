@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptContentParser.g4 by ANTLR 4.13.2
+// Generated from D:/Myriad-s-Projects/EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptContentParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -62,6 +62,12 @@ public interface IPlayscriptContentParserVisitor<Result> : IParseTreeVisitor<Res
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitLine([NotNull] PlayscriptContentParser.LineContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.segment"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitSegment([NotNull] PlayscriptContentParser.SegmentContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.textParagraph"/>.
 	/// </summary>

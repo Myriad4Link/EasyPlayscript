@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Antlr4.Runtime.Tree;
@@ -46,7 +47,12 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                 // So `page` here is guaranteed non-null. 
                 page!.Paragraphs.Add(paragraph);
             },
-            lineCtx => paragraph!.Lines.Add(new Line { Items = ParseLineItems(lineCtx) }));
+            lineCtx => paragraph!.Lines.Add(new Line
+            {
+                Segments = lineCtx.segment()
+                    .Select(s => new Segment { Items = ParseSegmentItems(s) })
+                    .ToList()
+            }));
 
         ContentResult = block;
     }
@@ -70,19 +76,19 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
             {
                 var items = ParseTextLineItems(lineCtx);
                 if (items.Count > 0)
-                    block.Lines.Add(new Line { Items = items });
+                    block.Lines.Add(new Line { Segments = new List<Segment> { new() { Items = items } } });
             }
         }
 
         TextResult = block;
     }
 
-    private List<LineItem> ParseLineItems(PlayscriptContentParser.LineContext? lineCtx)
+    private List<LineItem> ParseSegmentItems(PlayscriptContentParser.SegmentContext? segCtx)
     {
         var items = new List<LineItem>();
-        if (lineCtx?.children == null) return items;
+        if (segCtx?.children == null) return items;
 
-        foreach (var child in lineCtx.children)
+        foreach (var child in segCtx.children)
             switch (child)
             {
                 case PlayscriptContentParser.ConsumerCallContext callCtx:
@@ -138,6 +144,7 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
                     case '\\': sb.Append('\\'); break;
                     case '"': sb.Append('"'); break;
                     case 'n': sb.Append('\n'); break;
+                    case '+': sb.Append('+'); break;
                     default:
                         sb.Append('\\');
                         sb.Append(text[i]);

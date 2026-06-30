@@ -76,11 +76,11 @@ public class ScriptRegistryTests
     }
 
     [Fact]
-    public void Line_HasItems()
+    public void Line_HasSegments()
     {
         var line = new Line();
-        Assert.NotNull(line.Items);
-        Assert.Empty(line.Items);
+        Assert.NotNull(line.Segments);
+        Assert.Empty(line.Segments);
     }
 
     [Fact]

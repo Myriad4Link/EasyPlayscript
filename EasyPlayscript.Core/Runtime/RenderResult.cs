@@ -25,6 +25,22 @@ public sealed class LineRenderResult(
     public bool IsLastParagraphOfScript { get; } = isLastParagraphOfScript;
 }
 
+public sealed class SegmentRenderResult(
+    string text,
+    ScriptPointer pointer,
+    bool isLastPage,
+    bool isLastSegmentOfLine,
+    bool isLastSegmentOfParagraph,
+    bool isLastSegmentOfPage,
+    bool isLastSegmentOfScript)
+    : RenderResult(text, pointer, isLastPage)
+{
+    public bool IsLastSegmentOfLine { get; } = isLastSegmentOfLine;
+    public bool IsLastSegmentOfParagraph { get; } = isLastSegmentOfParagraph;
+    public bool IsLastSegmentOfPage { get; } = isLastSegmentOfPage;
+    public bool IsLastSegmentOfScript { get; } = isLastSegmentOfScript;
+}
+
 public sealed class ParagraphRenderResult(
     string text,
     ScriptPointer pointer,

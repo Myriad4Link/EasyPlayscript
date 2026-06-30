@@ -226,8 +226,8 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Single(block.Pages[0].Paragraphs[0].Lines[0].Items);
-        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Single(block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items);
+        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -257,7 +257,7 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -277,7 +277,7 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("Hello", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -287,7 +287,7 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Single(block.Pages[0].Paragraphs[0].Lines);
-        Assert.Empty(block.Pages[0].Paragraphs[0].Lines[0].Items);
+        Assert.Empty(block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items);
     }
 
     [Fact]
@@ -297,8 +297,8 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Equal(2, block.Pages[0].Paragraphs[0].Lines.Count);
-        Assert.Equal("line 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("line 2", ((TextItem)block.Pages[0].Paragraphs[0].Lines[1].Items[0]).Text);
+        Assert.Equal("line 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("line 2", ((TextItem)block.Pages[0].Paragraphs[0].Lines[1].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -307,8 +307,8 @@ public class PlayscriptStructureTests
         var block = ParseEndToEnd("script t[para 1\n\npara 2]");
         Assert.Single(block.Pages);
         Assert.Equal(2, block.Pages[0].Paragraphs.Count);
-        Assert.Equal("para 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("para 2", ((TextItem)block.Pages[0].Paragraphs[1].Lines[0].Items[0]).Text);
+        Assert.Equal("para 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("para 2", ((TextItem)block.Pages[0].Paragraphs[1].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -316,8 +316,8 @@ public class PlayscriptStructureTests
     {
         var block = ParseEndToEnd("script t[p1\n/\np2]");
         Assert.Equal(2, block.Pages.Count);
-        Assert.Equal("p1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("p2", ((TextItem)block.Pages[1].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("p1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("p2", ((TextItem)block.Pages[1].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -327,8 +327,8 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Equal(2, block.Pages[0].Paragraphs[0].Lines.Count);
-        Assert.Equal("line 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("line 2", ((TextItem)block.Pages[0].Paragraphs[0].Lines[1].Items[0]).Text);
+        Assert.Equal("line 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("line 2", ((TextItem)block.Pages[0].Paragraphs[0].Lines[1].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -338,8 +338,8 @@ public class PlayscriptStructureTests
         Assert.Single(block.Pages);
         Assert.Single(block.Pages[0].Paragraphs);
         Assert.Equal(2, block.Pages[0].Paragraphs[0].Lines.Count);
-        Assert.Equal("line 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("line 2", ((TextItem)block.Pages[0].Paragraphs[0].Lines[1].Items[0]).Text);
+        Assert.Equal("line 1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("line 2", ((TextItem)block.Pages[0].Paragraphs[0].Lines[1].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -347,8 +347,8 @@ public class PlayscriptStructureTests
     {
         var block = ParseEndToEnd("script t[\np1\n/\np2\n]");
         Assert.Equal(2, block.Pages.Count);
-        Assert.Equal("p1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Items[0]).Text);
-        Assert.Equal("p2", ((TextItem)block.Pages[1].Paragraphs[0].Lines[0].Items[0]).Text);
+        Assert.Equal("p1", ((TextItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
+        Assert.Equal("p2", ((TextItem)block.Pages[1].Paragraphs[0].Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -367,8 +367,8 @@ public class PlayscriptStructureTests
         var block = builder.TextResult;
 
         Assert.Single(block.Lines);
-        Assert.Single(block.Lines[0].Items);
-        Assert.Equal("Welcome", ((TextItem)block.Lines[0].Items[0]).Text);
+        Assert.Single(block.Lines[0].Segments[0].Items);
+        Assert.Equal("Welcome", ((TextItem)block.Lines[0].Segments[0].Items[0]).Text);
     }
 
     // ─── Async Interface Parsing ─────────────────────────────────────────────

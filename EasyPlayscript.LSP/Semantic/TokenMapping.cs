@@ -58,6 +58,7 @@ internal static class TokenMapping
         [PlayscriptContentLexer.FLOAT_LITERAL] = SemanticTokenTypes.Number,
         [PlayscriptContentLexer.BOOLEAN_LITERAL] = SemanticTokenTypes.Boolean,
         [PlayscriptContentLexer.SLASH] = SemanticTokenTypes.Operator,
+        [PlayscriptContentLexer.PLUS] = SemanticTokenTypes.Operator,
         [PlayscriptContentLexer.TEXT] = SemanticTokenTypes.String
     };
 }

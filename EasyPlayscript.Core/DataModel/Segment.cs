@@ -4,7 +4,7 @@ using MessagePack;
 namespace EasyPlayscript.DataModel;
 
 [MessagePackObject]
-public class Line
+public class Segment
 {
-    [Key(0)] public List<Segment> Segments { get; set; } = [];
+    [Key(0)] public List<LineItem> Items { get; set; } = [];
 }

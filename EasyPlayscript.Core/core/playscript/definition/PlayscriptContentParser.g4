@@ -25,6 +25,10 @@ paragraph
     ;
 
 line
+    : segment (PLUS segment)*
+    ;
+
+segment
     : (TEXT | consumerCall)+
     ;
 

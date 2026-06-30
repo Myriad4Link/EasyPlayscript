@@ -2,12 +2,16 @@ lexer grammar PlayscriptContentLexer;
 
 @header { namespace EasyPlayscript.Parsing; }
 
-tokens { AT, COMMENT, LPAREN, RPAREN, STRING_LITERAL, IDENTIFIER, COMMA, INTEGER_LITERAL, FLOAT_LITERAL, BOOLEAN_LITERAL }
+tokens { AT, COMMENT, LPAREN, RPAREN, STRING_LITERAL, IDENTIFIER, COMMA, INTEGER_LITERAL, FLOAT_LITERAL, BOOLEAN_LITERAL, PLUS }
 
 // ─── DEFAULT MODE (content inside [...]) ─────────────────────────────────────
 
 S_AT
     : '@' -> type(AT), pushMode(IN_CALL)
+    ;
+
+S_PLUS
+    : '+' -> type(PLUS)
     ;
 
 S_COMMENT
@@ -27,7 +31,7 @@ SLASH
     ;
 
 TEXT
-    : ('\\' ~[\r\n] | ~[@\\\r\n#/])+
+    : ('\\' ~[\r\n] | ~[@\\\r\n#/+])+
     ;
 
 // ─── IN_CALL MODE ───────────────────────────────────────────────────────────

@@ -27,7 +27,6 @@ public static class PlayscriptRuntimeEmitter
         Dictionary<string, ScriptBlock> scripts,
         Dictionary<string, TextBlock> texts,
         string outputPath,
-        string aesKey,
         bool hasAsync = false)
     {
         var normalizedPath = outputPath.Replace('\\', '/');
@@ -53,40 +52,47 @@ public static class PlayscriptRuntimeEmitter
         indented.Indent++;
 
         // ── Fields & properties ──
+        indented.WriteLine("private readonly string? _aesKey;");
         indented.WriteLine("private readonly Lazy<Dictionary<string, ScriptBlock>> _scripts;");
         indented.WriteLine("private readonly Lazy<Dictionary<string, TextBlock>> _texts;");
         indented.WriteLine("public PlayscriptRegistry Registry { get; }");
         indented.WriteLine();
 
-        // ── Constructors ──
-        indented.WriteLine("public PlayscriptRuntimeSession() : this(new PlayscriptRegistry()) { }");
+        // ── Public constructors ──
+        indented.WriteLine("public PlayscriptRuntimeSession() : this((string?)null) { }");
         indented.WriteLine();
-        indented.WriteLine("public PlayscriptRuntimeSession(PlayscriptRegistry registry) : base()");
+        indented.WriteLine("public PlayscriptRuntimeSession(string? aesKey) : this(new PlayscriptRegistry(), aesKey) { }");
+        indented.WriteLine();
+        indented.WriteLine("public PlayscriptRuntimeSession(PlayscriptRegistry registry, string? aesKey) : base()");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("Registry = registry ?? throw new ArgumentNullException(nameof(registry));");
+        indented.WriteLine("_aesKey = aesKey;");
         indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptBlock>>(");
         indented.Indent++;
-        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
         indented.WriteLine("_texts = new Lazy<Dictionary<string, TextBlock>>(");
         indented.Indent++;
-        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();
-        indented.WriteLine("private PlayscriptRuntimeSession(PlayscriptRegistry registry, PlayscriptSessionScope parent) : base(parent)");
+
+        // ── Private child constructor (inherits parent key) ──
+        indented.WriteLine("private PlayscriptRuntimeSession(PlayscriptRegistry registry, string? aesKey, PlayscriptSessionScope parent) : base(parent)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("Registry = registry;");
+        indented.WriteLine("_aesKey = aesKey;");
         indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptBlock>>(");
         indented.Indent++;
-        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
         indented.WriteLine("_texts = new Lazy<Dictionary<string, TextBlock>>(");
         indented.Indent++;
-        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), \"{aesKey}\"));");
+        indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
         indented.Indent--;
         indented.WriteLine("}");
@@ -96,7 +102,7 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("public override PlayscriptRuntimeSession CreateChild()");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("return new PlayscriptRuntimeSession(Registry, this);");
+        indented.WriteLine("return new PlayscriptRuntimeSession(Registry, _aesKey, this);");
         indented.Indent--;
         indented.WriteLine("}");
         indented.WriteLine();

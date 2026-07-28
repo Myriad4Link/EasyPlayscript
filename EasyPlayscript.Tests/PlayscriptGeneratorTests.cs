@@ -50,31 +50,20 @@ public class PlayscriptGeneratorTests
 
     private static string GenerateRegistryCode(params (string name, string content)[] files)
     {
-        return GenerateCodeForKey("PlayscriptRegistry.g.cs", TestOutputPath, TestAesKey, files);
+        return GenerateCodeForKey("PlayscriptRegistry.g.cs", TestOutputPath, files);
     }
 
     private static string GenerateRuntimeCode(params (string name, string content)[] files)
     {
-        return GenerateCodeForKey("PlayscriptRuntime.g.cs", TestOutputPath, TestAesKey, files);
-    }
-
-    private static string GenerateRegistryCodeWithKey(string aesKey, params (string name, string content)[] files)
-    {
-        return GenerateCodeForKey("PlayscriptRegistry.g.cs", TestOutputPath, aesKey, files);
-    }
-
-    private static string GenerateRuntimeCodeWithKey(string aesKey, params (string name, string content)[] files)
-    {
-        return GenerateCodeForKey("PlayscriptRuntime.g.cs", TestOutputPath, aesKey, files);
+        return GenerateCodeForKey("PlayscriptRuntime.g.cs", TestOutputPath, files);
     }
 
     private static string GenerateCodeForKey(
-        string fileName, string outputPath, string aesKey,
+        string fileName, string outputPath,
         params (string name, string content)[] files)
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
-            ("build_property.PlayscriptOutputPath", outputPath),
-            ("build_property.PlayscriptAesKey", aesKey));
+            ("build_property.PlayscriptOutputPath", outputPath));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -101,8 +90,7 @@ public class PlayscriptGeneratorTests
         params (string name, string content)[] files)
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
-            ("build_property.PlayscriptOutputPath", TestOutputPath),
-            ("build_property.PlayscriptAesKey", TestAesKey));
+            ("build_property.PlayscriptOutputPath", TestOutputPath));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -139,15 +127,8 @@ public class PlayscriptGeneratorTests
 
     private static ImmutableArray<Diagnostic> GenerateDiagnostics(params (string name, string content)[] files)
     {
-        return GenerateDiagnosticsWithKey(TestAesKey, files);
-    }
-
-    private static ImmutableArray<Diagnostic> GenerateDiagnosticsWithKey(string aesKey,
-        params (string name, string content)[] files)
-    {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
-            ("build_property.PlayscriptOutputPath", TestOutputPath),
-            ("build_property.PlayscriptAesKey", aesKey));
+            ("build_property.PlayscriptOutputPath", TestOutputPath));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -234,7 +215,7 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_HasConstructor()
     {
         var code = GenerateRuntimeCode(("Example", ScriptBlockExample));
-        Assert.Contains("public PlayscriptRuntimeSession(PlayscriptRegistry registry)", code);
+        Assert.Contains("public PlayscriptRuntimeSession(PlayscriptRegistry registry, string? aesKey)", code);
         Assert.Contains("LoadScripts", code);
         Assert.Contains("LoadTexts", code);
     }
@@ -263,20 +244,21 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
-    public void GeneratedCode_EmbedsAesKey()
+    public void GeneratedCode_DoesNotEmbed_AesKey_AsStringLiteral()
     {
+        // Security property: whatever the build-time PlayscriptAesKey was, the
+        // generated source must not contain it as a string literal. The key is
+        // a runtime argument, not an embedded secret.
         var code = GenerateRuntimeCode(("Example", ScriptBlockExample));
-        Assert.Contains($"\"{TestAesKey}\"", code);
+        Assert.DoesNotContain($"\"{TestAesKey}\"", code);
     }
 
     [Fact]
-    public void GeneratedCode_EmptyAesKey_EmbedsEmptyString()
+    public void GeneratedCode_Passes_AesKey_Via_Field()
     {
-        var code = GenerateRuntimeCodeWithKey("", ("Example", ScriptBlockExample));
-        Assert.Contains("public PlayscriptRuntimeSession(PlayscriptRegistry", code);
-        Assert.DoesNotContain("dev-key-change-me", code);
-        Assert.Contains("ResolvePath(\"test-scripts.bin\")", code);
-        Assert.Contains("LoadScripts(ResolvePath(\"test-scripts.bin\"), \"\")", code);
+        var code = GenerateRuntimeCode(("Example", ScriptBlockExample));
+        Assert.Contains("PlayscriptLoader.LoadScripts(ResolvePath(\"test-scripts.bin\"), _aesKey)", code);
+        Assert.Contains("PlayscriptLoader.LoadTexts(ResolvePath(\"test-scripts.bin\"), _aesKey)", code);
     }
 
     [Fact]
@@ -307,8 +289,12 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
-    public void MissingAesKey_DefaultsToEmptyString()
+    public void MissingAesKey_GeneratesRuntimeWithFieldReference()
     {
+        // The generator no longer reads the PlayscriptAesKey MSBuild property.
+        // The generated code always passes the runtime-supplied _aesKey to the
+        // loader. This test verifies that even when no PlayscriptAesKey is
+        // configured, the generator still emits correct code.
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
             ImmutableDictionary<string, string>.Empty);
 
@@ -331,7 +317,7 @@ public class PlayscriptGeneratorTests
 
         Assert.DoesNotContain("dev-key-change-me", code);
         Assert.Contains("ResolvePath(\"playscripts.bin\")", code);
-        Assert.Contains("LoadScripts(ResolvePath(\"playscripts.bin\"), \"\")", code);
+        Assert.Contains("LoadScripts(ResolvePath(\"playscripts.bin\"), _aesKey)", code);
     }
 
     // ─── PlayscriptRegistry Structure ──────────────────────────────────────
@@ -929,8 +915,7 @@ public class PlayscriptGeneratorTests
         string sourceCode, params (string name, string content)[] files)
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
-            ("build_property.PlayscriptOutputPath", TestOutputPath),
-            ("build_property.PlayscriptAesKey", TestAesKey));
+            ("build_property.PlayscriptOutputPath", TestOutputPath));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -959,8 +944,7 @@ public class PlayscriptGeneratorTests
         string sourceCode, params (string name, string content)[] files)
     {
         var optionsProvider = new TestAnalyzerConfigOptionsProvider(
-            ("build_property.PlayscriptOutputPath", TestOutputPath),
-            ("build_property.PlayscriptAesKey", TestAesKey));
+            ("build_property.PlayscriptOutputPath", TestOutputPath));
 
         var generator = new PlayscriptGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(

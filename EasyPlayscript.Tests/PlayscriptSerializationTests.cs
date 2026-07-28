@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using EasyPlayscript.DataModel;
 using MessagePack;
 using Xunit;
@@ -157,66 +156,6 @@ public class PlayscriptSerializationTests
     }
 
     [Fact]
-    public void Aes_RoundTrip()
-    {
-        var original = Encoding.UTF8.GetBytes("Hello world");
-        var key = "test-key-1234567";
-        var encrypted = PlayscriptLoader.AesEncrypt(original, key);
-        var decrypted = PlayscriptLoader.AesDecrypt(encrypted, key);
-        Assert.Equal(original, decrypted);
-    }
-
-    [Fact]
-    public void Aes_DifferentKeys_ProduceDifferentCiphertext()
-    {
-        var original = Encoding.UTF8.GetBytes("Hello world");
-        var encrypted1 = PlayscriptLoader.AesEncrypt(original, "key-one");
-        var encrypted2 = PlayscriptLoader.AesEncrypt(original, "key-two");
-        Assert.NotEqual(encrypted1, encrypted2);
-    }
-
-    [Fact]
-    public void Aes_EncryptedDataStartsWithIV()
-    {
-        var original = Encoding.UTF8.GetBytes("Hello world");
-        var encrypted = PlayscriptLoader.AesEncrypt(original, "test-key");
-        Assert.True(encrypted.Length > 16);
-        Assert.NotEqual(original, encrypted);
-    }
-
-    [Fact]
-    public void AesEncrypt_EmptyKey_ReturnsInputUnchanged()
-    {
-        var original = Encoding.UTF8.GetBytes("Hello world");
-        var result = PlayscriptLoader.AesEncrypt(original, "");
-        Assert.Same(original, result);
-    }
-
-    [Fact]
-    public void AesDecrypt_EmptyKey_ReturnsInputUnchanged()
-    {
-        var original = Encoding.UTF8.GetBytes("Hello world");
-        var result = PlayscriptLoader.AesDecrypt(original, "");
-        Assert.Same(original, result);
-    }
-
-    [Fact]
-    public void AesEncrypt_NullKey_ReturnsInputUnchanged()
-    {
-        var original = Encoding.UTF8.GetBytes("Hello world");
-        var result = PlayscriptLoader.AesEncrypt(original, null);
-        Assert.Same(original, result);
-    }
-
-    [Fact]
-    public void AesDecrypt_NullKey_ReturnsInputUnchanged()
-    {
-        var original = Encoding.UTF8.GetBytes("Hello world");
-        var result = PlayscriptLoader.AesDecrypt(original, null);
-        Assert.Same(original, result);
-    }
-
-    [Fact]
     public void FullPipeline_SerializeEncryptDeserialize()
     {
         var data = new PlayscriptData
@@ -263,8 +202,8 @@ public class PlayscriptSerializationTests
 
         var key = "pipeline-test-key";
         var bytes = MessagePackSerializer.Serialize(data);
-        var encrypted = PlayscriptLoader.AesEncrypt(bytes, key);
-        var decrypted = PlayscriptLoader.AesDecrypt(encrypted, key);
+        var encrypted = PlayscriptLoader.Encrypt(bytes, key);
+        var decrypted = PlayscriptLoader.Decrypt(encrypted, key);
         var deserialized = MessagePackSerializer.Deserialize<PlayscriptData>(decrypted);
 
         Assert.Single(deserialized.Scripts);
@@ -326,13 +265,14 @@ public class PlayscriptSerializationTests
         };
 
         var bytes = MessagePackSerializer.Serialize(data);
-        var encrypted = PlayscriptLoader.AesEncrypt(bytes, "");
-        var decrypted = PlayscriptLoader.AesDecrypt(encrypted, "");
-        var deserialized = MessagePackSerializer.Deserialize<PlayscriptData>(decrypted);
+        var encrypted = PlayscriptLoader.Encrypt(bytes, "");
+        var decrypted = PlayscriptLoader.Decrypt(encrypted, "");
 
+        // When no key is set, encryption is a no-op — bytes are passed through.
         Assert.Same(bytes, encrypted);
         Assert.Same(encrypted, decrypted);
 
+        var deserialized = MessagePackSerializer.Deserialize<PlayscriptData>(decrypted);
         Assert.Single(deserialized.Scripts);
         Assert.Empty(deserialized.Texts);
 
@@ -552,7 +492,7 @@ public class PlayscriptSerializationTests
 
         var key = "loader-test-key";
         var bytes = MessagePackSerializer.Serialize(data);
-        var encrypted = PlayscriptLoader.AesEncrypt(bytes, key);
+        var encrypted = PlayscriptLoader.Encrypt(bytes, key);
         var tempPath = Path.GetTempFileName();
         try
         {

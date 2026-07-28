@@ -59,7 +59,7 @@ public class PlayscriptBuildTask : Task
 
         var playscriptData = new PlayscriptData { Scripts = data.Scripts, Texts = data.Texts };
         var bytes = MessagePackSerializer.Serialize(playscriptData);
-        var encrypted = PlayscriptLoader.AesEncrypt(bytes, AesKey);
+        var encrypted = PlayscriptLoader.Encrypt(bytes, AesKey);
 
         var dir = Path.GetDirectoryName(OutputPath);
         if (!string.IsNullOrEmpty(dir))

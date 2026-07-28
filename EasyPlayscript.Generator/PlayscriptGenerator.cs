@@ -90,17 +90,15 @@ public class PlayscriptGenerator : IIncrementalGenerator
             spc.CancellationToken.ThrowIfCancellationRequested();
 
             configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptOutputPath", out var outputPath);
-            configOptions.GlobalOptions.TryGetValue("build_property.PlayscriptAesKey", out var aesKey);
 
             outputPath = string.IsNullOrEmpty(outputPath) ? "playscripts.bin" : outputPath;
-            aesKey ??= string.Empty;
 
             var registryCode = PlayscriptRegistryEmitter.Generate(ctx.Data);
             spc.AddSource("PlayscriptRegistry.g.cs", SourceText.From(registryCode, Encoding.UTF8));
 
             var hasAsync = ctx.Data.Interfaces.Any(i => i.IsAsync);
             var runtimeCode = PlayscriptRuntimeEmitter.Generate(
-                ctx.Data.Scripts, ctx.Data.Texts, outputPath!, aesKey, hasAsync);
+                ctx.Data.Scripts, ctx.Data.Texts, outputPath!, hasAsync);
             spc.AddSource("PlayscriptRuntime.g.cs", SourceText.From(runtimeCode, Encoding.UTF8));
         });
     }

@@ -83,6 +83,12 @@ fabric.properties
 **/obj/
 **/publish/
 
+# Coverage reports
+coveragereport/
+
+# Test results
+TestResults/
+
 # Local NuGet feed
 nuget-local/
 

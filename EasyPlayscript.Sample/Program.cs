@@ -67,8 +67,13 @@ public static class Program
         Console.WriteLine("║      EasyPlayscript: Parent-Child Session Demo       ║");
         Console.WriteLine("╚══════════════════════════════════════════════════════╝");
 
+        // The AES passphrase must match PlayscriptAesKey in the .csproj at
+        // build time. In a real game this would come from a runtime secret
+        // (config, server, hardware) — never from a string literal.
+        const string aesKey = "dev-key-change-me";
+
         // ── Global session: shared services for the entire game ──
-        var globalSession = new PlayscriptRuntimeSession();
+        var globalSession = new PlayscriptRuntimeSession(aesKey);
         globalSession.Register(new AudioSystem());
         globalSession.Register(new UiSystem());
         globalSession.Register(new DataSystem());

@@ -248,7 +248,6 @@ public class ScriptRegistry : IIncrementalGenerator
     private static void EmitRenderNextMethod(IndentedTextWriter indented, string returnType, string methodName, string delegateCall, bool isAsync)
     {
         var asyncKeyword = isAsync ? $"async Task<{returnType}?> " : $"{returnType}? ";
-        var awaitPrefix = isAsync ? "await " : "";
 
         indented.WriteLine($"public {asyncKeyword}{methodName}()");
         indented.WriteLine("{");
@@ -257,7 +256,11 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.Indent++;
         indented.WriteLine($"\"Script.{methodName}() requires a PlayscriptRuntimeSession. Use session.GetScript() to create session-aware scripts.\");");
         indented.Indent--;
-        indented.WriteLine($"return {awaitPrefix}{delegateCall};");
+        // delegateCall already includes the leading "await" for the async case
+        // (e.g. "await Navigator.RenderNextLineSegmentAsync(RenderSegmentAsync)").
+        // Adding another "await" here would produce a double-await on a
+        // non-awaitable type. Just return the delegate call as-is.
+        indented.WriteLine($"return {delegateCall};");
         indented.Indent--;
         indented.WriteLine("}");
     }

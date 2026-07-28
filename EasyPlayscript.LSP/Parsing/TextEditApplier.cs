@@ -60,9 +60,6 @@ internal static class TextEditApplier
             }
         }
 
-        if (line == pos.Line && col == pos.Character)
-            return text.Length;
-
         return text.Length;
     }
 }

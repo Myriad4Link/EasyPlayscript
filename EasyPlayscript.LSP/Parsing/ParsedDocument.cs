@@ -1,4 +1,3 @@
-using EasyPlayscript.LSP.Mapping;
 using EasyPlayscript.LSP.Semantic;
 using EasyPlayscript.Parsing;
 
@@ -11,20 +10,21 @@ namespace EasyPlayscript.LSP.Parsing;
 /// </summary>
 internal record CachedBlockContent(
     IReadOnlyList<TokenEntry> Tokens,
-    IReadOnlyList<PlayscriptError> Errors,
-    BlockOffset? Offset = null);
+    IReadOnlyList<PlayscriptError> Errors);
 
 /// <summary>
 ///     Result of parsing a <c>.scpt</c> file. Contains structure-level tokens/errors,
 ///     content-level tokens/errors merged and sorted, and an optional block cache
-///     for incremental re-parsing on document changes.
+///     for incremental reparsing on document changes.
 /// </summary>
 internal class ParsedDocument(
     IReadOnlyList<TokenEntry> tokens,
     IReadOnlyList<PlayscriptError> errors,
     StructureParseResult structure,
     string? text = null,
-    IReadOnlyDictionary<string, CachedBlockContent>? blockCache = null)
+    IReadOnlyDictionary<string, CachedBlockContent>? blockCache = null,
+    IReadOnlyList<ValidationDiagnostic>? validationDiagnostics = null,
+    PlayscriptCompilationData? compilationData = null)
 {
     public IReadOnlyList<TokenEntry> Tokens { get; } = tokens;
     public IReadOnlyList<PlayscriptError> Errors { get; } = errors;
@@ -37,4 +37,19 @@ internal class ParsedDocument(
     ///     with only a line-offset adjustment. <c>null</c> on the first parse.
     /// </summary>
     public IReadOnlyDictionary<string, CachedBlockContent>? BlockCache { get; } = blockCache;
+
+    /// <summary>
+    ///     Per-file validation diagnostics produced by Pass 2 (full pipeline):
+    ///     SCPT002/003 from content parsing, SCPT004 from duplicate script/text names.
+    ///     Empty when the structure failed to parse.
+    /// </summary>
+    public IReadOnlyList<ValidationDiagnostic> ValidationDiagnostics { get; } =
+        validationDiagnostics ?? [];
+
+    /// <summary>
+    ///     Per-file parsed data (scripts, texts, interfaces) produced by Pass 2.
+    ///     Carries block locations and interface declarations for cross-file validation.
+    ///     <c>null</c> when the structure failed to parse.
+    /// </summary>
+    public PlayscriptCompilationData? CompilationData { get; } = compilationData;
 }

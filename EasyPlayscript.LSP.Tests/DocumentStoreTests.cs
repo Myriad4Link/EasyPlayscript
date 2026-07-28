@@ -9,7 +9,7 @@ namespace EasyPlayscript.LSP.Tests;
 public class DocumentStoreTests
 {
     private static DocumentStore CreateStore() =>
-        new();
+        new(new WorkspaceIndex());
 
     [Fact]
     public void OpenNewDocument_StoresAndReturns()

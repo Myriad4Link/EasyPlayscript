@@ -7,18 +7,30 @@ namespace EasyPlayscript.LSP.Parsing;
 
 internal class PlayscriptDocumentParser
 {
-    // TODO: add errors publishing other than syntax and lexer ones.
     public static ParsedDocument Parse(string content)
     {
         return ParseIncremental(content, null);
     }
 
-    public static ParsedDocument ParseIncremental(string content, ParsedDocument? previous)
+    public static ParsedDocument ParseIncremental(string content, ParsedDocument? previous,
+        string filePath = "")
     {
         var structureErrors = new List<PlayscriptError>();
         var structureTokens = CollectStructureTokens(content, structureErrors);
         var (structureResult, parseErrors) = PlayscriptStructureHelper.ParseStructureWithErrors(content);
         structureErrors.AddRange(parseErrors);
+
+        // Pass 2 — run the full Core pipeline on the structure. Produces a per-file
+        // PlayscriptCompilationData (scripts, texts, interfaces) and per-file
+        // ValidationDiagnostics (SCPT002/003 from content errors, SCPT004 from
+        // duplicate script/text names). The pipeline is rerun every parse — the
+        // content-token cache (below) only short-circuits token extraction, not
+        // Pass 2. Per-file cost is O(content size) and is negligible for typical
+        // script files.
+        var perFileData = new PlayscriptCompilationData();
+        var validationDiagnostics = new List<ValidationDiagnostic>();
+        validationDiagnostics.AddRange(PlayscriptPipeline.ProcessFile(
+            structureResult, perFileData, filePath));
 
         var allTokens = new List<TokenEntry>(structureTokens);
         var contentErrors = new List<PlayscriptError>();
@@ -87,14 +99,15 @@ internal class PlayscriptDocumentParser
                     CollectContentTokens(trimmed, offset, block.Identifier == BlockType.Script);
                 allTokens.AddRange(contentTokens);
                 contentErrors.AddRange(errors);
-                blockCache[block.Name] = new CachedBlockContent(contentTokens, errors, offset);
+                blockCache[block.Name] = new CachedBlockContent(contentTokens, errors);
             }
         }
 
         structureErrors.AddRange(contentErrors);
         allTokens.Sort((a, b) => a.Line != b.Line ? a.Line - b.Line : a.Col - b.Col);
 
-        return new ParsedDocument(allTokens, structureErrors, structureResult, content, blockCache);
+        return new ParsedDocument(allTokens, structureErrors, structureResult, content, blockCache,
+            validationDiagnostics, perFileData);
     }
 
     /// <summary>

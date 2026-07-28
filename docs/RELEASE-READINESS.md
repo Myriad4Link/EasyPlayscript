@@ -33,14 +33,14 @@ No `.github/workflows/`, no Azure DevOps, nothing. `dotnet test` is manual via `
 
 ### 1.5 LSP doesn't actually show sema errors
 
-`EasyPlayscript.LSP/Parsing/PlayscriptDocumentParser.cs:10` has a literal `// TODO: add errors publishing other than syntax and lexer ones.` The LSP currently only surfaces ANTLR syntax/lexer errors. It does **not** report:
+`EasyPlayscript.LSP/Parsing/PlayscriptDocumentParser.cs:10` had a literal `// TODO: add errors publishing other than syntax and lexer ones.` The LSP only surfaced ANTLR syntax/lexer errors. It did **not** report:
 
 - SCPT005 (undeclared consumer call)
 - SCPT007 / SCPT008 (argument type/count mismatch)
 - SCPT004 (duplicate names)
 - SCPT009 (missing implementation)
 
-For a 1.0 with an LSP, the whole point is to catch these in the editor. Right now the editor only catches "this bracket is wrong" — the unique value of the LSP is missing.
+**Status:** fixed. The LSP now runs Pass 2 (`PlayscriptPipeline.ProcessFile`) per file and routes diagnostics through a new `WorkspaceIndex` service that aggregates all open files, runs `PlayscriptPipeline.Validate(aggregate)`, and publishes SCPT002–SCPT008 to the right file. Implementation-side diagnostics (SCPT009–SCPT013) are intentionally deferred — see §2.1.
 
 ### 1.6 `AesKey` is a string, no KDF
 
@@ -60,7 +60,7 @@ For a 1.0 with an LSP, the whole point is to catch these in the editor. Right no
 
 ### 2.1 LSP missing core language features
 
-The LSP only has sync + semantic tokens. For a "playable" editor experience, the following are expected:
+The LSP has sync + semantic tokens + full diagnostic surface (SCPT002–SCPT008; see §1.5). For a "playable" editor experience, the following are expected:
 
 - **Hover** — show interface signature on `@callName`
 - **Completion** — `@<TAB>` suggests declared interfaces; signature help inside `(`
@@ -71,6 +71,8 @@ The LSP only has sync + semantic tokens. For a "playable" editor experience, the
 - **Rename** — rename an interface and update all call sites
 - **Document Formatting** — basic indentation/trimming
 - **Code Actions** — "create [Implementation] stub" on an interface
+
+**SCPT009–SCPT013 (implementation-side) diagnostics** are not reported by the LSP. The LSP process has no access to user `[Implementation]` methods, so reporting missing / duplicate / async-mismatch implementations would always produce false positives. The Roslyn source generator and the build task still surface them at compile time. Re-evaluate when the LSP gains a workspace symbol index.
 
 ### 2.2 No `Directory.Build.props`
 

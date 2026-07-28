@@ -17,11 +17,12 @@ public class PlayscriptDocumentSyncHandlerTests
     private static (PlayscriptDocumentSyncHandler handler, DocumentStore store,
         ITextDocumentLanguageServer textDoc) CreateHandler()
     {
-        var store = new DocumentStore();
+        var workspace = new WorkspaceIndex();
+        var store = new DocumentStore(workspace);
         var facade = Substitute.For<ILanguageServerFacade>();
         var textDoc = Substitute.For<ITextDocumentLanguageServer>();
         facade.TextDocument.Returns(textDoc);
-        var handler = new PlayscriptDocumentSyncHandler(store, facade);
+        var handler = new PlayscriptDocumentSyncHandler(store, workspace, facade);
         return (handler, store, textDoc);
     }
 

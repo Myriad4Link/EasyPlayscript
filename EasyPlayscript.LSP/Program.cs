@@ -10,6 +10,7 @@ var server = await LanguageServer.From(options => options
     .WithServices(services =>
     {
         services.AddSingleton<PlayscriptDocumentParser>();
+        services.AddSingleton<WorkspaceIndex>();
         services.AddSingleton<DocumentStore>();
     })
     .WithHandler<PlayscriptDocumentSyncHandler>()

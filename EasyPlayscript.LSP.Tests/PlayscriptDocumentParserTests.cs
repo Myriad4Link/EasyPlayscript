@@ -1,5 +1,6 @@
 using EasyPlayscript.LSP.Parsing;
 using EasyPlayscript.LSP.Semantic;
+using EasyPlayscript.Parsing;
 
 namespace EasyPlayscript.LSP.Tests;
 
@@ -493,6 +494,51 @@ public class PlayscriptDocumentParserTests
             Assert.Equal(c1[i].Line, c3[i].Line);
             Assert.Equal(c1[i].Col, c3[i].Col);
         }
+    }
+
+    // ── Pass 2 diagnostics (ProcessFile output) ─────────────────────────────
+
+    [Fact]
+    public void ParseIncremental_ContentParseError_ReportsSCPT003()
+    {
+        var doc = PlayscriptDocumentParser.ParseIncremental("script a[@]", null);
+        Assert.NotEmpty(doc.ValidationDiagnostics);
+        Assert.Contains(doc.ValidationDiagnostics, d => d.Code == DiagnosticCodes.MismatchedInput);
+    }
+
+    [Fact]
+    public void ParseIncremental_DuplicateScriptName_ReportsSCPT004()
+    {
+        var doc = PlayscriptDocumentParser.ParseIncremental("script a[hello] script a[world]", null);
+        Assert.NotEmpty(doc.ValidationDiagnostics);
+        Assert.Contains(doc.ValidationDiagnostics, d => d.Code == DiagnosticCodes.DuplicateScriptName);
+    }
+
+    [Fact]
+    public void ParseIncremental_CompilationData_ScriptPopulated()
+    {
+        var doc = PlayscriptDocumentParser.ParseIncremental("script a[hello]", null);
+        Assert.NotNull(doc.CompilationData);
+        Assert.True(doc.CompilationData!.Scripts.ContainsKey("a"));
+        Assert.Empty(doc.CompilationData.Texts);
+    }
+
+    [Fact]
+    public void ParseIncremental_CompilationData_TextPopulated()
+    {
+        var doc = PlayscriptDocumentParser.ParseIncremental("text b[hello]", null);
+        Assert.NotNull(doc.CompilationData);
+        Assert.True(doc.CompilationData!.Texts.ContainsKey("b"));
+        Assert.Empty(doc.CompilationData.Scripts);
+    }
+
+    [Fact]
+    public void ParseIncremental_CompilationData_InterfacePopulated()
+    {
+        var doc = PlayscriptDocumentParser.ParseIncremental("interface foo(x:int):string", null);
+        Assert.NotNull(doc.CompilationData);
+        Assert.NotEmpty(doc.CompilationData!.Interfaces);
+        Assert.Equal("foo", doc.CompilationData.Interfaces[0].Name);
     }
 
     private static string GetTokenText(string source, TokenEntry token)

@@ -5,7 +5,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 namespace EasyPlayscript.LSP.Services;
 
-internal class DocumentStore
+internal class DocumentStore(WorkspaceIndex workspace)
 {
     private readonly ConcurrentDictionary<DocumentUri, ParsedDocument> _docs = new();
     private readonly ConcurrentDictionary<DocumentUri, string> _texts = new();
@@ -13,8 +13,10 @@ internal class DocumentStore
     public void OpenOrUpdate(DocumentUri uri, string text)
     {
         _texts[uri] = text;
-        var doc = PlayscriptDocumentParser.ParseIncremental(text, Get(uri));
+        var doc = PlayscriptDocumentParser.ParseIncremental(text, Get(uri), uri.ToString());
         _docs[uri] = doc;
+        if (doc.CompilationData is not null)
+            workspace.Register(uri, doc.ValidationDiagnostics, doc.CompilationData);
     }
 
     public ParsedDocument ApplyChanges(DocumentUri uri, IReadOnlyList<TextDocumentContentChangeEvent> changes)
@@ -24,8 +26,10 @@ internal class DocumentStore
         _texts[uri] = newText;
 
         var previous = Get(uri);
-        var doc = PlayscriptDocumentParser.ParseIncremental(newText, previous);
+        var doc = PlayscriptDocumentParser.ParseIncremental(newText, previous, uri.ToString());
         _docs[uri] = doc;
+        if (doc.CompilationData is not null)
+            workspace.Register(uri, doc.ValidationDiagnostics, doc.CompilationData);
         return doc;
     }
 
@@ -33,6 +37,7 @@ internal class DocumentStore
     {
         _docs.TryRemove(uri, out _);
         _texts.TryRemove(uri, out _);
+        workspace.Remove(uri);
     }
 
     public ParsedDocument? Get(DocumentUri uri)

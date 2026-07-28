@@ -28,6 +28,7 @@ dotnet test EasyPlayscript.Tests          # Run only Core/Generator tests
 dotnet test EasyPlayscript.LSP.Tests      # Run only LSP tests
 dotnet run --project EasyPlayscript.Sample       # Run sample app
 ./pack-local.ps1                          # Rebuild & repack NuGet packages into nuget-local/
+./coverage.ps1                            # Run tests + generate HTML coverage report (requires `reportgenerator` on PATH)
 ```
 
 **Note**: `dotnet test` takes the project path as a positional argument, not `--project`. Use `dotnet test EasyPlayscript.LSP.Tests`, not `dotnet test --project EasyPlayscript.LSP.Tests`.
@@ -35,6 +36,10 @@ dotnet run --project EasyPlayscript.Sample       # Run sample app
 **SDK**: .NET 10.0.301 required (`global.json` with `rollForward: latestMinor`).
 
 **NuGet lock issue**: The LSP server may lock DLLs in the global NuGet cache. If `dotnet restore` fails with "Access to the path ... is denied", use `dotnet build --no-restore`.
+
+**MSBuild diagnostic verbosity**: To see how the build task is invoked (and which `.scpt` files it's processing), build with `dotnet build -v:n` or higher. Useful when `playscripts.bin` is missing or stale.
+
+**Test counts**: 515 (Core/Generator) + 146 (LSP) = 661. Last known green baseline is recorded in commit messages; if a count drops, find the missing case by running `dotnet test --list-tests`.
 
 ## Architecture: Two-Pass Parsing
 
@@ -182,13 +187,15 @@ All codes defined in `EasyPlayscript.Generator/PlayscriptDiagnostics.cs`.
 
 Tests in `EasyPlayscript.Tests/` use `CSharpGeneratorDriver` with:
 - `TestAdditionalFile` (from `Utils/`) to simulate `.scpt` files
-- `TestAnalyzerConfigOptionsProvider` for build properties (`PlayscriptOutputPath`, `PlayscriptAesKey`)
+- `TestAnalyzerConfigOptionsProvider` for build properties (`PlayscriptOutputPath` only — `PlayscriptAesKey` is build-task-only, not generator input)
 
 Pattern: create generator → add additional files → run driver → assert on generated syntax tree or diagnostics.
 
 Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`) call emitters directly with hand-built `PlayscriptCompilationData` — no Roslyn driver needed.
 
 `ScriptRegistryTests` uses `CSharpGeneratorDriver` with the `ScriptRegistry` generator (post-initialization, no .scpt files needed).
+
+`PlayscriptLoaderTests` covers the `PlayscriptLoader` API — encrypt/decrypt round trips, `LoadScripts`/`LoadTexts`/`LoadData` overloads, passphrase-optional paths. Required reading if you change `PlayscriptLoader.cs`.
 
 ## LSP Server
 
@@ -206,36 +213,32 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `EasyPlayscript.Core/Parsing/PlayscriptPipeline.cs` — orchestrates validation
 - `EasyPlayscript.Core/Parsing/InterfaceValidator.cs` — cross-file interface validation
 - `EasyPlayscript.Core/Parsing/ImplementationValidator.cs` — validates `[Implementation]` method presence and duplicates
+- `EasyPlayscript.Core/DataModel/PlayscriptLoader.cs` — encrypt/decrypt + LoadScripts/LoadTexts/LoadData overloads
 - `EasyPlayscript.Generator/PlayscriptGenerator.cs` — main generator entry point, emits all `.g.cs` files
 - `EasyPlayscript.Generator/PlayscriptRegistryEmitter.cs` — generates `PlayscriptRegistry.g.cs` with `DispatchCall()` using `session.Get<T>()`
 - `EasyPlayscript.Generator/PlayscriptRuntimeEmitter.cs` — generates `PlayscriptRuntime.g.cs` (`PlayscriptRuntimeSession` class extending `PlayscriptSessionScope`)
 - `EasyPlayscript.Generator/ScriptRegistry.cs` — generates `Script.g.cs` and `Text.g.cs` (post-initialization)
+- `EasyPlayscript.BuildTask/PlayscriptBuildTask.cs` — MSBuild task entry point; reads `AesKey` and calls `PlayscriptLoader.Encrypt`
 - `EasyPlayscript.Core/PlayscriptSessionScope.cs` — base class with `ConcurrentDictionary` services, parent chain, `Register<T>`, `Get<T>`, `CreateChild`
-- `EasyPlayscript.Core/ScriptNavigator.cs` — pointer-based navigation for Script (RenderNext*, IsLast*, JumpTo, Reset)
+- `EasyPlayscript.Core/ScriptNavigator.cs` — pointer-based navigation for Script (RenderNext*, IsLast*, JumpTo, Reset); returns `RenderResult?` subtypes
 - `EasyPlayscript.Core/ScriptPointer.cs` — immutable value type for script position (pageIndex, paragraphIndex, lineIndex)
 - `EasyPlayscript.Core/Runtime/RenderResult.cs` — abstract `RenderResult` base + sealed `SegmentRenderResult`, `LineRenderResult`, `ParagraphRenderResult`, `PageRenderResult` subtypes
-- `EasyPlayscript.Core/DataModel/Segment.cs` — `Segment` class with `Items` (a segment is one part of a line, delimited by `+`)
-- `EasyPlayscript.Core/DataModel/Line.cs` — `Line` class with `Segments` (a line contains one or more segments)
+- `EasyPlayscript.Core/DataModel/Segment.cs` / `Line.cs` — `Segment` (a part of a line, delimited by `+`) and `Line` (one or more `Segment`s)
 - `EasyPlayscript.Core/ImplementationAttribute.cs` — `[Implementation]` attribute (no scope — all services use parent-child chain)
-- `EasyPlayscript.Core/Parsing/InterfaceDeclaration.cs` — `InterfaceDeclaration` with `IsAsync` property; `InterfaceType` enum
-- `EasyPlayscript.Core/Parsing/ImplementationInfo.cs` — `ImplementationInfo` with `IsAsync` property
 - `EasyPlayscript.Generator/ImplementationScanner.cs` — extracts `[Implementation]` methods, detects async via `INamedTypeSymbol`
 - `EasyPlayscript.Sample/scripts/*.scpt` — example `.scpt` files
+- `docs/RELEASE-READINESS.md` — what's shippable for 1.0, what's still open
 
 ## Gotchas
 
 - The `.uid` files are JetBrains Rider cache — ignore them
-- `EasyPlayscript.Sample` references NuGet packages (not project references). After changing Core or Generator, run `./pack-local.ps1` before building the Sample
-- `EasyPlayscript.BuildTask` must be built before `EasyPlayscript.Sample` (the sample's MSBuild target references the build task DLL)
-- `nuget-local/` is the local NuGet feed; `pack-local.ps1` rebuilds packages there and clears global cache
-- `NuGet.Config` clears default sources and adds only `nuget.org` + `./nuget-local`
+- `EasyPlayscript.Sample` references NuGet packages (not project references). After changing Core, Generator, or BuildTask, run `./pack-local.ps1` before building the Sample
+- `nuget-local/` is the local NuGet feed; `NuGet.Config` clears default sources and adds only `nuget.org` + `./nuget-local`
 - No CI workflows exist — this is a local development repo
 - `Script.g.cs` and `Text.g.cs` are emitted via `RegisterPostInitializationOutput` (runs before other generators). They reference `PlayscriptRuntimeSession` by name, which is generated later. This works because all generated sources compile together
 - `PlayscriptRegistry.DispatchCall` switch cases use `{ }` blocks to scope local variables — C# switch cases share scope without blocks
-- `ScriptNavigator` (Core) owns all pointer state; the generated `Script` class delegates to it. The navigator takes a `Func<Line, string>` render callback so it can be tested without a runtime. The generated Script passes its own `RenderLine` method (which dispatches consumer calls) as that callback
-- `ScriptNavigator` also has async variants (`RenderNextLineAsync`, etc.) taking `Func<Line, Task<string>>`. The generated Script passes `RenderLineAsync` (which uses `await Runtime.DispatchCallAsync(call)`) as that callback
-- `ScriptNavigator` returns `RenderResult?` subtypes from all `RenderNext*` methods (`LineRenderResult?`, `ParagraphRenderResult?`, `PageRenderResult?`). The callback still returns `string` — the navigator wraps it in the appropriate subtype with the pointer and boundary flags captured before advancing
-- The generated `PlayscriptRuntimeSession` inherits from `PlayscriptSessionScope` (Core). The base holds the service dictionary and parent chain; the generated class adds `Registry`, `DispatchCall`, `CreateChild` override, and script/text loading
-- `CreateChild()` returns `PlayscriptRuntimeSession` (covariant return). The child shares the same `Registry` instance as the parent
-- `EasyPlayscript.LSP` targets net10.0 (not netstandard2.0 like Core/Generator) — it's an executable, not a library
+- `ScriptNavigator` (Core) owns all pointer state; the generated `Script` class delegates to it. The navigator takes a `Func<Line, string>` render callback so it can be tested without a runtime. Async variants take `Func<Line, Task<string>>`. Flags are captured **before** the pointer advances (they describe the rendered unit, not the next position)
+- The generated `PlayscriptRuntimeSession` inherits from `PlayscriptSessionScope` (Core). The base holds the service dictionary and parent chain; the generated class adds `Registry`, `DispatchCall`, `CreateChild` override (covariant return), and script/text loading
+- `CreateChild()` returns `PlayscriptRuntimeSession` and shares the same `Registry` instance as the parent
+- `EasyPlayscript.LSP` targets net10.0 (not netstandard2.0 like Core/Generator/BuildTask) — it's an executable, not a library
 - LSP uses incremental sync (`TextDocumentSyncKind.Incremental`). The client sends range-based edits, not full document text. `DocumentStore.ApplyChanges()` applies edits to the stored text, then calls `ParseIncremental()` which reuses cached block tokens when a block's `RawContent` is unchanged

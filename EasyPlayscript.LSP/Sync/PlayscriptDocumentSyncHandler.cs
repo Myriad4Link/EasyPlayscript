@@ -13,6 +13,7 @@ namespace EasyPlayscript.LSP.Sync;
 
 internal class PlayscriptDocumentSyncHandler(
     DocumentStore store,
+    WorkspaceIndex workspace,
     ILanguageServerFacade facade)
     : TextDocumentSyncHandlerBase
 {
@@ -62,15 +63,10 @@ internal class PlayscriptDocumentSyncHandler(
         var uri = notification.TextDocument.Uri;
         _pending.AddOrUpdate(uri, changes, (_, existing) => existing.Concat(changes).ToList());
 
-        if (_timers.TryGetValue(uri, out var existing))
-        {
-            existing.Change(DebounceDelay, Timeout.InfiniteTimeSpan);
-        }
+        if (_timers.TryGetValue(uri, out var timer))
+            timer.Change(DebounceDelay, Timeout.InfiniteTimeSpan);
         else
-        {
-            var timer = new Timer(OnDebounceElapsed, uri, DebounceDelay, Timeout.InfiniteTimeSpan);
-            _timers[uri] = timer;
-        }
+            _timers[uri] = new Timer(OnDebounceElapsed, uri, DebounceDelay, Timeout.InfiniteTimeSpan);
 
         return Unit.Task;
     }
@@ -118,14 +114,35 @@ internal class PlayscriptDocumentSyncHandler(
         var doc = store.Get(uri);
         if (doc is null) return;
 
-        var diagnostics = doc.Errors
-            .Select(e => PositionMapper.ToLspDiagnostic(e, uri))
-            .ToArray();
+        var fileText = store.GetText(uri);
+
+        // Sources of diagnostics:
+        //  1. doc.Errors — ANTLR lexer/parser errors from structure (and content)
+        //     parse. These run even when the structure fails to parse, so the
+        //     structure-error path stays visible.
+        //  2. doc.ValidationDiagnostics — per-file Pass 2 diagnostics
+        //     (SCPT002/003/004). May overlap with doc.Errors for content errors.
+        //  3. workspace.GetAllDiagnostics(uri) — cross-file diagnostics
+        //     (SCPT004/005/006/007/008) routed to this file.
+        // Merge and dedupe by (line, col, code) so a single error isn't published twice.
+        var combined = new Dictionary<string, Diagnostic>();
+        foreach (var e in doc.Errors)
+            AddDiagnostic(combined, PositionMapper.ToLspDiagnostic(e, uri));
+        foreach (var d in doc.ValidationDiagnostics)
+            AddDiagnostic(combined, PositionMapper.ToLspDiagnostic(d, fileText));
+        foreach (var d in workspace.GetAllDiagnostics(uri))
+            AddDiagnostic(combined, PositionMapper.ToLspDiagnostic(d, fileText));
 
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
         {
             Uri = uri,
-            Diagnostics = diagnostics
+            Diagnostics = combined.Values.ToArray()
         });
+    }
+
+    private static void AddDiagnostic(Dictionary<string, Diagnostic> sink, Diagnostic d)
+    {
+        var key = $"{d.Range.Start.Line}:{d.Range.Start.Character}:{d.Code}";
+        sink.TryAdd(key, d);
     }
 }

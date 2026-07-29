@@ -65,7 +65,9 @@ public static class PlayscriptStructureHelper
 
                 var rawContent = context.RAW_CONTENT()?.GetText();
 
-                Results.Add(new StructureResult(blockType, nameNode.GetText(), rawContent, line, col));
+                var startChar = context.Start.StartIndex;
+                var endChar = context.Stop.StopIndex + 1;
+                Results.Add(new StructureResult(blockType, nameNode.GetText(), rawContent, line, col, startChar, endChar));
                 return string.Empty;
             }
 

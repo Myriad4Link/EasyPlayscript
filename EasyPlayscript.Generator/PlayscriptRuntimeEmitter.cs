@@ -42,8 +42,7 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("using EasyPlayscript;");
         indented.WriteLine("using EasyPlayscript.DataModel;");
         indented.WriteLine("using EasyPlayscript.Runtime;");
-        if (hasAsync)
-            indented.WriteLine("using System.Threading.Tasks;");
+        indented.WriteLine("using System.Threading.Tasks;");
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
@@ -114,17 +113,14 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("Registry.DispatchCall(call, this);");
         indented.Indent--;
         indented.WriteLine("}");
+        indented.WriteLine();
 
-        if (hasAsync)
-        {
-            indented.WriteLine();
-            indented.WriteLine("public async Task DispatchCallAsync(ConsumerCallItem call)");
-            indented.WriteLine("{");
-            indented.Indent++;
-            indented.WriteLine("await Registry.DispatchCallAsync(call, this);");
-            indented.Indent--;
-            indented.WriteLine("}");
-        }
+        indented.WriteLine("public async Task DispatchCallAsync(ConsumerCallItem call)");
+        indented.WriteLine("{");
+        indented.Indent++;
+        indented.WriteLine("await Registry.DispatchCallAsync(call, this);");
+        indented.Indent--;
+        indented.WriteLine("}");
 
         indented.WriteLine();
 

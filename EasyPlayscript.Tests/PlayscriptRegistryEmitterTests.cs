@@ -311,7 +311,7 @@ public class PlayscriptRegistryEmitterTests
     }
 
     [Fact]
-    public void Generate_SyncInterface_NoDispatchCallAsync()
+    public void Generate_SyncInterface_GeneratesDispatchCallAsync()
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(new ImplementationInfo
@@ -327,7 +327,7 @@ public class PlayscriptRegistryEmitterTests
 
         var code = PlayscriptRegistryEmitter.Generate(data);
         Assert.Contains("void DispatchCall", code);
-        Assert.DoesNotContain("DispatchCallAsync", code);
+        Assert.Contains("DispatchCallAsync", code);
     }
 
     [Fact]

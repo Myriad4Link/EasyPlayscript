@@ -22,8 +22,7 @@ public static class PlayscriptRegistryEmitter
         indented.WriteLine("using System;");
         indented.WriteLine("using EasyPlayscript;");
         indented.WriteLine("using EasyPlayscript.DataModel;");
-        if (hasAsync)
-            indented.WriteLine("using System.Threading.Tasks;");
+        indented.WriteLine("using System.Threading.Tasks;");
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
@@ -33,11 +32,8 @@ public static class PlayscriptRegistryEmitter
 
         GenerateDispatchCall(data, indented);
 
-        if (hasAsync)
-        {
-            indented.WriteLine();
-            GenerateDispatchCallAsync(data, indented);
-        }
+        indented.WriteLine();
+        GenerateDispatchCallAsync(data, indented);
 
         indented.Indent--;
         indented.WriteLine("}");

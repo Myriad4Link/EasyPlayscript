@@ -12,9 +12,11 @@ var server = await LanguageServer.From(options => options
         services.AddSingleton<PlayscriptDocumentParser>();
         services.AddSingleton<WorkspaceIndex>();
         services.AddSingleton<DocumentStore>();
+        services.AddSingleton<PlayscriptFormatter>();
     })
     .WithHandler<PlayscriptDocumentSyncHandler>()
     .WithHandler<PlayscriptSemanticTokensHandler>()
+    .WithHandler<PlayscriptFormattingHandler>()
 );
 
 await server.WaitForExit;

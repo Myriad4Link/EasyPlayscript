@@ -318,10 +318,10 @@ public class PlayscriptRuntimeEmitterTests
     }
 
     [Fact]
-    public void Generate_WithoutAsync_NoDispatchCallAsync()
+    public void Generate_WithoutAsync_GeneratesDispatchCallAsync()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath, hasAsync: false);
-        Assert.DoesNotContain("DispatchCallAsync", code);
+        Assert.Contains("DispatchCallAsync", code);
     }
 
     [Fact]
@@ -332,9 +332,9 @@ public class PlayscriptRuntimeEmitterTests
     }
 
     [Fact]
-    public void Generate_Default_NoAsync_NoDispatchCallAsync()
+    public void Generate_Default_GeneratesDispatchCallAsync()
     {
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScripts, EmptyTexts, DefaultOutputPath);
-        Assert.DoesNotContain("DispatchCallAsync", code);
+        Assert.Contains("DispatchCallAsync", code);
     }
 }

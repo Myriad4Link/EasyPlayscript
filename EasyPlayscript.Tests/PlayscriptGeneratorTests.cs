@@ -519,6 +519,42 @@ public class PlayscriptGeneratorTests
         Assert.Contains(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    [Fact]
+    public void CrossFileError_SuppressesCodeEmission()
+    {
+        const string fileA = "interface greet(name: string) : void";
+        const string fileB = """
+                             script scene[
+                             @unknown("oops")
+                             @greet("world")
+                             ]
+                             """;
+
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(
+            ("build_property.PlayscriptOutputPath", TestOutputPath));
+
+        var generator = new PlayscriptGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            optionsProvider: optionsProvider);
+
+        var additionalFiles = new AdditionalText[]
+        {
+            new TestAdditionalFile("./fileA.scpt", fileA),
+            new TestAdditionalFile("./fileB.scpt", fileB)
+        };
+
+        driver = driver.AddAdditionalTexts(additionalFiles.ToImmutableArray());
+
+        var compilation = CSharpCompilation.Create(nameof(PlayscriptGeneratorTests));
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var newCompilation, out var diagnostics);
+
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.UndeclaredConsumerCall && d.GetMessage().Contains("unknown"));
+        Assert.DoesNotContain(
+            newCompilation.SyntaxTrees,
+            t => Path.GetFileName(t.FilePath) == "PlayscriptRegistry.g.cs");
+    }
+
     // ─── SCPT006 Duplicate Interface Signature ───────────────────────────
 
     [Fact]

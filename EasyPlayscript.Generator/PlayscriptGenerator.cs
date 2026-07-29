@@ -50,9 +50,7 @@ public class PlayscriptGenerator : IIncrementalGenerator
                 foreach (var diag in result.Diagnostics)
                 {
                     spc.CancellationToken.ThrowIfCancellationRequested();
-                    spc.ReportDiagnostic(diag);
-                    if (diag.Severity == DiagnosticSeverity.Error)
-                        ctx.Data.HasErrors = true;
+                    ctx.ReportDiagnostic(diag);
                 }
 
                 foreach (var diag in ctx.Data.MergeFrom(result.Data))

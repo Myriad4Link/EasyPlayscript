@@ -117,19 +117,17 @@ Common properties (`LangVersion`, `Nullable`, `Authors`, `Company`, `NeutralLang
 
 When called without a session, `Script.Run()`, `Script.RenderNextLine()`, `Text.Render()` all throw `InvalidOperationException` with a long pre-formatted message. This is a public API — the errors should probably be a documented `InvalidOperationException` (or better, a custom `PlayscriptException` type) with a clear property bag.
 
-### 2.8 `PlayscriptGenerator.HasErrors` is set inconsistently
+### 2.8 `PlayscriptGenerator.HasErrors` is set inconsistently — **FIXED**
 
-`PlayscriptGenerator.cs:70-76` calls `PlayscriptPipeline.Validate` but **does not** flag `ctx.Data.HasErrors` for the cross-file `Validate()` result, even though the same pipeline does flag it in the per-file loop. The generated code is still suppressed correctly via the per-file errors, but if a project has *only* cross-file errors (e.g., SCPT005 from a script calling an interface declared in another file), the generator may emit broken code.
-
-This is a subtle correctness bug.
+`PlayscriptGenerator.cs:70-76` now uses `ctx.ReportDiagnostic()` consistently across all diagnostics paths, and there is a dedicated test (`CrossFileError_SuppressesCodeEmission`) proving that code emission is suppressed when only cross-file errors exist.
 
 ### 2.9 `PlayscriptLoader` has no Stream / byte[] / embedded-resource overload
 
 Only `LoadScripts(string path, string key)` exists. There's no `LoadScripts(byte[] data, string key)` or `LoadScripts(Stream s, string key)`. Any consumer who wants to ship the `.bin` as an embedded resource has to round-trip through disk. **Status:** being fixed alongside 1.6.
 
-### 2.10 `PlayscriptCompilationData.HasErrors` semantics differ between modes
+### 2.10 `PlayscriptCompilationData.HasErrors` semantics differ between modes — **FIXED**
 
-The `BuildTask` (`PlayscriptBuildTask.cs`) only logs errors but doesn't set `HasErrors` from the cross-file validation step. The Roslyn source generator does, partially (see 2.8). A user running the build task outside of a Roslyn context can't tell from the data whether to abort — they have to inspect diagnostics.
+The `BuildTask` (`PlayscriptBuildTask.cs`) correctly sets `hasErrors` from the cross-file `Validate()` step (line 50-55). The Roslyn generator also correctly handles cross-file errors via `ctx.ReportDiagnostic()`. Both modes now abort on cross-file errors.
 
 ---
 
@@ -158,8 +156,8 @@ The `BuildTask` (`PlayscriptBuildTask.cs`) only logs errors but doesn't set `Has
 | 1 | NuGet package metadata (license, repo URL, tags, readme, icon) | NuGet.org will reject / demote the package |
 | 2 | Remove "early development" badge from README | Marketing lie on release day |
 | 3 | Add a `CHANGELOG.md` | Required for users |
-| 4 | Make the LSP report SCPT005/007/008/004/009 | The headline feature is the editor experience; right now it's just syntax highlighting |
-| 5 | Fix the `HasErrors` inconsistency in `PlayscriptGenerator` (2.8) | A real correctness bug |
+| 4 | ~~Make the LSP report SCPT005/007/008/004/009~~ | **DONE** (SCPT002-008 via WorkspaceIndex; SCPT009-013 deferred per §2.1) |
+| 5 | ~~Fix the `HasErrors` inconsistency in `PlayscriptGenerator` (2.8)~~ | **DONE** (unified via `ctx.ReportDiagnostic`, test added) |
 | 6 | Add a wire-format version to `PlayscriptData` (in-progress via the cryptography refactor) | Required for any future migration story |
 | 7 | Set up at least GitHub Actions build+test | A "release" with no CI is a footgun |
 | 8 | Replace the stock template `Readme.md` in `EasyPlayscript.Generator` | Embarrassing to ship |

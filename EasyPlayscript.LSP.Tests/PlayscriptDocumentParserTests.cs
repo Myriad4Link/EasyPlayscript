@@ -220,6 +220,13 @@ public class PlayscriptDocumentParserTests
     }
 
     [Fact]
+    public void Parse_ContentLexerError_UnexpectedChar_ReportsError()
+    {
+        var doc = PlayscriptDocumentParser.Parse("script a[test\\\r\nmore]");
+        Assert.NotEmpty(doc.Errors);
+    }
+
+    [Fact]
     public void Parse_ValidFile_ReturnsNoErrors()
     {
         var doc = PlayscriptDocumentParser.Parse("script test[hello world]");
@@ -240,6 +247,20 @@ public class PlayscriptDocumentParserTests
     {
         var offsets = PlayscriptDocumentParser.ComputeBlockOffsets("script a[hello] script b[world]");
         Assert.Equal(2, offsets.Count);
+    }
+
+    [Fact]
+    public void ComputeBlockOffsets_CrLfNewlines_CountsLeadingNewlines()
+    {
+        var offsets = PlayscriptDocumentParser.ComputeBlockOffsets("script a[\r\nhello]");
+        Assert.Single(offsets);
+    }
+
+    [Fact]
+    public void ComputeBlockOffsets_CrNewline_CountsStandaloneCarriageReturn()
+    {
+        var offsets = PlayscriptDocumentParser.ComputeBlockOffsets("script a[\rhello]");
+        Assert.Single(offsets);
     }
 
     // ── Edge cases ────────────────────────────────────────────────────────────

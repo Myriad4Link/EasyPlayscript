@@ -3,19 +3,23 @@
 
 $ErrorActionPreference = "Stop"
 
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$reportDir = Join-Path $scriptDir "coveragereport"
+$resultsRoot = Join-Path $scriptDir "TestResults"
 $testProjects = @(
     "EasyPlayscript.Tests",
     "EasyPlayscript.LSP.Tests"
 )
 
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Clean stale coverage data so old XMLs and HTMLs don't pollute the report.
+if (Test-Path $resultsRoot) { Remove-Item -Recurse -Force $resultsRoot }
+if (Test-Path $reportDir) { Remove-Item -Recurse -Force $reportDir }
 
 foreach ($project in $testProjects) {
     Write-Host "`n=== Running coverage for $project ===" -ForegroundColor Cyan
     dotnet test $project --collect:"XPlat Code Coverage" --results-directory "TestResults/$project"
 }
 
-$reportDir = Join-Path $scriptDir "coveragereport"
 $xmlPaths = @()
 
 foreach ($project in $testProjects) {

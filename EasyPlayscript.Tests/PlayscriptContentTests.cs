@@ -1004,4 +1004,42 @@ public class PlayscriptContentTests
         Assert.IsType<TextItem>(items[0]);
         Assert.Equal("literal @get_name()", ((TextItem)items[0]).Text);
     }
+
+    // ── Direct Unescape coverage ─────────────────────────────────────────────
+
+    [Fact]
+    public void Unescape_AtSign()
+    {
+        Assert.Equal("@", PlayscriptCodeBuilder.Unescape("\\@"));
+    }
+
+    [Fact]
+    public void Unescape_DoubleQuote()
+    {
+        Assert.Equal("\"", PlayscriptCodeBuilder.Unescape("\\\""));
+    }
+
+    [Fact]
+    public void Unescape_Plus()
+    {
+        Assert.Equal("+", PlayscriptCodeBuilder.Unescape("\\+"));
+    }
+
+    [Fact]
+    public void Unescape_Slash()
+    {
+        Assert.Equal("/", PlayscriptCodeBuilder.Unescape("\\/"));
+    }
+
+    // ── Boolean false ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Builder_BoolFalseParam()
+    {
+        var block = BuildScriptBlock("@func(false)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0];
+        Assert.Single(item.Arguments);
+        Assert.IsType<BoolArgument>(item.Arguments[0]);
+        Assert.False(((BoolArgument)item.Arguments[0]).Value);
+    }
 }

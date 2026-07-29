@@ -23,10 +23,7 @@ internal class PlayscriptDocumentParser
         // Pass 2 — run the full Core pipeline on the structure. Produces a per-file
         // PlayscriptCompilationData (scripts, texts, interfaces) and per-file
         // ValidationDiagnostics (SCPT002/003 from content errors, SCPT004 from
-        // duplicate script/text names). The pipeline is rerun every parse — the
-        // content-token cache (below) only short-circuits token extraction, not
-        // Pass 2. Per-file cost is O(content size) and is negligible for typical
-        // script files.
+        // duplicate script/text names).
         var perFileData = new PlayscriptCompilationData();
         var validationDiagnostics = new List<ValidationDiagnostic>();
         validationDiagnostics.AddRange(PlayscriptPipeline.ProcessFile(
@@ -34,24 +31,8 @@ internal class PlayscriptDocumentParser
 
         var allTokens = new List<TokenEntry>(structureTokens);
         var contentErrors = new List<PlayscriptError>();
-
         var blockOffsets = ComputeBlockOffsets(content);
-
-        // Build an index of previous blocks by name so we can look up cached
-        // content in O(1). The index stores both the StructureResult (for
-        // RawContent comparison and line number) and the original list position
-        // (unused but kept for completeness).
-        Dictionary<string, (StructureResult result, int index)>? prevBlockIndex = null;
-        if (previous?.BlockCache is not null)
-        {
-            prevBlockIndex = new Dictionary<string, (StructureResult, int)>();
-            for (var i = 0; i < previous.Structure.Results.Count; i++)
-            {
-                var prev = previous.Structure.Results[i];
-                prevBlockIndex[prev.Name] = (prev, i);
-            }
-        }
-
+        var prevBlockIndex = BuildPrevBlockIndex(previous);
         var blockCache = new Dictionary<string, CachedBlockContent>();
 
         for (var i = 0; i < structureResult.Results.Count; i++)
@@ -62,45 +43,11 @@ internal class PlayscriptDocumentParser
             var trimmed = block.RawContent.Trim('\r', '\n');
             if (string.IsNullOrEmpty(trimmed)) continue;
 
-            var offset = blockOffsets[i];
+            if (TryApplyCachedContent(block, blockOffsets[i], previous, prevBlockIndex,
+                    allTokens, contentErrors, blockCache))
+                continue;
 
-            // Try to reuse cached content tokens from the previous parse.
-            // A cache hit requires: (1) a previous parse exists with a block cache,
-            // (2) the block existed before (same name), and (3) its raw content
-            // is identical — meaning the user edited outside this block.
-            if (previous?.BlockCache is not null &&
-                prevBlockIndex is not null &&
-                prevBlockIndex.TryGetValue(block.Name, out var prevEntry) &&
-                previous.BlockCache.TryGetValue(block.Name, out var cached) &&
-                prevEntry.result.RawContent == block.RawContent)
-            {
-                // The block's content didn't change, but it may have shifted
-                // up or down due to edits in preceding blocks. Adjust all
-                // cached line numbers by the delta.
-                var lineDelta = block.Line - prevEntry.result.Line;
-
-                var adjustedTokens = lineDelta == 0
-                    ? cached.Tokens
-                    : AdjustLineOffsets(cached.Tokens, lineDelta);
-
-                var adjustedErrors = lineDelta == 0
-                    ? cached.Errors
-                    : AdjustErrorLineOffsets(cached.Errors, lineDelta);
-
-                allTokens.AddRange(adjustedTokens);
-                contentErrors.AddRange(adjustedErrors);
-                blockCache[block.Name] = new CachedBlockContent(adjustedTokens, adjustedErrors);
-            }
-            else
-            {
-                // Cache miss: block is new, was deleted and re-added, or its
-                // content changed. Reparse the content from scratch.
-                var (contentTokens, errors) =
-                    CollectContentTokens(trimmed, offset, block.Identifier == BlockType.Script);
-                allTokens.AddRange(contentTokens);
-                contentErrors.AddRange(errors);
-                blockCache[block.Name] = new CachedBlockContent(contentTokens, errors);
-            }
+            ReparseContent(block, trimmed, blockOffsets[i], allTokens, contentErrors, blockCache);
         }
 
         structureErrors.AddRange(contentErrors);
@@ -108,6 +55,63 @@ internal class PlayscriptDocumentParser
 
         return new ParsedDocument(allTokens, structureErrors, structureResult, content, blockCache,
             validationDiagnostics, perFileData);
+    }
+
+    private static Dictionary<string, (StructureResult result, int index)>? BuildPrevBlockIndex(
+        ParsedDocument? previous)
+    {
+        if (previous?.BlockCache is null) return null;
+
+        var index = new Dictionary<string, (StructureResult, int)>();
+        for (var i = 0; i < previous.Structure.Results.Count; i++)
+        {
+            var prev = previous.Structure.Results[i];
+            index[prev.Name] = (prev, i);
+        }
+
+        return index;
+    }
+
+    private static bool TryApplyCachedContent(StructureResult block, BlockOffset offset,
+        ParsedDocument? previous,
+        Dictionary<string, (StructureResult result, int index)>? prevBlockIndex,
+        List<TokenEntry> allTokens, List<PlayscriptError> contentErrors,
+        Dictionary<string, CachedBlockContent> blockCache)
+    {
+        // A cache hit requires: (1) a previous parse exists with a block cache,
+        // (2) the block existed before (same name), and (3) its raw content
+        // is identical — meaning the user edited outside this block.
+        if (previous?.BlockCache is null) return false;
+        if (prevBlockIndex is null) return false;
+        if (!prevBlockIndex.TryGetValue(block.Name, out var prevEntry)) return false;
+        if (!previous.BlockCache.TryGetValue(block.Name, out var cached)) return false;
+        if (prevEntry.result.RawContent != block.RawContent) return false;
+
+        var lineDelta = block.Line - prevEntry.result.Line;
+
+        var adjustedTokens = lineDelta == 0
+            ? cached.Tokens
+            : AdjustLineOffsets(cached.Tokens, lineDelta);
+
+        var adjustedErrors = lineDelta == 0
+            ? cached.Errors
+            : AdjustErrorLineOffsets(cached.Errors, lineDelta);
+
+        allTokens.AddRange(adjustedTokens);
+        contentErrors.AddRange(adjustedErrors);
+        blockCache[block.Name] = new CachedBlockContent(adjustedTokens, adjustedErrors);
+        return true;
+    }
+
+    private static void ReparseContent(StructureResult block, string trimmedContent,
+        BlockOffset offset, List<TokenEntry> allTokens, List<PlayscriptError> contentErrors,
+        Dictionary<string, CachedBlockContent> blockCache)
+    {
+        var (contentTokens, errors) =
+            CollectContentTokens(trimmedContent, offset, block.Identifier == BlockType.Script);
+        allTokens.AddRange(contentTokens);
+        contentErrors.AddRange(errors);
+        blockCache[block.Name] = new CachedBlockContent(contentTokens, errors);
     }
 
     /// <summary>

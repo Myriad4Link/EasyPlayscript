@@ -128,27 +128,31 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
         return items;
     }
 
-    private static string Unescape(string text)
+    private static readonly Dictionary<char, char> EscapeChars = new()
     {
-        if (text.IndexOf('\\') < 0) return text;
+        ['@'] = '@',
+        ['#'] = '#',
+        ['/'] = '/',
+        ['\\'] = '\\',
+        ['"'] = '"',
+        ['n'] = '\n',
+        ['+'] = '+',
+    };
+
+    internal static string Unescape(string text)
+    {
         var sb = new StringBuilder(text.Length);
         for (var i = 0; i < text.Length; i++)
             if (text[i] == '\\' && i + 1 < text.Length)
             {
                 i++;
-                switch (text[i])
+                var c = text[i];
+                if (EscapeChars.TryGetValue(c, out var replacement))
+                    sb.Append(replacement);
+                else
                 {
-                    case '@': sb.Append('@'); break;
-                    case '#': sb.Append('#'); break;
-                    case '/': sb.Append('/'); break;
-                    case '\\': sb.Append('\\'); break;
-                    case '"': sb.Append('"'); break;
-                    case 'n': sb.Append('\n'); break;
-                    case '+': sb.Append('+'); break;
-                    default:
-                        sb.Append('\\');
-                        sb.Append(text[i]);
-                        break;
+                    sb.Append('\\');
+                    sb.Append(c);
                 }
             }
             else

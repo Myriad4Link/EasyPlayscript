@@ -64,6 +64,8 @@ public static class PlayscriptStructureHelper
                 var col = nameSymbol.Column;
 
                 var rawContent = context.RAW_CONTENT()?.GetText();
+                if (rawContent != null && rawContent.StartsWith("<missing"))
+                    rawContent = string.Empty;
 
                 var startChar = context.Start.StartIndex;
                 var endChar = context.Stop.StopIndex + 1;

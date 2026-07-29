@@ -33,11 +33,13 @@ internal class PlayscriptFormatter
         sb.Append(baseIndent);
         sb.Append('[');
 
-        if (block.RawContent != null)
+        var hasContent = false;
+        if (!string.IsNullOrEmpty(block.RawContent))
         {
-            var content = block.RawContent.TrimStart('\r', '\n').TrimEnd('\r', '\n');
+            var content = block.RawContent.Trim();
             if (content.Length > 0)
             {
+                hasContent = true;
                 sb.Append('\n');
                 var normalized = content.Replace("\r\n", "\n");
                 var lines = normalized.Split('\n');
@@ -45,13 +47,14 @@ internal class PlayscriptFormatter
                 {
                     sb.Append(baseIndent);
                     sb.Append('\t');
-                    sb.Append(line.TrimEnd());
+                    sb.Append(line.Trim());
                     sb.Append('\n');
                 }
             }
         }
 
-        sb.Append('\n');
+        if (!hasContent)
+            sb.Append('\n');
         sb.Append(baseIndent);
         sb.Append(']');
 

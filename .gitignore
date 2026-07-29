@@ -82,6 +82,7 @@ fabric.properties
 **/bin/
 **/obj/
 **/publish/
+**/published/
 
 # Coverage reports
 coveragereport/

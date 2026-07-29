@@ -36,6 +36,15 @@ Write-Host "==> Building and packing EasyPlayscript.BuildTask" -ForegroundColor 
 dotnet pack (Join-Path $repoRoot "EasyPlayscript.BuildTask") -c $Configuration -o $outputDir
 if ($LASTEXITCODE -ne 0) { throw "Failed to pack EasyPlayscript.BuildTask" }
 
+Write-Host "==> Publishing EasyPlayscript.LSP" -ForegroundColor Cyan
+$publishDir = Join-Path $repoRoot "published\EasyPlayscript.LSP"
+if (Test-Path $publishDir) {
+    Remove-Item -Recurse -Force $publishDir
+}
+dotnet publish (Join-Path $repoRoot "EasyPlayscript.LSP") -c $Configuration -o $publishDir
+if ($LASTEXITCODE -ne 0) { throw "Failed to publish EasyPlayscript.LSP" }
+Write-Host "  Published to ${publishDir}" -ForegroundColor Gray
+
 if (-not $SkipCacheClear) {
     Write-Host "==> Clearing NuGet global cache for EasyPlayscript packages" -ForegroundColor Cyan
     $packagesDir = Join-Path $env:USERPROFILE ".nuget\packages"

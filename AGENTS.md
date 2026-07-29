@@ -27,7 +27,7 @@ dotnet test --filter "PlayscriptGeneratorTests"  # Run specific test class
 dotnet test EasyPlayscript.Tests          # Run only Core/Generator tests
 dotnet test EasyPlayscript.LSP.Tests      # Run only LSP tests
 dotnet run --project EasyPlayscript.Sample       # Run sample app
-./pack-local.ps1                          # Rebuild & repack NuGet packages into nuget-local/
+./pack-local.ps1                          # Rebuild, repack NuGet packages into nuget-local/, + publish LSP to published/
 ./coverage.ps1                            # Run tests + generate HTML coverage report (requires `reportgenerator` on PATH)
 ```
 
@@ -35,7 +35,7 @@ dotnet run --project EasyPlayscript.Sample       # Run sample app
 
 **SDK**: .NET 10.0.301 required (`global.json` with `rollForward: latestMinor`).
 
-**NuGet lock issue**: The LSP server may lock DLLs in the global NuGet cache. If `dotnet restore` fails with "Access to the path ... is denied", use `dotnet build --no-restore`.
+**NuGet lock issue**: Running the LSP via `dotnet run --project` loads `Antlr4.Runtime.Standard.dll` from the build output, which can lock the same DLL in the NuGet cache for other projects. The fix: `pack-local.ps1` now publishes the LSP to `published/EasyPlayscript.LSP/` — point your editor/LSP config at `published/EasyPlayscript.LSP/EasyPlayscript.LSP.exe` instead of `dotnet run`. If restore still fails, use `dotnet build --no-restore`.
 
 **MSBuild diagnostic verbosity**: To see how the build task is invoked (and which `.scpt` files it's processing), build with `dotnet build -v:n` or higher. Useful when `playscripts.bin` is missing or stale.
 

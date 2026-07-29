@@ -15,7 +15,8 @@ public class WorkspaceIndexTests
     {
         var doc = PlayscriptDocumentParser.ParseIncremental(text, null, uri.ToString());
         Assert.NotNull(doc.CompilationData);
-        index.Register(uri, doc.ValidationDiagnostics, doc.CompilationData!);
+        index.Register(uri, doc.ValidationDiagnostics, doc.CompilationData!,
+            text.GetHashCode(StringComparison.Ordinal));
     }
 
     // ── Single-file SCPT005 (undeclared consumer call) ─────────────────────
@@ -302,5 +303,87 @@ public class WorkspaceIndexTests
         var diags = index.GetAllDiagnostics(UriA);
         Assert.DoesNotContain(diags, d => d.Code == DiagnosticCodes.AsyncSyncMismatch);
         Assert.DoesNotContain(diags, d => d.Code == DiagnosticCodes.SyncAsyncMismatch);
+    }
+
+    // ── Dirty-set short-circuit ────────────────────────────────────────────
+
+    [Fact]
+    public void Register_SameTextHash_SkipsRecompute()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, "script a[hi]");
+        Register(index, UriB, "text b[hello]");
+        var countBefore = index.RecomputeCount;
+
+        Register(index, UriA, "script a[hi]");
+
+        Assert.Equal(countBefore, index.RecomputeCount);
+    }
+
+    [Fact]
+    public void Register_DifferentTextHash_TriggersRecompute()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, "script a[hi]");
+        var countBefore = index.RecomputeCount;
+
+        Register(index, UriA, "script a[hello]");
+
+        Assert.Equal(countBefore + 1, index.RecomputeCount);
+    }
+
+    [Fact]
+    public void Register_NewFile_AlwaysRecomputes()
+    {
+        var index = new WorkspaceIndex();
+        // First registration — no prior entry, so always recompute.
+        var countBefore = index.RecomputeCount;
+        Register(index, UriA, "script a[hi]");
+        Assert.Equal(countBefore + 1, index.RecomputeCount);
+
+        // Second file — new URI, always recompute.
+        countBefore = index.RecomputeCount;
+        Register(index, UriB, "script b[hi]");
+        Assert.Equal(countBefore + 1, index.RecomputeCount);
+    }
+
+    [Fact]
+    public void Remove_AlwaysRecomputes()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, "script a[hi]");
+        var removed = index.RecomputeCount;
+
+        index.Remove(UriA);
+
+        Assert.Equal(removed + 1, index.RecomputeCount);
+    }
+
+    [Fact]
+    public void Register_SameTextHash_UpdatesStoredData()
+    {
+        // When the short-circuit fires, the FileCompilation entry is still
+        // updated so a subsequent Recompute triggered by another file picks
+        // up the latest data.
+        var index = new WorkspaceIndex();
+        Register(index, UriA, """
+            interface greet(name: string) : void
+            """);
+        Register(index, UriB, """
+            script s[
+            @greet("hi")
+            ]
+            """);
+        var countBefore = index.RecomputeCount;
+
+        // Re-register A with same text — should short-circuit.
+        Register(index, UriA, """
+            interface greet(name: string) : void
+            """);
+        Assert.Equal(countBefore, index.RecomputeCount);
+
+        // A's cross-file diagnostics are still valid (B's call resolved).
+        Assert.DoesNotContain(index.GetAllDiagnostics(UriB),
+            d => d.Code == DiagnosticCodes.UndeclaredConsumerCall);
     }
 }

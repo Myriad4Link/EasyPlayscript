@@ -16,7 +16,8 @@ internal class DocumentStore(WorkspaceIndex workspace)
         var doc = PlayscriptDocumentParser.ParseIncremental(text, Get(uri), uri.ToString());
         _docs[uri] = doc;
         if (doc.CompilationData is not null)
-            workspace.Register(uri, doc.ValidationDiagnostics, doc.CompilationData);
+            workspace.Register(uri, doc.ValidationDiagnostics, doc.CompilationData,
+                text.GetHashCode(StringComparison.Ordinal));
     }
 
     public ParsedDocument ApplyChanges(DocumentUri uri, IReadOnlyList<TextDocumentContentChangeEvent> changes)
@@ -29,7 +30,8 @@ internal class DocumentStore(WorkspaceIndex workspace)
         var doc = PlayscriptDocumentParser.ParseIncremental(newText, previous, uri.ToString());
         _docs[uri] = doc;
         if (doc.CompilationData is not null)
-            workspace.Register(uri, doc.ValidationDiagnostics, doc.CompilationData);
+            workspace.Register(uri, doc.ValidationDiagnostics, doc.CompilationData,
+                newText.GetHashCode(StringComparison.Ordinal));
         return doc;
     }
 

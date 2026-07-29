@@ -39,7 +39,7 @@ dotnet run --project EasyPlayscript.Sample       # Run sample app
 
 **MSBuild diagnostic verbosity**: To see how the build task is invoked (and which `.scpt` files it's processing), build with `dotnet build -v:n` or higher. Useful when `playscripts.bin` is missing or stale.
 
-**Test counts**: 515 (Core/Generator) + 146 (LSP) = 661. Last known green baseline is recorded in commit messages; if a count drops, find the missing case by running `dotnet test --list-tests`.
+**Test counts**: 515 (Core/Generator) + 192 (LSP) = 707. Last known green baseline is recorded in commit messages; if a count drops, find the missing case by running `dotnet test --list-tests`.
 
 ## Architecture: Two-Pass Parsing
 
@@ -181,7 +181,7 @@ The generated `PlayscriptRegistry.DispatchCall(call, session)` calls `session.Ge
 | SCPT012 | Async interface with sync implementation |
 | SCPT013 | Sync interface with async implementation |
 
-All codes defined in `EasyPlayscript.Generator/PlayscriptDiagnostics.cs`.
+Code constants in `EasyPlayscript.Core/Parsing/DiagnosticCodes.cs`; Roslyn `DiagnosticDescriptor` mapping in `EasyPlayscript.Generator/PlayscriptDiagnostics.cs`. Both must be kept in sync when adding codes.
 
 ## Generator Testing Pattern
 
@@ -201,12 +201,13 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 
 `EasyPlayscript.LSP` is an executable targeting net10.0 using `OmniSharp.Extensions.LanguageServer`. It references Core (not Generator). Key components:
 
-- `PlayscriptDocumentParser` — parses `.scpt` files into `ParsedDocument`; `ParseIncremental()` reuses cached block tokens when content is unchanged
-- `PlayscriptDocumentSyncHandler` — open/change/close sync with **incremental** changes (`TextDocumentSyncKind.Incremental`), debounced at 300ms
+- `PlayscriptDocumentParser` — parses `.scpt` files into `ParsedDocument`; `ParseIncremental()` reuses cached block tokens when content is unchanged; runs Pass 2 via `PlayscriptPipeline.ProcessFile`
+- `PlayscriptDocumentSyncHandler` — open/change/close sync with **incremental** changes (`TextDocumentSyncKind.Incremental`), debounced at 300ms; `PublishDiagnostics` merges three sources: `doc.Errors`, `doc.ValidationDiagnostics`, and cross-file diagnostics from `WorkspaceIndex`
 - `PlayscriptSemanticTokensHandler` — semantic token highlighting
-- `PositionMapper` — ANTLR ↔ LSP position conversion (ANTLR 1-based lines → LSP 0-based)
-- `DocumentStore` — tracks open documents, stores current text, applies incremental edits via `TextEditApplier`
+- `PositionMapper` — ANTLR ↔ LSP position conversion (ANTLR 1-based lines → LSP 0-based); also converts `ValidationDiagnostic` → LSP `Diagnostic` with column clamping, CRLF handling, severity mapping (SCPT011→Warning else Error)
+- `DocumentStore` — tracks open documents, stores current text, applies incremental edits via `TextEditApplier`, wires through to `WorkspaceIndex` on open/change/close
 - `TextEditApplier` — applies `TextDocumentContentChangeEvent` range-based edits to a string
+- `WorkspaceIndex` — insertion-ordered aggregation of per-file `PlayscriptCompilationData`; merges and re-runs `PlayscriptPipeline.Validate` on every change, routes cross-file diagnostics (SCPT004–008) by file path. Single-root only; multi-root deferred.
 
 ## Key Files
 
@@ -219,6 +220,7 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `EasyPlayscript.Generator/PlayscriptRuntimeEmitter.cs` — generates `PlayscriptRuntime.g.cs` (`PlayscriptRuntimeSession` class extending `PlayscriptSessionScope`)
 - `EasyPlayscript.Generator/ScriptRegistry.cs` — generates `Script.g.cs` and `Text.g.cs` (post-initialization)
 - `EasyPlayscript.BuildTask/PlayscriptBuildTask.cs` — MSBuild task entry point; reads `AesKey` and calls `PlayscriptLoader.Encrypt`
+- `EasyPlayscript.LSP/Services/WorkspaceIndex.cs` — cross-file validation aggregation; routes SCPT004–008 diagnostics by file path, single-root only
 - `EasyPlayscript.Core/PlayscriptSessionScope.cs` — base class with `ConcurrentDictionary` services, parent chain, `Register<T>`, `Get<T>`, `CreateChild`
 - `EasyPlayscript.Core/ScriptNavigator.cs` — pointer-based navigation for Script (RenderNext*, IsLast*, JumpTo, Reset); returns `RenderResult?` subtypes
 - `EasyPlayscript.Core/ScriptPointer.cs` — immutable value type for script position (pageIndex, paragraphIndex, lineIndex)
@@ -242,3 +244,6 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 - `CreateChild()` returns `PlayscriptRuntimeSession` and shares the same `Registry` instance as the parent
 - `EasyPlayscript.LSP` targets net10.0 (not netstandard2.0 like Core/Generator/BuildTask) — it's an executable, not a library
 - LSP uses incremental sync (`TextDocumentSyncKind.Incremental`). The client sends range-based edits, not full document text. `DocumentStore.ApplyChanges()` applies edits to the stored text, then calls `ParseIncremental()` which reuses cached block tokens when a block's `RawContent` is unchanged
+- SCPT009–SCPT013 (implementation-side diagnostics) are **not** surfaced by the LSP — the LSP has no access to Roslyn symbols or `[Implementation]` methods. The Roslyn source generator and MSBuild task still report them at compile time
+- The LSP diagnostic pipeline merges three sources (`doc.Errors`, `doc.ValidationDiagnostics`, `workspace.GetAllDiagnostics`) and dedupes by `line:col:code` before publishing
+- SCPT004 attribution is "first-merged file" (deterministic via insertion-ordered dictionary). SCPT006 attribution is "second-seen file"

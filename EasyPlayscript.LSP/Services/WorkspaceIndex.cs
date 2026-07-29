@@ -59,13 +59,18 @@ internal class WorkspaceIndex
     ///     Per-file parsed data: scripts, texts, interfaces, and their locations.
     /// </param>
     public void Register(DocumentUri uri, IReadOnlyList<ValidationDiagnostic> perFileDiagnostics,
-        PlayscriptCompilationData compilationData)
+        PlayscriptCompilationData compilationData, int textHash)
     {
         lock (_lock)
         {
             // Re-registering preserves the existing insertion position so SCPT004
             // attribution remains stable across edits.
-            _files[uri] = new FileCompilation(uri.ToString(), perFileDiagnostics, compilationData);
+            _files.TryGetValue(uri, out var existing);
+            _files[uri] = new FileCompilation(uri.ToString(), perFileDiagnostics, compilationData, textHash);
+
+            if (existing is not null && existing.TextHash == textHash)
+                return;
+
             Recompute();
         }
     }
@@ -119,8 +124,19 @@ internal class WorkspaceIndex
         }
     }
 
+    /// <summary>
+    ///     Number of times <see cref="Recompute"/> has been called. Used by tests
+    ///     to verify short-circuit behavior.
+    /// </summary>
+    public int RecomputeCount
+    {
+        get;
+        private set;
+    }
+
     private void Recompute()
     {
+        RecomputeCount++;
         // Caller holds _lock. Re-aggregation is O(aggregate size); for typical
         // workspaces (tens of files) this is sub-millisecond.
 
@@ -172,5 +188,6 @@ internal class WorkspaceIndex
     private sealed record FileCompilation(
         string FilePath,
         IReadOnlyList<ValidationDiagnostic> PerFileDiagnostics,
-        PlayscriptCompilationData CompilationData);
+        PlayscriptCompilationData CompilationData,
+        int TextHash);
 }

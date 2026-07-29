@@ -160,7 +160,7 @@ The `BuildTask` (`PlayscriptBuildTask.cs`) correctly sets `hasErrors` from the c
 | 5 | ~~Fix the `HasErrors` inconsistency in `PlayscriptGenerator` (2.8)~~ | **DONE** (unified via `ctx.ReportDiagnostic`, test added) |
 | 6 | Add a wire-format version to `PlayscriptData` (in-progress via the cryptography refactor) | Required for any future migration story |
 | 7 | Set up at least GitHub Actions build+test | A "release" with no CI is a footgun |
-| 8 | Replace the stock template `Readme.md` in `EasyPlayscript.Generator` | Embarrassing to ship |
+| 8 | ~~Replace the stock template `Readme.md` in `EasyPlayscript.Generator`~~ | **DONE** |
 | 9 | Decide: is the AES story a security claim or a speedbump? (in-progress) | Either implement real KDF+versioning or rename the feature to "obfuscation" |
 
 After that, Tier 2 features (Hover/Completion/Definition in LSP, `Directory.Build.props`, source link, full pipeline tests, docs) are the difference between "released" and "ready for adoption."

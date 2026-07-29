@@ -1,45 +1,53 @@
-# Roslyn Source Generators Sample
+# EasyPlayscript.Generator
 
-A set of three projects that illustrates Roslyn source generators. Enjoy this template to learn from and modify source
-generators for your own needs.
+Roslyn incremental source generator for [EasyPlayscript](https://github.com/Myriad4Link/EasyPlayscript), a type-safe scripting language for narrative-driven game development.
 
-## Content
+At compile time this generator reads `.scpt` files from the host project, parses them with the ANTLR-based two-pass parser, validates interfaces/implementations/cross-file references, and emits four generated files:
 
-### EasyPlayscript
+| File | Purpose |
+|------|---------|
+| `PlayscriptRegistry.g.cs` | Service dispatch (`DispatchCall`, `DispatchCallAsync`) |
+| `PlayscriptRuntime.g.cs` | `PlayscriptRuntimeSession` + registry + enums |
+| `Script.g.cs` | Script class with `Run()`, `RunAsync()` and pointer-based navigation |
+| `Text.g.cs` | Text class with `Render()`, `RenderAsync()` |
 
-A .NET Standard project with implementations of sample source generators.
-**You must build this project to see the result (generated code) in the IDE.**
+## Usage
 
-- [SampleSourceGenerator.cs](SampleSourceGenerator.cs): A source generator that creates C# classes based on a text
-  file (in this case, Domain Driven Design ubiquitous language registry).
-- [SampleIncrementalSourceGenerator.cs](SampleIncrementalSourceGenerator.cs): A source generator that creates a custom
-  report based on class properties. The target class should be annotated with the `Generators.ReportAttribute`
-  attribute.
+Add a reference to this package in your `.csproj` (alongside `EasyPlayscript.Core`):
 
-### EasyPlayscript.Sample
+```xml
+<PackageReference Include="EasyPlayscript.Core" Version="1.0.0" />
+<PackageReference Include="EasyPlayscript.Generator" Version="1.0.0"
+                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+```
 
-A project that references source generators. Note the parameters of `ProjectReference`
-in [EasyPlayscript.Sample.csproj](../EasyPlayscript.Sample/EasyPlayscript.Sample.csproj), they make sure that the
-project is referenced as a set of source generators.
+Place `.scpt` files anywhere in your project (e.g., a `scripts/` directory). They are automatically picked up as additional files.
 
-### EasyPlayscript.Tests
+The generator requires MSBuild property `PlayscriptOutputPath` (set in your `.csproj`):
 
-Unit tests for source generators. The easiest way to develop language-related features is to start with unit tests.
+```xml
+<PropertyGroup>
+  <PlayscriptOutputPath>$(MSBuildThisFileDirectory)Generated\Playscripts\</PlayscriptOutputPath>
+</PropertyGroup>
+```
 
-## How To?
+## Diagnostics
 
-### How to debug?
+| Code | Description |
+|------|-------------|
+| SCPT002 | Lexer error |
+| SCPT003 | Parser error |
+| SCPT004 | Duplicate script/text name |
+| SCPT005 | Undeclared consumer call |
+| SCPT006 | Duplicate interface signature |
+| SCPT007 | Argument type mismatch |
+| SCPT008 | Argument count mismatch |
+| SCPT009 | Missing `[Implementation]` method |
+| SCPT010 | Duplicate `[Implementation]` |
+| SCPT011 | Unused `[Implementation]` (warning) |
+| SCPT012 | Async interface with sync implementation |
+| SCPT013 | Sync interface with async implementation |
 
-- Use the [launchSettings.json](Properties/launchSettings.json) profile.
-- Debug tests.
+## License
 
-### How can I determine which syntax nodes I should expect?
-
-Consider using the Roslyn Visualizer tool window, which allows you to observe the syntax tree.
-
-### How to learn more about wiring source generators?
-
-Watch the walkthrough
-video: [Let’s Build an Incremental Source Generator With Roslyn, by Stefan Pölz](https://youtu.be/azJm_Y2nbAI)
-The complete set of information is available
-in [Source Generators Cookbook](https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md).
+MIT — see the [root LICENSE](../LICENSE).

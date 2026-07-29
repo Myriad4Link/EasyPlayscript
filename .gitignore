@@ -83,6 +83,11 @@ fabric.properties
 **/obj/
 **/publish/
 
+# VS Code extension
+vscode/node_modules/
+vscode/server/
+*.vsix
+
 # Coverage reports
 coveragereport/
 

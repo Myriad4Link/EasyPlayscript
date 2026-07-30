@@ -427,6 +427,111 @@ public class PlayscriptGeneratorTests
     }
 
     [Fact]
+    public void DefaultVariation_ReportsSCPT004_WhenUnversionedExists()
+    {
+        const string content = """
+                               script foo[
+                               Hello
+                               ]
+                               script foo default variation casual[
+                               Hi
+                               ]
+                               """;
+        var diagnostics = GenerateDiagnostics(("dup", content));
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
+    }
+
+    [Fact]
+    public void DefaultVariation_ReportsSCPT004_WhenDefaultComesFirst()
+    {
+        const string content = """
+                               script foo default variation casual[
+                               Hi
+                               ]
+                               script foo[
+                               Hello
+                               ]
+                               """;
+        var diagnostics = GenerateDiagnostics(("dup", content));
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
+    }
+
+    [Fact]
+    public void DefaultVariation_TwoDefaults_ReportsSCPT004()
+    {
+        const string content = """
+                               script foo default variation casual[
+                               Hi
+                               ]
+                               script foo default variation formal[
+                               Hello
+                               ]
+                               """;
+        var diagnostics = GenerateDiagnostics(("dup", content));
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
+    }
+
+    [Fact]
+    public void DefaultVariation_WithSameVariationName_ReportsSCPT004()
+    {
+        const string content = """
+                               script foo variation casual[
+                               Hi
+                               ]
+                               script foo default variation casual[
+                               Hello
+                               ]
+                               """;
+        var diagnostics = GenerateDiagnostics(("dup", content));
+        Assert.Contains(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
+    }
+
+    [Fact]
+    public void DefaultVariation_NoConflict_WhenDifferentNames()
+    {
+        const string content = """
+                               script foo default variation casual[
+                               Hi
+                               ]
+                               script foo variation formal[
+                               Hello
+                               ]
+                               """;
+        var diagnostics = GenerateDiagnostics(("ok", content));
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagnosticCodes.DuplicateScriptName);
+    }
+
+    // ─── Default Variation in Runtime ────────────────────────────────────────
+
+    [Fact]
+    public void DefaultVariation_GeneratesAsUnversioned()
+    {
+        const string content = """
+                               script foo default variation casual[
+                               Hello World
+                               ]
+                               """;
+        var code = GenerateRuntimeCode(("test", content));
+        Assert.Contains("GetScript(ScriptKey", code);
+        // The script appears with name "foo" in ScriptKey enum via unversioned path
+        Assert.Contains("ScriptKey.foo", code);
+        Assert.Contains("\"foo\"", code);
+    }
+
+    [Fact]
+    public void DefaultVariation_TextGeneratesAsUnversioned()
+    {
+        const string content = """
+                               text intro default variation quick[
+                               Welcome
+                               ]
+                               """;
+        var code = GenerateRuntimeCode(("test", content));
+        Assert.Contains("GetText(TextKey", code);
+        Assert.Contains("TextKey.intro", code);
+    }
+
+    [Fact]
     public void InvalidContent_ReportsDiagnostic()
     {
         const string content = """

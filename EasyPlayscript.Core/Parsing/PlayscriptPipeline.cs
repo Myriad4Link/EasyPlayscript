@@ -16,8 +16,16 @@ public static class PlayscriptPipeline
     {
         var diagnostics = new List<ValidationDiagnostic>();
 
-        foreach (var (identifier, name, variation, rawContent, line, col) in structureResult.Results)
+        foreach (var result in structureResult.Results)
         {
+            var identifier = result.Identifier;
+            var name = result.Name;
+            var variation = result.Variation;
+            var isDefault = result.IsDefault;
+            var rawContent = result.RawContent;
+            var line = result.Line;
+            var col = result.Col;
+
             cancellationToken.ThrowIfCancellationRequested();
             if (rawContent == null) continue;
 
@@ -31,7 +39,7 @@ public static class PlayscriptPipeline
 
             if (contentFailed || builder is null) continue;
 
-            RegisterBlock(data, identifier, name, variation, builder, filePath, line, col, diagnostics);
+            RegisterBlock(data, identifier, name, variation, isDefault, builder, filePath, line, col, diagnostics);
         }
 
         foreach (var iface in structureResult.Interfaces)
@@ -81,14 +89,13 @@ public static class PlayscriptPipeline
         BlockType identifier,
         string name,
         string? variation,
+        bool isDefault,
         PlayscriptCodeBuilder builder,
         string filePath,
         int line,
         int col,
         List<ValidationDiagnostic> diagnostics)
     {
-        var locKey = (name, variation ?? "");
-
         if (identifier == BlockType.Script)
         {
             if (!data.Scripts.TryGetValue(name, out var variants))
@@ -101,6 +108,7 @@ public static class PlayscriptPipeline
             {
                 if (variants.Unversioned != null)
                 {
+                    var locKey = (name, "");
                     var loc = data.ScriptLocations[locKey];
                     diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
                         DiagnosticCodes.DuplicateScriptNameFormat,
@@ -108,11 +116,28 @@ public static class PlayscriptPipeline
                     return;
                 }
 
-                data.ScriptLocations[locKey] = (filePath, line, col);
+                data.ScriptLocations[(name, "")] = (filePath, line, col);
                 variants.Unversioned = builder.ContentResult;
             }
             else
             {
+                if (isDefault)
+                {
+                    if (variants.Unversioned != null)
+                    {
+                        var defKey = (name, "");
+                        var loc = data.ScriptLocations[defKey];
+                        diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                            DiagnosticCodes.DuplicateScriptNameFormat,
+                            loc.filePath, loc.line, loc.col, "script", $"{name} (default variation {variation})"));
+                        return;
+                    }
+
+                    variants.Unversioned = builder.ContentResult;
+                    data.ScriptLocations[(name, "")] = (filePath, line, col);
+                }
+
+                var locKey = (name, variation);
                 if (variants.Numbered.ContainsKey(variation))
                 {
                     var loc = data.ScriptLocations[locKey];
@@ -138,6 +163,7 @@ public static class PlayscriptPipeline
             {
                 if (variants.Unversioned != null)
                 {
+                    var locKey = (name, "");
                     var loc = data.TextLocations[locKey];
                     diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
                         DiagnosticCodes.DuplicateScriptNameFormat,
@@ -145,11 +171,28 @@ public static class PlayscriptPipeline
                     return;
                 }
 
-                data.TextLocations[locKey] = (filePath, line, col);
+                data.TextLocations[(name, "")] = (filePath, line, col);
                 variants.Unversioned = builder.TextResult;
             }
             else
             {
+                if (isDefault)
+                {
+                    if (variants.Unversioned != null)
+                    {
+                        var defKey = (name, "");
+                        var loc = data.TextLocations[defKey];
+                        diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                            DiagnosticCodes.DuplicateScriptNameFormat,
+                            loc.filePath, loc.line, loc.col, "text", $"{name} (default variation {variation})"));
+                        return;
+                    }
+
+                    variants.Unversioned = builder.TextResult;
+                    data.TextLocations[(name, "")] = (filePath, line, col);
+                }
+
+                var locKey = (name, variation);
                 if (variants.Numbered.ContainsKey(variation))
                 {
                     var loc = data.TextLocations[locKey];

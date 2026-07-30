@@ -64,6 +64,7 @@ public static class PlayscriptStructureHelper
                 var col = nameSymbol.Column;
 
                 var variationCtx = context.VARIATION();
+                var isDefault = context.DEFAULT() != null;
                 string? variation = null;
                 if (variationCtx != null)
                 {
@@ -77,7 +78,7 @@ public static class PlayscriptStructureHelper
 
                 var startChar = context.Start.StartIndex;
                 var endChar = context.Stop.StopIndex + 1;
-                Results.Add(new StructureResult(blockType, nameNode.GetText(), variation, rawContent, line, col, startChar, endChar));
+                Results.Add(new StructureResult(blockType, nameNode.GetText(), variation, isDefault, rawContent, line, col, startChar, endChar));
                 return string.Empty;
             }
 

@@ -419,4 +419,48 @@ public class PlayscriptStructureTests
         Assert.False(result.Interfaces[0].IsAsync);
         Assert.True(result.Interfaces[1].IsAsync);
     }
+
+    // ── Variation Parsing ────────────────────────────────────────────────────
+
+    [Fact]
+    public void ParseStructure_VariationBlock_ExtractsNameAndIsDefaultFalse()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("script foo variation casual[\nHello\n]");
+        Assert.Single(result.Results);
+        Assert.Equal("foo", result.Results[0].Name);
+        Assert.Equal("casual", result.Results[0].Variation);
+        Assert.False(result.Results[0].IsDefault);
+    }
+
+    [Fact]
+    public void ParseStructure_DefaultVariationBlock_ExtractsNameAndIsDefaultTrue()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("script foo default variation casual[\nHello\n]");
+        Assert.Single(result.Results);
+        Assert.Equal("foo", result.Results[0].Name);
+        Assert.Equal("casual", result.Results[0].Variation);
+        Assert.True(result.Results[0].IsDefault);
+    }
+
+    [Fact]
+    public void ParseStructure_DefaultVariationTextBlock()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("text intro default variation quick[\nWelcome\n]");
+        Assert.Single(result.Results);
+        Assert.Equal("intro", result.Results[0].Name);
+        Assert.Equal("quick", result.Results[0].Variation);
+        Assert.True(result.Results[0].IsDefault);
+        Assert.Equal(BlockType.Text, result.Results[0].Identifier);
+    }
+
+    [Fact]
+    public void ParseStructure_DefaultKeywordWithoutVariation_StillParsesAsUnversioned()
+    {
+        // DEFAULT without VARIATION is not matched by the optional group, so it's treated as unversioned
+        // (the optional group is (DEFAULT? VARIATION IDENTIFIER)? so DEFAULT alone doesn't trigger the group)
+        var result = PlayscriptStructureHelper.ParseStructure("script foo[\nHello\n]");
+        Assert.Single(result.Results);
+        Assert.Null(result.Results[0].Variation);
+        Assert.False(result.Results[0].IsDefault);
+    }
 }

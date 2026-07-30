@@ -209,7 +209,7 @@ public class ScriptRegistryTests
         var source = GetScriptSource();
 
         Assert.Contains("private ScriptNavigator? _navigator;", source);
-        Assert.Contains("private ScriptNavigator Navigator => _navigator ??= new ScriptNavigator(Block);", source);
+        Assert.Contains("private ScriptNavigator Navigator => _navigator ??= new ScriptNavigator(Block, Runtime!.NewLine);", source);
     }
 
     [Fact]

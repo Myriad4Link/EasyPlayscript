@@ -44,7 +44,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("internal PlayscriptRuntimeSession? Runtime { get; set; }");
         indented.WriteLine();
         indented.WriteLine("private ScriptNavigator? _navigator;");
-        indented.WriteLine("private ScriptNavigator Navigator => _navigator ??= new ScriptNavigator(Block);");
+        indented.WriteLine("private ScriptNavigator Navigator => _navigator ??= new ScriptNavigator(Block, Runtime!.NewLine);");
         indented.WriteLine();
 
         indented.WriteLine("public ScriptPointer Pointer => Navigator.Pointer;");
@@ -297,7 +297,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("foreach (var line in Block.Lines)");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("if (sb.Length > 0) sb.AppendLine();");
+        indented.WriteLine("if (sb.Length > 0) sb.Append(session.NewLine);");
         indented.WriteLine("foreach (var segment in line.Segments)");
         indented.WriteLine("{");
         indented.Indent++;
@@ -353,7 +353,7 @@ public class ScriptRegistry : IIncrementalGenerator
         indented.WriteLine("foreach (var line in Block.Lines)");
         indented.WriteLine("{");
         indented.Indent++;
-        indented.WriteLine("if (sb.Length > 0) sb.AppendLine();");
+        indented.WriteLine("if (sb.Length > 0) sb.Append(session.NewLine);");
         indented.WriteLine("foreach (var segment in line.Segments)");
         indented.WriteLine("{");
         indented.Indent++;

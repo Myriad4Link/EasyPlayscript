@@ -5,9 +5,10 @@ using EasyPlayscript.DataModel;
 
 namespace EasyPlayscript.Runtime;
 
-public class ScriptNavigator(ScriptBlock block)
+public class ScriptNavigator(ScriptBlock block, string newLine = "\n")
 {
     private ScriptBlock Block { get; } = block ?? throw new ArgumentNullException(nameof(block));
+    private readonly string _newLine = newLine ?? throw new ArgumentNullException(nameof(newLine));
 
     private int _pageIndex;
     private int _paragraphIndex;
@@ -175,7 +176,7 @@ public class ScriptNavigator(ScriptBlock block)
         var paragraph = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex];
         for (var i = 0; i < paragraph.Lines.Count; i++)
         {
-            if (i > 0) sb.AppendLine();
+            if (i > 0) sb.Append(_newLine);
             sb.Append(renderLine(paragraph.Lines[i]));
         }
 
@@ -206,14 +207,14 @@ public class ScriptNavigator(ScriptBlock block)
         {
             if (pi > 0)
             {
-                sb.AppendLine();
-                sb.AppendLine();
+                sb.Append(_newLine);
+                sb.Append(_newLine);
             }
 
             var paragraph = page.Paragraphs[pi];
             for (var li = 0; li < paragraph.Lines.Count; li++)
             {
-                if (li > 0) sb.AppendLine();
+                if (li > 0) sb.Append(_newLine);
                 sb.Append(renderLine(paragraph.Lines[li]));
             }
         }
@@ -267,7 +268,7 @@ public class ScriptNavigator(ScriptBlock block)
         var paragraph = Block.Pages[_pageIndex].Paragraphs[_paragraphIndex];
         for (var i = 0; i < paragraph.Lines.Count; i++)
         {
-            if (i > 0) sb.AppendLine();
+            if (i > 0) sb.Append(_newLine);
             sb.Append(await renderLine(paragraph.Lines[i]));
         }
 
@@ -298,14 +299,14 @@ public class ScriptNavigator(ScriptBlock block)
         {
             if (pi > 0)
             {
-                sb.AppendLine();
-                sb.AppendLine();
+                sb.Append(_newLine);
+                sb.Append(_newLine);
             }
 
             var paragraph = page.Paragraphs[pi];
             for (var li = 0; li < paragraph.Lines.Count; li++)
             {
-                if (li > 0) sb.AppendLine();
+                if (li > 0) sb.Append(_newLine);
                 sb.Append(await renderLine(paragraph.Lines[li]));
             }
         }

@@ -8,7 +8,7 @@
         <IsRoslynComponent>true</IsRoslynComponent>
         <RootNamespace>EasyPlayscript.Generator</RootNamespace>
         <PackageId>EasyPlayscript.Generator</PackageId>
-        <Version>1.0.0</Version>
+        <Version>1.0.0-preview1</Version>
         <Authors>EasyPlayscript</Authors>
         <Description>Roslyn source generator for EasyPlayscript scripting language</Description>
         <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>

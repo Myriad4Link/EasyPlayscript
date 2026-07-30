@@ -10,6 +10,8 @@ public class PlayscriptSessionScope
 
     public PlayscriptSessionScope? Parent { get; private set; }
 
+    public string NewLine { get; set; } = "\n";
+
     public PlayscriptSessionScope()
     {
     }

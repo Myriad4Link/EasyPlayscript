@@ -11,7 +11,7 @@ public class ScriptNavigationTests
 {
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
-    private static ScriptNavigator CreateNav(ScriptBlock block) => new(block);
+    private static ScriptNavigator CreateNav(ScriptBlock block, string newLine = "\n") => new(block, newLine);
     private static ScriptBlock Block(params Page[] pages) => new() { Pages = new List<Page>(pages) };
     private static Page Pg(params Paragraph[] paragraphs) => new() { Paragraphs = new List<Paragraph>(paragraphs) };
     private static Paragraph Para(params Line[] lines) => new() { Lines = new List<Line>(lines) };
@@ -278,7 +278,7 @@ public class ScriptNavigationTests
 
         var result = nav.RenderNextParagraph(RenderLine)!.Text;
 
-        var lines = result.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+        var lines = result.Split('\n');
         Assert.Equal(3, lines.Length);
         Assert.Equal("line1", lines[0]);
         Assert.Equal("line2", lines[1]);
@@ -410,11 +410,52 @@ public class ScriptNavigationTests
 
         var result = nav.RenderNextPage(RenderLine)!.Text;
 
-        var paragraphs = result.Split(new[] { Environment.NewLine + Environment.NewLine }, StringSplitOptions.None);
+        var paragraphs = result.Split(new[] { "\n\n" }, StringSplitOptions.None);
         Assert.Equal(2, paragraphs.Length);
         Assert.Contains("para1line1", paragraphs[0]);
         Assert.Contains("para1line2", paragraphs[0]);
         Assert.Equal("para2line1", paragraphs[1]);
+    }
+
+    [Fact]
+    public void RenderNextParagraph_WithCustomNewline_UsesCustomSeparator()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("A")), Li(T("B"))))), "\r\n");
+
+        var result = nav.RenderNextParagraph(RenderLine)!.Text;
+
+        Assert.Equal("A\r\nB", result);
+    }
+
+    [Fact]
+    public void RenderNextPage_WithCustomNewline_UsesCustomSeparator()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("P1"))), Para(Li(T("P2"))))), "\r\n");
+
+        var result = nav.RenderNextPage(RenderLine)!.Text;
+
+        Assert.Equal("P1\r\n\r\nP2", result);
+    }
+
+    [Fact]
+    public void RenderNextParagraph_DefaultNewline_IsLineFeedOnly()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("A")), Li(T("B"))))));
+
+        var result = nav.RenderNextParagraph(RenderLine)!.Text;
+
+        Assert.DoesNotContain("\r", result);
+        Assert.Equal("A\nB", result);
+    }
+
+    [Fact]
+    public void RenderNextPage_DefaultNewline_IsLineFeedOnly()
+    {
+        var nav = CreateNav(Block(Pg(Para(Li(T("P1"))), Para(Li(T("P2"))))));
+
+        var result = nav.RenderNextPage(RenderLine)!.Text;
+
+        Assert.DoesNotContain("\r", result);
     }
 
     [Fact]

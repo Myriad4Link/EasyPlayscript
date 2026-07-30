@@ -93,6 +93,9 @@ TestResults/
 # Local NuGet feed
 nuget-local/
 
+# Ship script
+ship-to-kuraitsuku.ps1
+
 # Editor-based Rest Client
 .idea/httpRequests
 

@@ -28,6 +28,7 @@ internal static class TokenMapping
     {
         [PlayscriptStructureLexer.SCRIPT] = SemanticTokenTypes.Keyword,
         [PlayscriptStructureLexer.TEXT] = SemanticTokenTypes.Keyword,
+        [PlayscriptStructureLexer.VARIATION] = SemanticTokenTypes.Keyword,
         [PlayscriptStructureLexer.ASYNC] = SemanticTokenTypes.Modifier,
         [PlayscriptStructureLexer.INTERFACE] = SemanticTokenTypes.Keyword,
         [PlayscriptStructureLexer.STRING_TYPE] = SemanticTokenTypes.Type,

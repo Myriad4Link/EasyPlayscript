@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Antlr4.Runtime;
 
 namespace EasyPlayscript.Parsing;
@@ -12,7 +13,7 @@ public static class PlayscriptContentHelper
 {
     public static (PlayscriptContentParser parser, List<PlayscriptError> errors) ParseScript(string input)
     {
-        var inputStream = new AntlrInputStream(input.Trim());
+        var inputStream = new AntlrInputStream(DedentContent(input));
         var lexer = new PlayscriptContentLexer(inputStream);
         var tokens = new CommonTokenStream(lexer);
         var parser = new PlayscriptContentParser(tokens);
@@ -28,7 +29,7 @@ public static class PlayscriptContentHelper
 
     public static (PlayscriptContentParser parser, List<PlayscriptError> errors) ParseText(string input)
     {
-        var inputStream = new AntlrInputStream(input.Trim());
+        var inputStream = new AntlrInputStream(DedentContent(input));
         var lexer = new PlayscriptContentLexer(inputStream);
         var tokens = new CommonTokenStream(lexer);
         var parser = new PlayscriptContentParser(tokens);
@@ -40,6 +41,15 @@ public static class PlayscriptContentHelper
         parser.AddErrorListener(new CollectingErrorListener(errors, false));
 
         return (parser, errors);
+    }
+
+    internal static string DedentContent(string input)
+    {
+        var lines = input.Replace("\r\n", "\n").Split('\n');
+        var dedented = string.Join("\n", lines.Select(l => l.TrimStart()));
+        if (string.IsNullOrEmpty(dedented.Trim('\n')))
+            return string.Empty;
+        return dedented.Trim('\n');
     }
 
     private class CollectingErrorListener(List<PlayscriptError> errors, bool isLexer)

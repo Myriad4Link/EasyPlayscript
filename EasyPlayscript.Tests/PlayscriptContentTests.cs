@@ -582,6 +582,70 @@ public class PlayscriptContentTests
         Assert.Single(tree.textParagraph(1).textLine(2).SLASH());
     }
 
+    // ─── Content with CRLF line endings and leading spaces ─────────────────
+
+    [Fact]
+    public void TextContent_CRLF_WithLeadingSpaces_ParsesWithoutError()
+    {
+        const string input = "    进入章节选择页面。\r\n\r\n    欢迎来到新东京都。";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        Assert.Equal(2, tree.textParagraph().Length);
+        Assert.Equal("进入章节选择页面。", tree.textParagraph(0).textLine(0).TEXT()[0].GetText());
+        Assert.Equal("欢迎来到新东京都。", tree.textParagraph(1).textLine(0).TEXT()[0].GetText());
+    }
+
+    [Fact]
+    public void TextContent_CRLF_MultipleParagraphs_ParsesCorrectly()
+    {
+        const string input = "para1 line1\r\npara1 line2\r\n\r\npara2 line1";
+        var (parser, errors) = PlayscriptContentHelper.ParseText(input);
+        var tree = parser.textContent();
+
+        Assert.Empty(errors);
+        Assert.Equal(2, tree.textParagraph().Length);
+        Assert.Equal(2, tree.textParagraph(0).textLine().Length);
+        Assert.Equal("para1 line1", tree.textParagraph(0).textLine(0).TEXT()[0].GetText());
+        Assert.Equal("para1 line2", tree.textParagraph(0).textLine(1).TEXT()[0].GetText());
+        Assert.Single(tree.textParagraph(1).textLine());
+        Assert.Equal("para2 line1", tree.textParagraph(1).textLine(0).TEXT()[0].GetText());
+    }
+
+    [Fact]
+    public void ScriptContent_CRLF_WithLeadingSpaces_ParsesWithoutError()
+    {
+        const string input = "    进入章节选择页面。\r\n\r\n    欢迎来到新东京都。";
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        Assert.Single(tree.page());
+        Assert.Equal(2, tree.page(0).paragraph().Length);
+    }
+
+    [Fact]
+    public void DedentContent_CRLF_RemovesCarriageReturns()
+    {
+        var result = PlayscriptContentHelper.DedentContent("    hello\r\n\r\n    world");
+        Assert.Equal("hello\n\nworld", result);
+    }
+
+    [Fact]
+    public void DedentContent_CRLF_TrimsLeadingAndTrailingNewlines()
+    {
+        var result = PlayscriptContentHelper.DedentContent("\n    \r\n");
+        Assert.Equal(string.Empty, result);
+    }
+
+    [Fact]
+    public void DedentContent_CRLF_TrimsLeadingNewlines()
+    {
+        var result = PlayscriptContentHelper.DedentContent("\r\n    hello\r\n    world");
+        Assert.Equal("hello\nworld", result);
+    }
+
     // ─── Phase 4: Builder Tests ───────────────────────────────────────────────
 
     private static ScriptBlock BuildScriptBlock(string input)

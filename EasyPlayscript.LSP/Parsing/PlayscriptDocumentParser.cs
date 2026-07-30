@@ -205,7 +205,7 @@ internal class PlayscriptDocumentParser
     private static (List<TokenEntry> tokens, List<PlayscriptError> errors) CollectContentTokens(
         string trimmedContent, in BlockOffset offset, bool isScript)
     {
-        var inputStream = new AntlrInputStream(trimmedContent);
+        var inputStream = new AntlrInputStream(trimmedContent.Replace("\r\n", "\n"));
         var lexer = new PlayscriptContentLexer(inputStream);
         var tokens = new CommonTokenStream(lexer);
         var parser = new PlayscriptContentParser(tokens)

@@ -145,11 +145,10 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetScript(key) — unversioned
-            indented.WriteLine("public Script GetScript(ScriptKey key)");
+            // GetScript(string name) — unversioned, string key
+            indented.WriteLine("public Script GetScript(string name)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("var name = ScriptKeyToString(key);");
             indented.WriteLine("if (!_scripts.Value.TryGetValue(name, out var variants))");
             indented.Indent++;
             indented.WriteLine("throw new InvalidOperationException($\"Script '{name}' not found.\");");
@@ -169,11 +168,10 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetScript(key, string variation)
-            indented.WriteLine("public Script GetScript(ScriptKey key, string variation)");
+            // GetScript(string name, string variation) — variation, string key
+            indented.WriteLine("public Script GetScript(string name, string variation)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("var name = ScriptKeyToString(key);");
             indented.WriteLine("if (!_scripts.Value.TryGetValue(name, out var variants))");
             indented.Indent++;
             indented.WriteLine("throw new InvalidOperationException($\"Script '{name}' not found.\");");
@@ -191,6 +189,14 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("};");
             indented.Indent--;
             indented.WriteLine("}");
+            indented.WriteLine();
+
+            // GetScript(key) — unversioned, enum key
+            indented.WriteLine("public Script GetScript(ScriptKey key) => GetScript(ScriptKeyToString(key));");
+            indented.WriteLine();
+
+            // GetScript(key, string variation) — enum key
+            indented.WriteLine("public Script GetScript(ScriptKey key, string variation) => GetScript(ScriptKeyToString(key), variation);");
             indented.WriteLine();
 
             // GetScript<TVar>(key, variation) — enum-based, delegates to string
@@ -231,11 +237,10 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetText(key) — unversioned
-            indented.WriteLine("public Text GetText(TextKey key)");
+            // GetText(string name) — unversioned, string key
+            indented.WriteLine("public Text GetText(string name)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("var name = TextKeyToString(key);");
             indented.WriteLine("if (!_texts.Value.TryGetValue(name, out var variants))");
             indented.Indent++;
             indented.WriteLine("throw new InvalidOperationException($\"Text '{name}' not found.\");");
@@ -255,11 +260,10 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetText(key, string variation)
-            indented.WriteLine("public Text GetText(TextKey key, string variation)");
+            // GetText(string name, string variation) — variation, string key
+            indented.WriteLine("public Text GetText(string name, string variation)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("var name = TextKeyToString(key);");
             indented.WriteLine("if (!_texts.Value.TryGetValue(name, out var variants))");
             indented.Indent++;
             indented.WriteLine("throw new InvalidOperationException($\"Text '{name}' not found.\");");
@@ -277,6 +281,14 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("};");
             indented.Indent--;
             indented.WriteLine("}");
+            indented.WriteLine();
+
+            // GetText(key) — unversioned, enum key
+            indented.WriteLine("public Text GetText(TextKey key) => GetText(TextKeyToString(key));");
+            indented.WriteLine();
+
+            // GetText(key, string variation) — enum key
+            indented.WriteLine("public Text GetText(TextKey key, string variation) => GetText(TextKeyToString(key), variation);");
             indented.WriteLine();
 
             // GetText<TVar>(key, variation) — enum-based, delegates to string

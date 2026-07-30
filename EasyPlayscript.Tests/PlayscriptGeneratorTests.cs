@@ -169,7 +169,7 @@ public class PlayscriptGeneratorTests
     public void GeneratedCode_ContextReferencesTextBlockType()
     {
         var code = GenerateRuntimeCode(("TextExample", TextBlockExample));
-        Assert.Contains("Dictionary<string, TextBlock>", code);
+        Assert.Contains("Dictionary<string, TextVariants>", code);
         Assert.DoesNotContain("Dictionary<string, ScriptBlock> _texts", code);
     }
 

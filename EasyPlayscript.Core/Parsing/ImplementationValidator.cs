@@ -61,10 +61,10 @@ public static class ImplementationValidator
                 var paramCount = first.ParameterTypeNames.Count;
                 var classList = string.Join(", ", classNames);
 
-                foreach (var impl in group.Skip(1))
-                    errors.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateImplementation,
-                        DiagnosticCodes.DuplicateImplementationFormat,
-                        impl.FilePath, impl.Line, 0, name, paramCount, impl.ClassName));
+                errors.AddRange(group.Skip(1).Select(impl =>
+                    new ValidationDiagnostic(DiagnosticCodes.DuplicateImplementation,
+                        DiagnosticCodes.DuplicateImplementationFormat, impl.FilePath, impl.Line, 0, name, paramCount,
+                        impl.ClassName)));
             }
         }
 
@@ -73,29 +73,31 @@ public static class ImplementationValidator
 
     public static List<ValidationDiagnostic> ValidateUnusedImplementations(PlayscriptCompilationData data)
     {
-        var warnings = new List<ValidationDiagnostic>();
-
         var usedNames = new HashSet<string>();
-        foreach (var kvp in data.Scripts)
+        foreach (var variants in data.Scripts.Select(kvp => kvp.Value))
         {
-            if (!data.ScriptLocations.ContainsKey(kvp.Key)) continue;
-            foreach (var call in InterfaceValidator.GetConsumerCalls(kvp.Value))
+            if (variants.Unversioned != null)
+                foreach (var call in InterfaceValidator.GetConsumerCalls(variants.Unversioned))
+                    usedNames.Add(call.Identifier);
+            foreach (var call in
+                     variants.Numbered.Values.SelectMany(InterfaceValidator.GetConsumerCalls))
                 usedNames.Add(call.Identifier);
         }
 
-        foreach (var kvp in data.Texts)
+        foreach (var variants in data.Texts.Select(kvp => kvp.Value))
         {
-            if (!data.TextLocations.ContainsKey(kvp.Key)) continue;
-            foreach (var call in InterfaceValidator.GetConsumerCalls(kvp.Value))
+            if (variants.Unversioned != null)
+                foreach (var call in InterfaceValidator.GetConsumerCalls(variants.Unversioned))
+                    usedNames.Add(call.Identifier);
+            foreach (var call in
+                     variants.Numbered.Values.SelectMany(InterfaceValidator.GetConsumerCalls))
                 usedNames.Add(call.Identifier);
         }
 
-        foreach (var impl in data.Implementations)
-            if (!usedNames.Contains(impl.EffectiveName))
-                warnings.Add(new ValidationDiagnostic(DiagnosticCodes.UnusedImplementation,
-                    DiagnosticCodes.UnusedImplementationFormat,
-                    impl.FilePath, impl.Line, 0, impl.ClassName, impl.MethodName));
-
-        return warnings;
+        return (from impl in data.Implementations
+            where !usedNames.Contains(impl.EffectiveName)
+            select new ValidationDiagnostic(DiagnosticCodes.UnusedImplementation,
+                DiagnosticCodes.UnusedImplementationFormat, impl.FilePath, impl.Line, 0, impl.ClassName,
+                impl.MethodName)).ToList();
     }
 }

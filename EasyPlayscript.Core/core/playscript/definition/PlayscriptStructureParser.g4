@@ -7,7 +7,7 @@ options { tokenVocab = PlayscriptStructureLexer; }
 playscript  : topLevelStatement* EOF ;
 
 topLevelStatement
-    : blockType IDENTIFIER LBRACKET RAW_CONTENT RBRACKET
+    : blockType IDENTIFIER (VARIATION IDENTIFIER)? LBRACKET RAW_CONTENT RBRACKET
     | ASYNC? INTERFACE IDENTIFIER LPAREN paramList? RPAREN COLON typeSpec
     ;
 

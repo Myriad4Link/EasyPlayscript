@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using MessagePack;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
@@ -69,34 +68,34 @@ public static class PlayscriptLoader
     /// <summary>
     /// Loads only the <c>Scripts</c> dictionary from a binary blob on disk.
     /// </summary>
-    public static Dictionary<string, ScriptBlock> LoadScripts(string path, string? passphrase) => LoadData(path, passphrase).Scripts;
+    public static Dictionary<string, ScriptVariants> LoadScripts(string path, string? passphrase) => LoadData(path, passphrase).Scripts;
 
     /// <summary>
     /// Loads only the <c>Texts</c> dictionary from a binary blob on disk.
     /// </summary>
-    public static Dictionary<string, TextBlock> LoadTexts(string path, string? passphrase) => LoadData(path, passphrase).Texts;
+    public static Dictionary<string, TextVariants> LoadTexts(string path, string? passphrase) => LoadData(path, passphrase).Texts;
 
     /// <summary>
     /// Loads <see cref="ScriptBlock" />s from an in-memory blob. Use this when the
     /// <c>.bin</c> is shipped as an embedded resource or otherwise preloaded.
     /// </summary>
-    public static Dictionary<string, ScriptBlock> LoadScripts(byte[] blob, string? passphrase) => LoadData(blob, passphrase).Scripts;
+    public static Dictionary<string, ScriptVariants> LoadScripts(byte[] blob, string? passphrase) => LoadData(blob, passphrase).Scripts;
 
     /// <summary>
     /// Loads <see cref="TextBlock" />s from an in-memory blob. Use this when the
     /// <c>.bin</c> is shipped as an embedded resource or otherwise preloaded.
     /// </summary>
-    public static Dictionary<string, TextBlock> LoadTexts(byte[] blob, string? passphrase) => LoadData(blob, passphrase).Texts;
+    public static Dictionary<string, TextVariants> LoadTexts(byte[] blob, string? passphrase) => LoadData(blob, passphrase).Texts;
 
     /// <summary>
     /// Loads <see cref="ScriptBlock" />s from a stream. The stream is read to end.
     /// </summary>
-    public static Dictionary<string, ScriptBlock> LoadScripts(Stream stream, string? passphrase) => LoadData(stream, passphrase).Scripts;
+    public static Dictionary<string, ScriptVariants> LoadScripts(Stream stream, string? passphrase) => LoadData(stream, passphrase).Scripts;
 
     /// <summary>
     /// Loads <see cref="TextBlock" />s from a stream. The stream is read to end.
     /// </summary>
-    public static Dictionary<string, TextBlock> LoadTexts(Stream stream, string? passphrase) => LoadData(stream, passphrase).Texts;
+    public static Dictionary<string, TextVariants> LoadTexts(Stream stream, string? passphrase) => LoadData(stream, passphrase).Texts;
 
     /// <summary>
     /// Loads the full <see cref="PlayscriptData" /> graph from a binary blob on disk.

@@ -183,8 +183,8 @@ public class ImplementationValidatorTests
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(MakeImplementation("Effects", "fade", null, "string"));
-        data.Scripts["s"] = BuildScriptBlock("@fade(\"out\")");
-        data.ScriptLocations["s"] = ("test.scpt", 1, 0);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = BuildScriptBlock("@fade(\"out\")") };
+        data.ScriptLocations[("s", "")] = ("test.scpt", 1, 0);
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Empty(warnings);
     }
@@ -194,8 +194,8 @@ public class ImplementationValidatorTests
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(MakeImplementation("Effects", "fade", null, "string"));
-        data.Texts["t"] = BuildTextBlock("@fade(\"out\")");
-        data.TextLocations["t"] = ("test.scpt", 1, 0);
+        data.Texts["t"] = new TextVariants { Unversioned = BuildTextBlock("@fade(\"out\")") };
+        data.TextLocations[("t", "")] = ("test.scpt", 1, 0);
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Empty(warnings);
     }
@@ -205,8 +205,8 @@ public class ImplementationValidatorTests
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(MakeImplementation("Effects", "fade", null, "string"));
-        data.Scripts["s"] = BuildScriptBlock("Hello world");
-        data.ScriptLocations["s"] = ("test.scpt", 1, 0);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = BuildScriptBlock("Hello world") };
+        data.ScriptLocations[("s", "")] = ("test.scpt", 1, 0);
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Single(warnings);
         Assert.Equal(DiagnosticCodes.UnusedImplementation, warnings[0].Code);
@@ -217,8 +217,8 @@ public class ImplementationValidatorTests
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(MakeImplementation("Effects", "DoFade", "fade", "string"));
-        data.Scripts["s"] = BuildScriptBlock("@fade(\"out\")");
-        data.ScriptLocations["s"] = ("test.scpt", 1, 0);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = BuildScriptBlock("@fade(\"out\")") };
+        data.ScriptLocations[("s", "")] = ("test.scpt", 1, 0);
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Empty(warnings);
     }
@@ -228,8 +228,8 @@ public class ImplementationValidatorTests
     {
         var data = new PlayscriptCompilationData();
         data.Implementations.Add(MakeImplementation("Effects", "DoFade", "fade", "string"));
-        data.Scripts["s"] = BuildScriptBlock("@DoFade(\"out\")");
-        data.ScriptLocations["s"] = ("test.scpt", 1, 0);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = BuildScriptBlock("@DoFade(\"out\")") };
+        data.ScriptLocations[("s", "")] = ("test.scpt", 1, 0);
         var warnings = ImplementationValidator.ValidateUnusedImplementations(data);
         Assert.Single(warnings);
         Assert.Equal(DiagnosticCodes.UnusedImplementation, warnings[0].Code);

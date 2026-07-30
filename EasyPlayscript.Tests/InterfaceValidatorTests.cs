@@ -127,8 +127,8 @@ public class InterfaceValidatorTests
     {
         var block = BuildScriptBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, errors[0].Code);
@@ -141,8 +141,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Empty(errors);
     }
@@ -183,8 +183,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.ArgumentCountMismatch, errors[0].Code);
@@ -198,8 +198,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\", \"not_a_number\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
@@ -213,8 +213,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\", 1)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Empty(errors);
     }
@@ -227,8 +227,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\", 1.0)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Empty(errors);
     }
@@ -260,8 +260,8 @@ public class InterfaceValidatorTests
     {
         var block = BuildTextBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
-        data.Texts["intro"] = block;
-        data.TextLocations["intro"] = ("file", 1, 0);
+        data.Texts["intro"] = new TextVariants { Unversioned = block };
+        data.TextLocations[("intro", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, errors[0].Code);
@@ -274,8 +274,8 @@ public class InterfaceValidatorTests
         var block = BuildTextBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Texts["intro"] = block;
-        data.TextLocations["intro"] = ("file", 1, 0);
+        data.Texts["intro"] = new TextVariants { Unversioned = block };
+        data.TextLocations[("intro", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Empty(errors);
     }
@@ -290,8 +290,8 @@ public class InterfaceValidatorTests
         var block = BuildTextBlock("@transition(\"fade_out\", \"not_a_number\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Texts["intro"] = block;
-        data.TextLocations["intro"] = ("file", 1, 0);
+        data.Texts["intro"] = new TextVariants { Unversioned = block };
+        data.TextLocations[("intro", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
@@ -327,10 +327,10 @@ public class InterfaceValidatorTests
         var scriptBlock = BuildScriptBlock("@undeclared_a()");
         var textBlock = BuildTextBlock("@undeclared_b()");
         var data = new PlayscriptCompilationData();
-        data.Scripts["s"] = scriptBlock;
-        data.ScriptLocations["s"] = ("file", 1, 0);
-        data.Texts["t"] = textBlock;
-        data.TextLocations["t"] = ("file", 2, 0);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = scriptBlock };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        data.Texts["t"] = new TextVariants { Unversioned = textBlock };
+        data.TextLocations[("t", "")] = ("file", 2, 0);
         var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
         Assert.Equal(2, errors.Count);
         Assert.All(errors, e => Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, e.Code));
@@ -344,8 +344,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\", \"not_a_number\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.Add(iface);
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
@@ -362,8 +362,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\", 1.0)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.AddRange(new[] { a, b });
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Empty(errors);
     }
@@ -378,8 +378,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\", true)");
         var data = new PlayscriptCompilationData();
         data.Interfaces.AddRange(new[] { a, b });
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
@@ -396,8 +396,8 @@ public class InterfaceValidatorTests
         var block = BuildScriptBlock("@transition(\"fade_out\")");
         var data = new PlayscriptCompilationData();
         data.Interfaces.AddRange(new[] { a, b });
-        data.Scripts["foo"] = block;
-        data.ScriptLocations["foo"] = ("file", 1, 0);
+        data.Scripts["foo"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("foo", "")] = ("file", 1, 0);
         var errors = InterfaceValidator.ValidateArgumentTypes(data);
         Assert.Single(errors);
         Assert.Equal(DiagnosticCodes.ArgumentCountMismatch, errors[0].Code);

@@ -66,7 +66,8 @@ internal class PlayscriptDocumentParser
         for (var i = 0; i < previous.Structure.Results.Count; i++)
         {
             var prev = previous.Structure.Results[i];
-            index[prev.Name] = (prev, i);
+            var key = MakeBlockKey(prev.Name, prev.Variation);
+            index[key] = (prev, i);
         }
 
         return index;
@@ -79,12 +80,13 @@ internal class PlayscriptDocumentParser
         Dictionary<string, CachedBlockContent> blockCache)
     {
         // A cache hit requires: (1) a previous parse exists with a block cache,
-        // (2) the block existed before (same name), and (3) its raw content
+        // (2) the block existed before (same name + variation), and (3) its raw content
         // is identical — meaning the user edited outside this block.
         if (previous?.BlockCache is null) return false;
         if (prevBlockIndex is null) return false;
-        if (!prevBlockIndex.TryGetValue(block.Name, out var prevEntry)) return false;
-        if (!previous.BlockCache.TryGetValue(block.Name, out var cached)) return false;
+        var blockKey = MakeBlockKey(block.Name, block.Variation);
+        if (!prevBlockIndex.TryGetValue(blockKey, out var prevEntry)) return false;
+        if (!previous.BlockCache.TryGetValue(blockKey, out var cached)) return false;
         if (prevEntry.result.RawContent != block.RawContent) return false;
 
         var lineDelta = block.Line - prevEntry.result.Line;
@@ -99,7 +101,7 @@ internal class PlayscriptDocumentParser
 
         allTokens.AddRange(adjustedTokens);
         contentErrors.AddRange(adjustedErrors);
-        blockCache[block.Name] = new CachedBlockContent(adjustedTokens, adjustedErrors);
+        blockCache[blockKey] = new CachedBlockContent(adjustedTokens, adjustedErrors);
         return true;
     }
 
@@ -111,7 +113,7 @@ internal class PlayscriptDocumentParser
             CollectContentTokens(trimmedContent, offset, block.Identifier == BlockType.Script);
         allTokens.AddRange(contentTokens);
         contentErrors.AddRange(errors);
-        blockCache[block.Name] = new CachedBlockContent(contentTokens, errors);
+        blockCache[MakeBlockKey(block.Name, block.Variation)] = new CachedBlockContent(contentTokens, errors);
     }
 
     /// <summary>
@@ -241,6 +243,9 @@ internal class PlayscriptDocumentParser
 
         return (result, errors);
     }
+
+    private static string MakeBlockKey(string name, string? variation) =>
+        string.IsNullOrEmpty(variation) ? name : $"{name}\0{variation}";
 
     private static int CountLeadingNewlines(string text)
     {

@@ -51,9 +51,9 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
-                ["greeting"] = new()
+                ["greeting"] = new ScriptVariants { Unversioned = new()
                 {
                     Pages = new List<Page>
                     {
@@ -87,8 +87,9 @@ public class PlayscriptLoaderTests
                         }
                     }
                 }
+            }
             },
-            Texts = new Dictionary<string, TextBlock>()
+            Texts = new Dictionary<string, TextVariants>()
         };
 
         var bytes = MessagePackSerializer.Serialize(data);
@@ -97,7 +98,7 @@ public class PlayscriptLoaderTests
         var deserialized = MessagePackSerializer.Deserialize<PlayscriptData>(decrypted);
 
         Assert.Single(deserialized.Scripts);
-        var items = deserialized.Scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
+        var items = deserialized.Scripts["greeting"].Unversioned.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
         Assert.Equal(3, items.Count);
         Assert.Equal("Hello ", ((TextItem)items[0]).Text);
         Assert.Equal("fade_out", ((StringArgument)((ConsumerCallItem)items[1]).Arguments[0]).Value);
@@ -236,11 +237,11 @@ public class PlayscriptLoaderTests
         // identify it as raw passthrough.
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["greeting"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>()
+            Texts = new Dictionary<string, TextVariants>()
         };
         var raw = MessagePackSerializer.Serialize(data);
 
@@ -430,9 +431,9 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
-                ["greeting"] = new()
+                ["greeting"] = new ScriptVariants { Unversioned = new()
                 {
                     Pages = new List<Page>
                     {
@@ -463,16 +464,17 @@ public class PlayscriptLoaderTests
                         }
                     }
                 }
+            }
             },
-            Texts = new Dictionary<string, TextBlock>()
+            Texts = new Dictionary<string, TextVariants>()
         };
 
         var bytes = PlayscriptLoader.Encrypt(MessagePackSerializer.Serialize(data), TestPassphrase);
         var scripts = PlayscriptLoader.LoadScripts(bytes, TestPassphrase);
 
         Assert.Single(scripts);
-        Assert.IsType<ScriptBlock>(scripts["greeting"]);
-        var items = scripts["greeting"].Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
+        Assert.IsType<ScriptVariants>(scripts["greeting"]);
+        var items = scripts["greeting"].Unversioned!.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
         Assert.Equal("Hello", ((TextItem)items[0]).Text);
     }
 
@@ -481,10 +483,10 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>(),
-            Texts = new Dictionary<string, TextBlock>
+            Scripts = new Dictionary<string, ScriptVariants>(),
+            Texts = new Dictionary<string, TextVariants>
             {
-                ["intro"] = new()
+                ["intro"] = new TextVariants { Unversioned = new()
                 {
                     Lines = new List<Line>
                     {
@@ -501,15 +503,16 @@ public class PlayscriptLoaderTests
                     }
                 }
             }
+            }
         };
 
         var bytes = PlayscriptLoader.Encrypt(MessagePackSerializer.Serialize(data), TestPassphrase);
         var texts = PlayscriptLoader.LoadTexts(bytes, TestPassphrase);
 
         Assert.Single(texts);
-        Assert.IsType<TextBlock>(texts["intro"]);
+        Assert.IsType<TextVariants>(texts["intro"]);
         Assert.Equal("Welcome",
-            ((TextItem)texts["intro"].Lines[0].Segments[0].Items[0]).Text);
+            ((TextItem)texts["intro"].Unversioned!.Lines[0].Segments[0].Items[0]).Text);
     }
 
     [Fact]
@@ -517,11 +520,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>()
+            Texts = new Dictionary<string, TextVariants>()
         };
 
         var bytes = PlayscriptLoader.Encrypt(MessagePackSerializer.Serialize(data), TestPassphrase);
@@ -537,11 +540,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>()
+            Texts = new Dictionary<string, TextVariants>()
         };
 
         var bytes = MessagePackSerializer.Serialize(data); // no encryption
@@ -556,8 +559,8 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>(),
-            Texts = new Dictionary<string, TextBlock>
+            Scripts = new Dictionary<string, ScriptVariants>(),
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["t"] = new()
             }
@@ -576,8 +579,8 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>(),
-            Texts = new Dictionary<string, TextBlock>
+            Scripts = new Dictionary<string, ScriptVariants>(),
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["t"] = new()
             }
@@ -595,11 +598,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>()
+            Texts = new Dictionary<string, TextVariants>()
         };
 
         var bytes = PlayscriptLoader.Encrypt(MessagePackSerializer.Serialize(data), TestPassphrase);
@@ -621,11 +624,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>()
+            Texts = new Dictionary<string, TextVariants>()
         };
 
         var bytes = MessagePackSerializer.Serialize(data);
@@ -640,11 +643,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["greeting"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["intro"] = new()
             }
@@ -664,11 +667,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["t"] = new()
             }
@@ -686,11 +689,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["t"] = new()
             }
@@ -709,11 +712,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["t"] = new()
             }
@@ -732,11 +735,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["t"] = new()
             }
@@ -763,11 +766,11 @@ public class PlayscriptLoaderTests
     {
         var data = new PlayscriptData
         {
-            Scripts = new Dictionary<string, ScriptBlock>
+            Scripts = new Dictionary<string, ScriptVariants>
             {
                 ["s"] = new()
             },
-            Texts = new Dictionary<string, TextBlock>
+            Texts = new Dictionary<string, TextVariants>
             {
                 ["t"] = new()
             }

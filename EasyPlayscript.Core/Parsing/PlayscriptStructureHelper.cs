@@ -56,12 +56,20 @@ public static class PlayscriptStructureHelper
                     _ => throw new InvalidOperationException("Unexpected blockType token")
                 };
 
-                var nameNode = context.IDENTIFIER();
+                var nameNode = context.IDENTIFIER(0);
                 if (nameNode == null) return string.Empty;
 
                 var nameSymbol = nameNode.Symbol;
                 var line = nameSymbol.Line;
                 var col = nameSymbol.Column;
+
+                var variationCtx = context.VARIATION();
+                string? variation = null;
+                if (variationCtx != null)
+                {
+                    var varNode = context.IDENTIFIER(1);
+                    variation = varNode?.GetText();
+                }
 
                 var rawContent = context.RAW_CONTENT()?.GetText();
                 if (rawContent != null && rawContent.StartsWith("<missing"))
@@ -69,13 +77,13 @@ public static class PlayscriptStructureHelper
 
                 var startChar = context.Start.StartIndex;
                 var endChar = context.Stop.StopIndex + 1;
-                Results.Add(new StructureResult(blockType, nameNode.GetText(), rawContent, line, col, startChar, endChar));
+                Results.Add(new StructureResult(blockType, nameNode.GetText(), variation, rawContent, line, col, startChar, endChar));
                 return string.Empty;
             }
 
             if (context.INTERFACE() == null) return string.Empty;
             {
-                var nameNode = context.IDENTIFIER();
+                var nameNode = context.IDENTIFIER(0);
                 if (nameNode == null) return string.Empty;
 
                 var typeSpecCtx = context.typeSpec();

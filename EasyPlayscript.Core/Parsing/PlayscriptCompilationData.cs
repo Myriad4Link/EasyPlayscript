@@ -3,62 +3,140 @@ using EasyPlayscript.DataModel;
 
 namespace EasyPlayscript.Parsing;
 
-/// <summary>
-///     Container for parsed playscript data collected across multiple .scpt files.
-///     Holds scripts, texts, their source locations, and interface declarations.
-/// </summary>
 public class PlayscriptCompilationData
 {
-    public Dictionary<string, ScriptBlock> Scripts { get; } = new();
-    public Dictionary<string, TextBlock> Texts { get; } = new();
-    public Dictionary<string, (string filePath, int line, int col)> ScriptLocations { get; } = new();
-    public Dictionary<string, (string filePath, int line, int col)> TextLocations { get; } = new();
+    public Dictionary<string, ScriptVariants> Scripts { get; } = new();
+    public Dictionary<string, TextVariants> Texts { get; } = new();
+    public Dictionary<(string Name, string Variation), (string filePath, int line, int col)> ScriptLocations { get; } = new();
+    public Dictionary<(string Name, string Variation), (string filePath, int line, int col)> TextLocations { get; } = new();
     public List<InterfaceDeclaration> Interfaces { get; } = [];
     public List<ImplementationInfo> Implementations { get; } = [];
     public bool HasErrors { get; set; }
 
-    /// <summary>
-    ///     Merges scripts, texts, and interfaces from another <see cref="PlayscriptCompilationData" />
-    ///     (typically a per-file result) into this instance. Duplicate script/text names are reported
-    ///     as SCPT004 diagnostics without merging the duplicate entry.
-    /// </summary>
-    /// <param name="source">
-    ///     The compilation data to merge from. Read-only from this method's perspective;
-    ///     only <paramref name="source" />'s dictionaries are iterated, not modified.
-    /// </param>
-    /// <returns>
-    ///     A list of <see cref="ValidationDiagnostic" /> for any duplicate script/text names
-    ///     found during the merge. Empty if no duplicates were detected.
-    /// </returns>
     public List<ValidationDiagnostic> MergeFrom(PlayscriptCompilationData source)
     {
         var diagnostics = new List<ValidationDiagnostic>();
-        MergeBlocks(diagnostics, source.Scripts, Scripts, source.ScriptLocations, ScriptLocations, "script");
-        MergeBlocks(diagnostics, source.Texts, Texts, source.TextLocations, TextLocations, "text");
+        MergeScriptVariants(diagnostics, source);
+        MergeTextVariants(diagnostics, source);
         Interfaces.AddRange(source.Interfaces);
         return diagnostics;
     }
 
-    private static void MergeBlocks<T>(
+    private void MergeScriptVariants(
         List<ValidationDiagnostic> diagnostics,
-        Dictionary<string, T> sourceBlocks,
-        Dictionary<string, T> targetBlocks,
-        Dictionary<string, (string filePath, int line, int col)> sourceLocations,
-        Dictionary<string, (string filePath, int line, int col)> targetLocations,
-        string label)
+        PlayscriptCompilationData source)
     {
-        foreach (var kvp in sourceBlocks)
-            if (targetBlocks.ContainsKey(kvp.Key))
+        foreach (var kvp in source.Scripts)
+        {
+            var name = kvp.Key;
+            var srcVar = kvp.Value;
+
+            if (!Scripts.TryGetValue(name, out var tgtVar))
             {
-                var loc = targetLocations[kvp.Key];
-                diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
-                    DiagnosticCodes.DuplicateScriptNameFormat,
-                    loc.filePath, loc.line, loc.col, label, kvp.Key));
+                Scripts[name] = srcVar;
+                foreach (var lkv in source.ScriptLocations)
+                    if (lkv.Key.Name == name)
+                        ScriptLocations[lkv.Key] = lkv.Value;
+                continue;
             }
-            else
+
+            if (srcVar.Unversioned != null)
             {
-                targetLocations[kvp.Key] = sourceLocations[kvp.Key];
-                targetBlocks[kvp.Key] = kvp.Value;
+                if (tgtVar.Unversioned != null)
+                {
+                    var key = (name, "");
+                    var sl = ScriptLocations[key];
+                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                        DiagnosticCodes.DuplicateScriptNameFormat,
+                        sl.filePath, sl.line, sl.col, "script", name));
+                }
+                else
+                {
+                    tgtVar.Unversioned = srcVar.Unversioned;
+                    var key = (name, "");
+                    if (source.ScriptLocations.TryGetValue(key, out var s))
+                        ScriptLocations[key] = s;
+                }
             }
+
+            foreach (var vk in srcVar.Numbered)
+            {
+                var varKey = vk.Key;
+                if (tgtVar.Numbered.ContainsKey(varKey))
+                {
+                    var key = (name, varKey);
+                    var sl = ScriptLocations[key];
+                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                        DiagnosticCodes.DuplicateScriptNameFormat,
+                        sl.filePath, sl.line, sl.col, "script", $"{name} variation {varKey}"));
+                }
+                else
+                {
+                    tgtVar.Numbered[varKey] = vk.Value;
+                    var key = (name, varKey);
+                    if (source.ScriptLocations.TryGetValue(key, out var s))
+                        ScriptLocations[key] = s;
+                }
+            }
+        }
+    }
+
+    private void MergeTextVariants(
+        List<ValidationDiagnostic> diagnostics,
+        PlayscriptCompilationData source)
+    {
+        foreach (var kvp in source.Texts)
+        {
+            var name = kvp.Key;
+            var srcVar = kvp.Value;
+
+            if (!Texts.TryGetValue(name, out var tgtVar))
+            {
+                Texts[name] = srcVar;
+                foreach (var lkv in source.TextLocations)
+                    if (lkv.Key.Name == name)
+                        TextLocations[lkv.Key] = lkv.Value;
+                continue;
+            }
+
+            if (srcVar.Unversioned != null)
+            {
+                if (tgtVar.Unversioned != null)
+                {
+                    var key = (name, "");
+                    var sl = TextLocations[key];
+                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                        DiagnosticCodes.DuplicateScriptNameFormat,
+                        sl.filePath, sl.line, sl.col, "text", name));
+                }
+                else
+                {
+                    tgtVar.Unversioned = srcVar.Unversioned;
+                    var key = (name, "");
+                    if (source.TextLocations.TryGetValue(key, out var s))
+                        TextLocations[key] = s;
+                }
+            }
+
+            foreach (var vk in srcVar.Numbered)
+            {
+                var varKey = vk.Key;
+                if (tgtVar.Numbered.ContainsKey(varKey))
+                {
+                    var key = (name, varKey);
+                    var sl = TextLocations[key];
+                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
+                        DiagnosticCodes.DuplicateScriptNameFormat,
+                        sl.filePath, sl.line, sl.col, "text", $"{name} variation {varKey}"));
+                }
+                else
+                {
+                    tgtVar.Numbered[varKey] = vk.Value;
+                    var key = (name, varKey);
+                    if (source.TextLocations.TryGetValue(key, out var s))
+                        TextLocations[key] = s;
+                }
+            }
+        }
     }
 }

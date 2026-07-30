@@ -121,16 +121,44 @@ public static class InterfaceValidator
     {
         foreach (var kvp in data.Scripts)
         {
-            if (!data.ScriptLocations.TryGetValue(kvp.Key, out var loc)) continue;
-            foreach (var call in GetConsumerCalls(kvp.Value))
-                yield return (call, loc.filePath);
+            var name = kvp.Key;
+            var variants = kvp.Value;
+
+            if (variants.Unversioned != null)
+            {
+                if (data.ScriptLocations.TryGetValue((name, ""), out var loc))
+                    foreach (var call in GetConsumerCalls(variants.Unversioned))
+                        yield return (call, loc.filePath);
+            }
+
+            foreach (var vk in variants.Numbered)
+            {
+                var variation = vk.Key;
+                if (data.ScriptLocations.TryGetValue((name, variation), out var loc))
+                    foreach (var call in GetConsumerCalls(vk.Value))
+                        yield return (call, loc.filePath);
+            }
         }
 
         foreach (var kvp in data.Texts)
         {
-            if (!data.TextLocations.TryGetValue(kvp.Key, out var loc)) continue;
-            foreach (var call in GetConsumerCalls(kvp.Value))
-                yield return (call, loc.filePath);
+            var name = kvp.Key;
+            var variants = kvp.Value;
+
+            if (variants.Unversioned != null)
+            {
+                if (data.TextLocations.TryGetValue((name, ""), out var loc))
+                    foreach (var call in GetConsumerCalls(variants.Unversioned))
+                        yield return (call, loc.filePath);
+            }
+
+            foreach (var vk in variants.Numbered)
+            {
+                var variation = vk.Key;
+                if (data.TextLocations.TryGetValue((name, variation), out var loc))
+                    foreach (var call in GetConsumerCalls(vk.Value))
+                        yield return (call, loc.filePath);
+            }
         }
     }
 

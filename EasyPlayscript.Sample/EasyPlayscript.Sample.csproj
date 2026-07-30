@@ -13,9 +13,9 @@
         <CompilerVisibleProperty Include="PlayscriptAesKey"/>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="EasyPlayscript.Core" Version="1.0.0-preview1"/>
-        <PackageReference Include="EasyPlayscript.Generator" Version="1.0.0-preview1" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-        <PackageReference Include="EasyPlayscript.BuildTask" Version="1.0.0-preview1"/>
+        <PackageReference Include="EasyPlayscript.Core" Version="0.1.0"/>
+        <PackageReference Include="EasyPlayscript.Generator" Version="0.1.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <PackageReference Include="EasyPlayscript.BuildTask" Version="0.1.0"/>
     </ItemGroup>
     <ItemGroup>
         <ScptFiles Include="scripts\**\*.scpt"/>

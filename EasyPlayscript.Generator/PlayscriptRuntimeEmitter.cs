@@ -24,8 +24,8 @@ public static class PlayscriptRuntimeEmitter
     ];
 
     public static string Generate(
-        Dictionary<string, ScriptBlock> scripts,
-        Dictionary<string, TextBlock> texts,
+        Dictionary<string, ScriptVariants> scripts,
+        Dictionary<string, TextVariants> texts,
         string outputPath,
         bool hasAsync = false)
     {
@@ -52,8 +52,8 @@ public static class PlayscriptRuntimeEmitter
 
         // ── Fields & properties ──
         indented.WriteLine("private readonly string? _aesKey;");
-        indented.WriteLine("private readonly Lazy<Dictionary<string, ScriptBlock>> _scripts;");
-        indented.WriteLine("private readonly Lazy<Dictionary<string, TextBlock>> _texts;");
+        indented.WriteLine("private readonly Lazy<Dictionary<string, ScriptVariants>> _scripts;");
+        indented.WriteLine("private readonly Lazy<Dictionary<string, TextVariants>> _texts;");
         indented.WriteLine("public PlayscriptRegistry Registry { get; }");
         indented.WriteLine();
 
@@ -67,11 +67,11 @@ public static class PlayscriptRuntimeEmitter
         indented.Indent++;
         indented.WriteLine("Registry = registry ?? throw new ArgumentNullException(nameof(registry));");
         indented.WriteLine("_aesKey = aesKey;");
-        indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptBlock>>(");
+        indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptVariants>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
-        indented.WriteLine("_texts = new Lazy<Dictionary<string, TextBlock>>(");
+        indented.WriteLine("_texts = new Lazy<Dictionary<string, TextVariants>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
@@ -79,17 +79,17 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("}");
         indented.WriteLine();
 
-        // ── Private child constructor (inherits parent key) ──
+        // ── Private child constructor ──
         indented.WriteLine("private PlayscriptRuntimeSession(PlayscriptRegistry registry, string? aesKey, PlayscriptSessionScope parent) : base(parent)");
         indented.WriteLine("{");
         indented.Indent++;
         indented.WriteLine("Registry = registry;");
         indented.WriteLine("_aesKey = aesKey;");
-        indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptBlock>>(");
+        indented.WriteLine("_scripts = new Lazy<Dictionary<string, ScriptVariants>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadScripts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
-        indented.WriteLine("_texts = new Lazy<Dictionary<string, TextBlock>>(");
+        indented.WriteLine("_texts = new Lazy<Dictionary<string, TextVariants>>(");
         indented.Indent++;
         indented.WriteLine($"() => PlayscriptLoader.LoadTexts(ResolvePath(\"{normalizedPath}\"), _aesKey));");
         indented.Indent--;
@@ -97,7 +97,7 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("}");
         indented.WriteLine();
 
-        // ── CreateChild override ──
+        // ── CreateChild ──
         indented.WriteLine("public override PlayscriptRuntimeSession CreateChild()");
         indented.WriteLine("{");
         indented.Indent++;
@@ -124,6 +124,10 @@ public static class PlayscriptRuntimeEmitter
 
         indented.WriteLine();
 
+        // ── Per-script variation enums ──
+        EmitVariationEnums(scripts, "Script", indented);
+        EmitVariationEnums(texts, "Text", indented);
+
         // ── ScriptKey enum + GetScript ──
         var sortedScripts = scripts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
         if (sortedScripts.Count > 0)
@@ -140,20 +144,65 @@ public static class PlayscriptRuntimeEmitter
             indented.Indent--;
             indented.WriteLine("}");
             indented.WriteLine();
+
+            // GetScript(key) — unversioned
             indented.WriteLine("public Script GetScript(ScriptKey key)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("var script = new Script");
+            indented.WriteLine("var name = ScriptKeyToString(key);");
+            indented.WriteLine("if (!_scripts.Value.TryGetValue(name, out var variants))");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Script '{name}' not found.\");");
+            indented.Indent--;
+            indented.WriteLine("if (variants.Unversioned == null)");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Script '{name}' has no unversioned block.\");");
+            indented.Indent--;
+            indented.WriteLine("return new Script");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("Block = _scripts.Value[ScriptKeyToString(key)],");
+            indented.WriteLine("Block = variants.Unversioned,");
             indented.WriteLine("Runtime = this");
             indented.Indent--;
             indented.WriteLine("};");
-            indented.WriteLine("return script;");
             indented.Indent--;
             indented.WriteLine("}");
             indented.WriteLine();
+
+            // GetScript(key, string variation)
+            indented.WriteLine("public Script GetScript(ScriptKey key, string variation)");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("var name = ScriptKeyToString(key);");
+            indented.WriteLine("if (!_scripts.Value.TryGetValue(name, out var variants))");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Script '{name}' not found.\");");
+            indented.Indent--;
+            indented.WriteLine("if (!variants.Numbered.TryGetValue(variation, out var block))");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Script '{name}' has no variation '{variation}'.\");");
+            indented.Indent--;
+            indented.WriteLine("return new Script");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("Block = block,");
+            indented.WriteLine("Runtime = this");
+            indented.Indent--;
+            indented.WriteLine("};");
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+
+            // GetScript<TVar>(key, variation) — enum-based, delegates to string
+            indented.WriteLine("public Script GetScript<TVar>(ScriptKey key, TVar variation)");
+            indented.WriteLine("    where TVar : struct, Enum");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("return GetScript(key, variation.ToString().ToLowerInvariant());");
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+
             indented.WriteLine("private static string ScriptKeyToString(ScriptKey key) => key switch");
             indented.WriteLine("{");
             indented.Indent++;
@@ -181,20 +230,65 @@ public static class PlayscriptRuntimeEmitter
             indented.Indent--;
             indented.WriteLine("}");
             indented.WriteLine();
+
+            // GetText(key) — unversioned
             indented.WriteLine("public Text GetText(TextKey key)");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("var text = new Text");
+            indented.WriteLine("var name = TextKeyToString(key);");
+            indented.WriteLine("if (!_texts.Value.TryGetValue(name, out var variants))");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Text '{name}' not found.\");");
+            indented.Indent--;
+            indented.WriteLine("if (variants.Unversioned == null)");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Text '{name}' has no unversioned block.\");");
+            indented.Indent--;
+            indented.WriteLine("return new Text");
             indented.WriteLine("{");
             indented.Indent++;
-            indented.WriteLine("Block = _texts.Value[TextKeyToString(key)],");
+            indented.WriteLine("Block = variants.Unversioned,");
             indented.WriteLine("Runtime = this");
             indented.Indent--;
             indented.WriteLine("};");
-            indented.WriteLine("return text;");
             indented.Indent--;
             indented.WriteLine("}");
             indented.WriteLine();
+
+            // GetText(key, string variation)
+            indented.WriteLine("public Text GetText(TextKey key, string variation)");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("var name = TextKeyToString(key);");
+            indented.WriteLine("if (!_texts.Value.TryGetValue(name, out var variants))");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Text '{name}' not found.\");");
+            indented.Indent--;
+            indented.WriteLine("if (!variants.Numbered.TryGetValue(variation, out var block))");
+            indented.Indent++;
+            indented.WriteLine("throw new InvalidOperationException($\"Text '{name}' has no variation '{variation}'.\");");
+            indented.Indent--;
+            indented.WriteLine("return new Text");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("Block = block,");
+            indented.WriteLine("Runtime = this");
+            indented.Indent--;
+            indented.WriteLine("};");
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+
+            // GetText<TVar>(key, variation) — enum-based, delegates to string
+            indented.WriteLine("public Text GetText<TVar>(TextKey key, TVar variation)");
+            indented.WriteLine("    where TVar : struct, Enum");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("return GetText(key, variation.ToString().ToLowerInvariant());");
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+
             indented.WriteLine("private static string TextKeyToString(TextKey key) => key switch");
             indented.WriteLine("{");
             indented.Indent++;
@@ -218,6 +312,58 @@ public static class PlayscriptRuntimeEmitter
 
         indented.Flush();
         return writer.ToString();
+    }
+
+    private static void EmitVariationEnums(Dictionary<string, ScriptVariants> scripts, string prefix, IndentedTextWriter indented)
+    {
+        foreach (var kvp in scripts)
+        {
+            if (kvp.Value.Numbered.Count == 0) continue;
+
+            var enumName = $"{EscapeKeyword(kvp.Key)}{prefix}Variation";
+            indented.WriteLine($"public enum {enumName}");
+            indented.WriteLine("{");
+            indented.Indent++;
+            var keys = kvp.Value.Numbered.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
+            for (var i = 0; i < keys.Count; i++)
+            {
+                var suffix = i < keys.Count - 1 ? "," : "";
+                var memberName = ToPascalCase(keys[i]);
+                indented.WriteLine($"{EscapeKeyword(memberName)}{suffix}");
+            }
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+        }
+    }
+
+    private static void EmitVariationEnums(Dictionary<string, TextVariants> texts, string prefix, IndentedTextWriter indented)
+    {
+        foreach (var kvp in texts)
+        {
+            if (kvp.Value.Numbered.Count == 0) continue;
+
+            var enumName = $"{EscapeKeyword(kvp.Key)}{prefix}Variation";
+            indented.WriteLine($"public enum {enumName}");
+            indented.WriteLine("{");
+            indented.Indent++;
+            var keys = kvp.Value.Numbered.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
+            for (var i = 0; i < keys.Count; i++)
+            {
+                var suffix = i < keys.Count - 1 ? "," : "";
+                var memberName = ToPascalCase(keys[i]);
+                indented.WriteLine($"{EscapeKeyword(memberName)}{suffix}");
+            }
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+        }
+    }
+
+    private static string ToPascalCase(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        return char.ToUpperInvariant(name[0]) + name.Substring(1);
     }
 
     private static string EscapeKeyword(string name)

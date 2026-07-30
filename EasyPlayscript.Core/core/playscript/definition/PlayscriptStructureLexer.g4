@@ -4,6 +4,7 @@ lexer grammar PlayscriptStructureLexer;
 
 SCRIPT      : 'script' ;
 TEXT        : 'text' ;
+VARIATION   : 'variation' ;
 ASYNC       : 'async' ;
 INTERFACE   : 'interface' ;
 

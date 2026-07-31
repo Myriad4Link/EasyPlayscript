@@ -195,4 +195,40 @@ public class PlayscriptFormatterTests
 
         Assert.Equal("script First\n[\n\tA\n]", result);
     }
+
+    [Fact]
+    public void Format_ScriptWithVariation()
+    {
+        var input = "script Greet variation casual [Hello!]";
+        var result = _formatter.Format(input);
+
+        Assert.Equal("script Greet variation casual\n[\n\tHello!\n]", result);
+    }
+
+    [Fact]
+    public void Format_ScriptWithDefaultVariation()
+    {
+        var input = "script Greet default variation casual [Hello!]";
+        var result = _formatter.Format(input);
+
+        Assert.Equal("script Greet default variation casual\n[\n\tHello!\n]", result);
+    }
+
+    [Fact]
+    public void Format_TextWithVariation()
+    {
+        var input = "text Lore variation quick [Once upon a time...]";
+        var result = _formatter.Format(input);
+
+        Assert.Equal("text Lore variation quick\n[\n\tOnce upon a time...\n]", result);
+    }
+
+    [Fact]
+    public void Format_TextWithDefaultVariation()
+    {
+        var input = "text Lore default variation quick [Once upon a time...]";
+        var result = _formatter.Format(input);
+
+        Assert.Equal("text Lore default variation quick\n[\n\tOnce upon a time...\n]", result);
+    }
 }

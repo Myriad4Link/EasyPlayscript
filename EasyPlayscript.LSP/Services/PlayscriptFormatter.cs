@@ -29,6 +29,15 @@ internal class PlayscriptFormatter
         sb.Append(keyword);
         sb.Append(' ');
         sb.Append(block.Name);
+        if (block.Variation != null)
+        {
+            if (block.IsDefault)
+            {
+                sb.Append(" default");
+            }
+            sb.Append(" variation ");
+            sb.Append(block.Variation);
+        }
         sb.Append('\n');
         sb.Append(baseIndent);
         sb.Append('[');

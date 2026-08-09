@@ -14,6 +14,7 @@ public static class DiagnosticCodes
     public const string UnusedImplementation = "SCPT011";
     public const string AsyncSyncMismatch = "SCPT012";
     public const string SyncAsyncMismatch = "SCPT013";
+    public const string AmbiguousConsumerCall = "SCPT014";
 
     public const string UnexpectedTokenFormat = "{0}";
     public const string MismatchedInputFormat = "{0}";
@@ -35,4 +36,7 @@ public static class DiagnosticCodes
 
     public const string SyncAsyncMismatchFormat =
         "Interface \"{0}\" is not async but [Implementation] method returns Task";
+
+    public const string AmbiguousConsumerCallFormat =
+        "Consumer call \"{0}\" is ambiguous between namespaces; available: {1}";
 }

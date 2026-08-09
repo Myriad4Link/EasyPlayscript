@@ -133,7 +133,7 @@ The `BuildTask` (`PlayscriptBuildTask.cs`) correctly sets `hasErrors` from the c
 
 ## Tier 3 — Polish / nice-to-have
 
-- **Naming consistency**: `ScriptKey`/`TextKey` (plural form, enums) vs the docs which show `PlayscriptRuntimeSession.ScriptKey.act_i_scene_i` (using the enum value as a key). It's idiomatic but a "new to this" user will trip on it.
+- **Naming consistency**: `ScriptKey`/`TextKey` (plural form, enums) vs the docs which show `ScriptKey.act_i_scene_i` (using the enum value as a key). It's idiomatic but a "new to this" user will trip on it.
 - **Decimals as `double` in generated code**: `DecimalArgument` becomes `(double)` in the generator. For an RPG-friendly DSL, this is lossy. There's no `decimal` type in the C# type system used here.
 - **No `try`/cancellation behavior in `RenderNext*Async`**: If a registered service throws, the navigator state is left half-advanced; no `try/finally` to keep the pointer consistent.
 - **`ScriptNavigator` is mutable state on an immutable `ScriptBlock`**. There's no way to clone or fork the navigator (e.g., to peek at a future page without advancing).

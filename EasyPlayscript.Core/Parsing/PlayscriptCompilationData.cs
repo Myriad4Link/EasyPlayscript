@@ -16,6 +16,13 @@ public class PlayscriptCompilationData
     public static string GetQualifiedName(string? ns, string name) =>
         ns != null ? $"{ns}.{name}" : name;
 
+    public static (string? ns, string name) ParseQualifiedName(string qualifiedName)
+    {
+        var lastDot = qualifiedName.LastIndexOf('.');
+        if (lastDot < 0) return (null, qualifiedName);
+        return (qualifiedName.Substring(0, lastDot), qualifiedName.Substring(lastDot + 1));
+    }
+
     public List<ValidationDiagnostic> MergeFrom(PlayscriptCompilationData source)
     {
         var diagnostics = new List<ValidationDiagnostic>();
@@ -31,14 +38,14 @@ public class PlayscriptCompilationData
     {
         foreach (var kvp in source.Scripts)
         {
-            var name = kvp.Key;
+            var qualifiedName = kvp.Key;
             var srcVar = kvp.Value;
 
-            if (!Scripts.TryGetValue(name, out var tgtVar))
+            if (!Scripts.TryGetValue(qualifiedName, out var tgtVar))
             {
-                Scripts[name] = srcVar;
+                Scripts[qualifiedName] = srcVar;
                 foreach (var lkv in source.ScriptLocations)
-                    if (lkv.Key.Name == name)
+                    if (lkv.Key.Name == qualifiedName)
                         ScriptLocations[lkv.Key] = lkv.Value;
                 continue;
             }
@@ -47,16 +54,16 @@ public class PlayscriptCompilationData
             {
                 if (tgtVar.Unversioned != null)
                 {
-                    var key = (name, "");
+                    var key = (qualifiedName, "");
                     var sl = ScriptLocations[key];
                     diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
                         DiagnosticCodes.DuplicateScriptNameFormat,
-                        sl.filePath, sl.line, sl.col, "script", name));
+                        sl.filePath, sl.line, sl.col, "script", qualifiedName));
                 }
                 else
                 {
                     tgtVar.Unversioned = srcVar.Unversioned;
-                    var key = (name, "");
+                    var key = (qualifiedName, "");
                     if (source.ScriptLocations.TryGetValue(key, out var s))
                         ScriptLocations[key] = s;
                 }
@@ -67,16 +74,16 @@ public class PlayscriptCompilationData
                 var varKey = vk.Key;
                 if (tgtVar.Numbered.ContainsKey(varKey))
                 {
-                    var key = (name, varKey);
+                    var key = (qualifiedName, varKey);
                     var sl = ScriptLocations[key];
                     diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
                         DiagnosticCodes.DuplicateScriptNameFormat,
-                        sl.filePath, sl.line, sl.col, "script", $"{name} variation {varKey}"));
+                        sl.filePath, sl.line, sl.col, "script", $"{qualifiedName} variation {varKey}"));
                 }
                 else
                 {
                     tgtVar.Numbered[varKey] = vk.Value;
-                    var key = (name, varKey);
+                    var key = (qualifiedName, varKey);
                     if (source.ScriptLocations.TryGetValue(key, out var s))
                         ScriptLocations[key] = s;
                 }
@@ -90,14 +97,14 @@ public class PlayscriptCompilationData
     {
         foreach (var kvp in source.Texts)
         {
-            var name = kvp.Key;
+            var qualifiedName = kvp.Key;
             var srcVar = kvp.Value;
 
-            if (!Texts.TryGetValue(name, out var tgtVar))
+            if (!Texts.TryGetValue(qualifiedName, out var tgtVar))
             {
-                Texts[name] = srcVar;
+                Texts[qualifiedName] = srcVar;
                 foreach (var lkv in source.TextLocations)
-                    if (lkv.Key.Name == name)
+                    if (lkv.Key.Name == qualifiedName)
                         TextLocations[lkv.Key] = lkv.Value;
                 continue;
             }
@@ -106,16 +113,16 @@ public class PlayscriptCompilationData
             {
                 if (tgtVar.Unversioned != null)
                 {
-                    var key = (name, "");
+                    var key = (qualifiedName, "");
                     var sl = TextLocations[key];
                     diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
                         DiagnosticCodes.DuplicateScriptNameFormat,
-                        sl.filePath, sl.line, sl.col, "text", name));
+                        sl.filePath, sl.line, sl.col, "text", qualifiedName));
                 }
                 else
                 {
                     tgtVar.Unversioned = srcVar.Unversioned;
-                    var key = (name, "");
+                    var key = (qualifiedName, "");
                     if (source.TextLocations.TryGetValue(key, out var s))
                         TextLocations[key] = s;
                 }
@@ -126,16 +133,16 @@ public class PlayscriptCompilationData
                 var varKey = vk.Key;
                 if (tgtVar.Numbered.ContainsKey(varKey))
                 {
-                    var key = (name, varKey);
+                    var key = (qualifiedName, varKey);
                     var sl = TextLocations[key];
                     diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateScriptName,
                         DiagnosticCodes.DuplicateScriptNameFormat,
-                        sl.filePath, sl.line, sl.col, "text", $"{name} variation {varKey}"));
+                        sl.filePath, sl.line, sl.col, "text", $"{qualifiedName} variation {varKey}"));
                 }
                 else
                 {
                     tgtVar.Numbered[varKey] = vk.Value;
-                    var key = (name, varKey);
+                    var key = (qualifiedName, varKey);
                     if (source.TextLocations.TryGetValue(key, out var s))
                         TextLocations[key] = s;
                 }

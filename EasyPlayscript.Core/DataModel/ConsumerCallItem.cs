@@ -15,4 +15,6 @@ public class ConsumerCallItem(string identifier, List<ArgumentValue> arguments) 
     [IgnoreMember] public int Col { get; set; }
 
     [IgnoreMember] public object? Result { get; set; }
+
+    [IgnoreMember] public string? Namespace { get; set; }
 }

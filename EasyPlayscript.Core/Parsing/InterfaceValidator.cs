@@ -52,21 +52,60 @@ public static class InterfaceValidator
 
     public static string MakeSignatureKey(InterfaceDeclaration decl)
     {
+        var qualifiedName = PlayscriptCompilationData.GetQualifiedName(decl.Namespace, decl.Name);
         var paramTypes = string.Join(",", decl.Parameters.Select(p =>
             p.Type.ToString().ToLowerInvariant()));
-        return $"{decl.Name}({paramTypes}):{decl.ReturnType.ToString().ToLowerInvariant()}";
+        return $"{qualifiedName}({paramTypes}):{decl.ReturnType.ToString().ToLowerInvariant()}";
     }
 
     public static List<ValidationDiagnostic> ValidateUndeclaredCalls(PlayscriptCompilationData data)
     {
-        var declaredNames = new HashSet<string>(data.Interfaces.Select(i => i.Name));
+        var diagnostics = new List<ValidationDiagnostic>();
 
-        return GetAllCalls(data)
-            .Where(x => !declaredNames.Contains(x.call.Identifier))
-            .Select(x => new ValidationDiagnostic(DiagnosticCodes.UndeclaredConsumerCall,
-                DiagnosticCodes.UndeclaredConsumerCallFormat,
-                x.filePath, x.call.Line, x.call.Col, x.call.Identifier))
-            .ToList();
+        var declaredQualifiedNames = new HashSet<string>(
+            data.Interfaces.Select(i =>
+                PlayscriptCompilationData.GetQualifiedName(i.Namespace, i.Name)));
+
+        foreach (var (call, filePath) in GetAllCalls(data))
+        {
+            var identifier = call.Identifier;
+            if (identifier.Contains("."))
+            {
+                if (!declaredQualifiedNames.Contains(identifier))
+                    diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.UndeclaredConsumerCall,
+                        DiagnosticCodes.UndeclaredConsumerCallFormat,
+                        filePath, call.Line, call.Col, identifier));
+                continue;
+            }
+
+            var sameNsQualified = PlayscriptCompilationData.GetQualifiedName(call.Namespace, identifier);
+            if (declaredQualifiedNames.Contains(sameNsQualified))
+                continue;
+
+            var globalMatches = declaredQualifiedNames
+                .Where(n => PlayscriptCompilationData.ParseQualifiedName(n).name == identifier)
+                .ToArray();
+
+            if (globalMatches.Length == 0)
+            {
+                diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.UndeclaredConsumerCall,
+                    DiagnosticCodes.UndeclaredConsumerCallFormat,
+                    filePath, call.Line, call.Col, identifier));
+            }
+            else if (globalMatches.Length > 1)
+            {
+                diagnostics.Add(new ValidationDiagnostic(DiagnosticCodes.AmbiguousConsumerCall,
+                    DiagnosticCodes.AmbiguousConsumerCallFormat,
+                    filePath, call.Line, call.Col, identifier,
+                    string.Join(", ", globalMatches)));
+            }
+            else if (globalMatches.Length == 1)
+            {
+                continue;
+            }
+        }
+
+        return diagnostics;
     }
 
     public static List<ValidationDiagnostic> ValidateDuplicateSignatures(PlayscriptCompilationData data)
@@ -79,8 +118,9 @@ public static class InterfaceValidator
             var key = MakeSignatureKey(decl);
             if (signatureMap.ContainsKey(key))
             {
+                var qualifiedName = PlayscriptCompilationData.GetQualifiedName(decl.Namespace, decl.Name);
                 var sig =
-                    $"{decl.Name}({string.Join(", ", decl.Parameters.Select(p =>
+                    $"{qualifiedName}({string.Join(", ", decl.Parameters.Select(p =>
                         p.Type.ToString().ToLowerInvariant()))}):{decl.ReturnType.ToString().ToLowerInvariant()}";
                 errors.Add(new ValidationDiagnostic(DiagnosticCodes.DuplicateInterfaceSignature,
                     DiagnosticCodes.DuplicateInterfaceSignatureFormat,
@@ -99,65 +139,81 @@ public static class InterfaceValidator
     {
         var errors = new List<ValidationDiagnostic>();
 
-        var interfacesByName = new Dictionary<string, List<InterfaceDeclaration>>();
+        var interfacesByQualifiedName = new Dictionary<string, List<InterfaceDeclaration>>();
         foreach (var decl in data.Interfaces)
         {
-            if (!interfacesByName.TryGetValue(decl.Name, out var list))
+            var qualifiedName = PlayscriptCompilationData.GetQualifiedName(decl.Namespace, decl.Name);
+            if (!interfacesByQualifiedName.TryGetValue(qualifiedName, out var list))
             {
                 list = [];
-                interfacesByName[decl.Name] = list;
+                interfacesByQualifiedName[qualifiedName] = list;
             }
 
             list.Add(decl);
         }
 
         foreach (var (call, filePath) in GetAllCalls(data))
-            ValidateConsumerCall(call, interfacesByName, filePath, errors);
+            ValidateConsumerCall(call, interfacesByQualifiedName, filePath, errors);
 
         return errors;
     }
 
-    private static IEnumerable<(ConsumerCallItem call, string filePath)> GetAllCalls(PlayscriptCompilationData data)
+    private static IEnumerable<(ConsumerCallItem call, string filePath)> GetAllCalls(
+        PlayscriptCompilationData data)
     {
         foreach (var kvp in data.Scripts)
         {
-            var name = kvp.Key;
+            var qualifiedName = kvp.Key;
+            var (ns, _) = PlayscriptCompilationData.ParseQualifiedName(qualifiedName);
             var variants = kvp.Value;
 
             if (variants.Unversioned != null)
             {
-                if (data.ScriptLocations.TryGetValue((name, ""), out var loc))
+                if (data.ScriptLocations.TryGetValue((qualifiedName, ""), out var loc))
                     foreach (var call in GetConsumerCalls(variants.Unversioned))
+                    {
+                        call.Namespace = ns;
                         yield return (call, loc.filePath);
+                    }
             }
 
             foreach (var vk in variants.Numbered)
             {
                 var variation = vk.Key;
-                if (data.ScriptLocations.TryGetValue((name, variation), out var loc))
+                if (data.ScriptLocations.TryGetValue((qualifiedName, variation), out var loc))
                     foreach (var call in GetConsumerCalls(vk.Value))
+                    {
+                        call.Namespace = ns;
                         yield return (call, loc.filePath);
+                    }
             }
         }
 
         foreach (var kvp in data.Texts)
         {
-            var name = kvp.Key;
+            var qualifiedName = kvp.Key;
+            var (ns, _) = PlayscriptCompilationData.ParseQualifiedName(qualifiedName);
             var variants = kvp.Value;
 
             if (variants.Unversioned != null)
             {
-                if (data.TextLocations.TryGetValue((name, ""), out var loc))
+                if (data.TextLocations.TryGetValue((qualifiedName, ""), out var loc))
                     foreach (var call in GetConsumerCalls(variants.Unversioned))
+                    {
+                        call.Namespace = ns;
                         yield return (call, loc.filePath);
+                    }
             }
 
             foreach (var vk in variants.Numbered)
             {
                 var variation = vk.Key;
-                if (data.TextLocations.TryGetValue((name, variation), out var loc))
+                if (data.TextLocations.TryGetValue((qualifiedName, variation), out var loc))
                     foreach (var call in GetConsumerCalls(vk.Value))
+                    {
+                        call.Namespace = ns;
                         yield return (call, loc.filePath);
+                    }
             }
         }
     }
@@ -165,17 +221,24 @@ public static class InterfaceValidator
     private static string FormatCandidates(List<InterfaceDeclaration> candidates)
     {
         var signatures = candidates.Select(c =>
-            $"{c.Name}({string.Join(", ", c.Parameters.Select(p => p.Type.ToString().ToLowerInvariant()))}):{c.ReturnType.ToString().ToLowerInvariant()}");
+        {
+            var qualifiedName = PlayscriptCompilationData.GetQualifiedName(c.Namespace, c.Name);
+            return $"{qualifiedName}({string.Join(", ", c.Parameters.Select(p => p.Type.ToString().ToLowerInvariant()))}):{c.ReturnType.ToString().ToLowerInvariant()}";
+        });
         return "\n  Candidates:\n    " + string.Join("\n    ", signatures);
     }
 
     private static void ValidateConsumerCall(
         ConsumerCallItem call,
-        Dictionary<string, List<InterfaceDeclaration>> interfacesByName,
+        Dictionary<string, List<InterfaceDeclaration>> interfacesByQualifiedName,
         string filePath,
         List<ValidationDiagnostic> errors)
     {
-        if (!interfacesByName.TryGetValue(call.Identifier, out var overloads))
+        var resolvedName = ResolveInterfaceName(call.Identifier, call.Namespace, interfacesByQualifiedName);
+        if (resolvedName == null)
+            return;
+
+        if (!interfacesByQualifiedName.TryGetValue(resolvedName, out var overloads))
             return;
 
         var argCount = call.Arguments.Count;
@@ -206,6 +269,32 @@ public static class InterfaceValidator
             actualType?.ToString().ToLowerInvariant() ?? "unknown",
             expectedType.ToString().ToLowerInvariant(),
             candidateSuffix2));
+    }
+
+    private static string? ResolveInterfaceName(
+        string callIdentifier,
+        string? callNamespace,
+        Dictionary<string, List<InterfaceDeclaration>> interfacesByQualifiedName)
+    {
+        if (callIdentifier.Contains("."))
+        {
+            if (interfacesByQualifiedName.ContainsKey(callIdentifier))
+                return callIdentifier;
+            return null;
+        }
+
+        var sameNsQualified = PlayscriptCompilationData.GetQualifiedName(callNamespace, callIdentifier);
+        if (interfacesByQualifiedName.ContainsKey(sameNsQualified))
+            return sameNsQualified;
+
+        var globalMatches = interfacesByQualifiedName.Keys
+            .Where(k => PlayscriptCompilationData.ParseQualifiedName(k).name == callIdentifier)
+            .ToArray();
+
+        if (globalMatches.Length == 1)
+            return globalMatches[0];
+
+        return null;
     }
 
     private static bool TryMatchOverload(ConsumerCallItem call, InterfaceDeclaration overload)

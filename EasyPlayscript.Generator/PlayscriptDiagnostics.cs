@@ -109,6 +109,14 @@ internal static class PlayscriptDiagnostics
         DiagnosticSeverity.Error,
         true);
 
+    private static readonly DiagnosticDescriptor AmbiguousConsumerCall = new(
+        DiagnosticCodes.AmbiguousConsumerCall,
+        "Ambiguous consumer call",
+        DiagnosticCodes.AmbiguousConsumerCallFormat,
+        Category,
+        DiagnosticSeverity.Error,
+        true);
+
     private static readonly Dictionary<string, DiagnosticDescriptor> ByCodeMap = new()
     {
         [DiagnosticCodes.UnexpectedToken] = UnexpectedToken,
@@ -122,7 +130,8 @@ internal static class PlayscriptDiagnostics
         [DiagnosticCodes.DuplicateImplementation] = DuplicateImplementation,
         [DiagnosticCodes.UnusedImplementation] = UnusedImplementation,
         [DiagnosticCodes.AsyncSyncMismatch] = AsyncSyncMismatch,
-        [DiagnosticCodes.SyncAsyncMismatch] = SyncAsyncMismatch
+        [DiagnosticCodes.SyncAsyncMismatch] = SyncAsyncMismatch,
+        [DiagnosticCodes.AmbiguousConsumerCall] = AmbiguousConsumerCall
     };
 
     internal static DiagnosticDescriptor GetDescriptor(string code)

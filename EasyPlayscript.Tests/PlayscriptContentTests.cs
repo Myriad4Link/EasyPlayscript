@@ -1106,4 +1106,102 @@ public class PlayscriptContentTests
         Assert.IsType<BoolArgument>(item.Arguments[0]);
         Assert.False(((BoolArgument)item.Arguments[0]).Value);
     }
+
+    // ─── Dot-Qualified Consumer Calls ────────────────────────────────────────
+
+    [Fact]
+    public void ConsumerCall_SingleDot_QualifiedName()
+    {
+        const string input = "@Audio.play()";
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).segment(0).consumerCall(0);
+        Assert.Equal("Audio.play", call.qualifiedName().GetText());
+    }
+
+    [Fact]
+    public void ConsumerCall_MultiDot_QualifiedName()
+    {
+        const string input = "@A.B.C.func()";
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).segment(0).consumerCall(0);
+        Assert.Equal("A.B.C.func", call.qualifiedName().GetText());
+    }
+
+    [Fact]
+    public void ConsumerCall_SimpleName_StillWorks()
+    {
+        const string input = "@func()";
+        var (parser, errors) = PlayscriptContentHelper.ParseScript(input);
+        var tree = parser.scriptContent();
+
+        Assert.Empty(errors);
+        var call = tree.page(0).paragraph(0).line(0).segment(0).consumerCall(0);
+        Assert.Equal("func", call.qualifiedName().GetText());
+    }
+
+    [Fact]
+    public void Builder_DottedCall_ConsumerCallItemIdentifier()
+    {
+        var block = BuildScriptBlock("@Audio.play(\"beep\")");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0];
+        Assert.Equal("Audio.play", item.Identifier);
+        Assert.Null(item.Namespace);
+        Assert.Single(item.Arguments);
+        Assert.IsType<StringArgument>(item.Arguments[0]);
+        Assert.Equal("beep", ((StringArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_MultiDotCall_Identifier()
+    {
+        var block = BuildScriptBlock("@A.B.func(42)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0];
+        Assert.Equal("A.B.func", item.Identifier);
+        Assert.Single(item.Arguments);
+        Assert.IsType<IntArgument>(item.Arguments[0]);
+        Assert.Equal(42, ((IntArgument)item.Arguments[0]).Value);
+    }
+
+    [Fact]
+    public void Builder_DottedCall_MixedWithText()
+    {
+        var block = BuildScriptBlock("Hello @UI.dialog(\"hi\") world");
+        var items = block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items;
+        Assert.Equal(3, items.Count);
+        Assert.IsType<TextItem>(items[0]);
+        Assert.Equal("Hello ", ((TextItem)items[0]).Text);
+        Assert.IsType<ConsumerCallItem>(items[1]);
+        Assert.Equal("UI.dialog", ((ConsumerCallItem)items[1]).Identifier);
+        Assert.IsType<TextItem>(items[2]);
+        Assert.Equal(" world", ((TextItem)items[2]).Text);
+    }
+
+    [Fact]
+    public void Builder_DottedCall_InTextBlock()
+    {
+        var block = BuildTextBlock("@UI.dialog(\"hi\")");
+        var items = block.Lines[0].Segments[0].Items;
+        Assert.Single(items);
+        Assert.IsType<ConsumerCallItem>(items[0]);
+        Assert.Equal("UI.dialog", ((ConsumerCallItem)items[0]).Identifier);
+    }
+
+    [Fact]
+    public void Builder_DottedCall_WithMultipleParams()
+    {
+        var block = BuildScriptBlock("@Audio.play(\"beep\", 3.0)");
+        var item = (ConsumerCallItem)block.Pages[0].Paragraphs[0].Lines[0].Segments[0].Items[0];
+        Assert.Equal("Audio.play", item.Identifier);
+        Assert.Equal(2, item.Arguments.Count);
+        Assert.IsType<StringArgument>(item.Arguments[0]);
+        Assert.IsType<DoubleArgument>(item.Arguments[1]);
+        Assert.Equal("beep", ((StringArgument)item.Arguments[0]).Value);
+        Assert.Equal(3.0, ((DoubleArgument)item.Arguments[1]).Value);
+    }
 }

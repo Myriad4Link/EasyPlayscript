@@ -250,4 +250,65 @@ public class PlayscriptSyncHandlerDiagnosticsTests
         textDoc.Received(1).PublishDiagnostics(Arg.Is<PublishDiagnosticsParams>(
             p => p.Uri == uri && !p.Diagnostics.Any()));
     }
+
+    // ── Namespace-aware diagnostics ────────────────────────────────────────
+
+    [Fact]
+    public async Task Open_NamespaceFile_DotQualifiedCall_NoDiagnostics()
+    {
+        var (handler, _, _, textDoc) = CreateHandler();
+        var uri = DocumentUri.From("/test.scpt");
+
+        await handler.Handle(OpenParams(uri, """
+            namespace Foo
+            interface greet(s: string) : void
+            script a[
+            @Foo.greet("hi")
+            ]
+            """), CancellationToken.None);
+
+        textDoc.Received(1).PublishDiagnostics(Arg.Is<PublishDiagnosticsParams>(
+            p => p.Uri == uri && !p.Diagnostics.Any()));
+    }
+
+    [Fact]
+    public async Task Open_NamespaceFile_SameNsCall_NoDiagnostics()
+    {
+        var (handler, _, _, textDoc) = CreateHandler();
+        var uri = DocumentUri.From("/test.scpt");
+
+        await handler.Handle(OpenParams(uri, """
+            namespace Foo
+            interface greet(s: string) : void
+            script a[
+            @greet("hi")
+            ]
+            """), CancellationToken.None);
+
+        textDoc.Received(1).PublishDiagnostics(Arg.Is<PublishDiagnosticsParams>(
+            p => p.Uri == uri && !p.Diagnostics.Any()));
+    }
+
+    [Fact]
+    public async Task Open_CrossFile_NamespaceAware_Scpt005()
+    {
+        var (handler, _, _, textDoc) = CreateHandler();
+        var uriA = DocumentUri.From("/a.scpt");
+        var uriB = DocumentUri.From("/b.scpt");
+
+        await handler.Handle(OpenParams(uriA, """
+            namespace Foo
+            interface greet(s: string) : void
+            """), CancellationToken.None);
+        await handler.Handle(OpenParams(uriB, """
+            namespace Foo
+            script s[
+            @other_call("hi")
+            ]
+            """), CancellationToken.None);
+
+        textDoc.Received().PublishDiagnostics(Arg.Is<PublishDiagnosticsParams>(
+            p => p.Uri == uriB
+                 && ExtractCodes(p).Contains(DiagnosticCodes.UndeclaredConsumerCall)));
+    }
 }

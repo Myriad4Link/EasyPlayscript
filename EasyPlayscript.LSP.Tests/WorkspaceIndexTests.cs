@@ -386,4 +386,131 @@ public class WorkspaceIndexTests
         Assert.DoesNotContain(index.GetAllDiagnostics(UriB),
             d => d.Code == DiagnosticCodes.UndeclaredConsumerCall);
     }
+
+    // ── Namespace-aware cross-file ──────────────────────────────────────────
+
+    [Fact]
+    public void CrossFile_SameNs_ResolvesCall()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, """
+            namespace Foo
+            interface greet(s: string) : void
+            """);
+        Register(index, UriB, """
+            namespace Foo
+            script s[
+            @greet("hi")
+            ]
+            """);
+
+        Assert.DoesNotContain(index.GetAllDiagnostics(UriB),
+            d => d.Code == DiagnosticCodes.UndeclaredConsumerCall);
+    }
+
+    [Fact]
+    public void CrossFile_DotQualifiedCall_Resolves()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, """
+            namespace Foo
+            interface greet(s: string) : void
+            """);
+        Register(index, UriB, """
+            script s[
+            @Foo.greet("hi")
+            ]
+            """);
+
+        Assert.DoesNotContain(index.GetAllDiagnostics(UriB),
+            d => d.Code == DiagnosticCodes.UndeclaredConsumerCall);
+    }
+
+    [Fact]
+    public void CrossFile_DuplicateScript_DifferentNs_NoError()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, """
+            namespace A
+            script foo[
+            hi
+            ]
+            """);
+        Register(index, UriB, """
+            namespace B
+            script foo[
+            hello
+            ]
+            """);
+
+        Assert.DoesNotContain(index.GetAllDiagnostics(UriA),
+            d => d.Code == DiagnosticCodes.DuplicateScriptName);
+        Assert.DoesNotContain(index.GetAllDiagnostics(UriB),
+            d => d.Code == DiagnosticCodes.DuplicateScriptName);
+    }
+
+    [Fact]
+    public void CrossFile_DuplicateInterface_DifferentNs_NoError()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, """
+            namespace A
+            interface play(s: string) : void
+            """);
+        Register(index, UriB, """
+            namespace B
+            interface play(s: string) : void
+            """);
+
+        Assert.DoesNotContain(index.GetAllDiagnostics(UriA),
+            d => d.Code == DiagnosticCodes.DuplicateInterfaceSignature);
+        Assert.DoesNotContain(index.GetAllDiagnostics(UriB),
+            d => d.Code == DiagnosticCodes.DuplicateInterfaceSignature);
+    }
+
+    [Fact]
+    public void CrossFile_AmbiguousCall_ReportsScpt014()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, """
+            namespace Foo
+            interface greet(s: string) : void
+            """);
+        Register(index, UriB, """
+            namespace Bar
+            interface greet(s: string) : void
+            """);
+        Register(index, UriC, """
+            script s[
+            @greet("hi")
+            ]
+            """);
+
+        var diags = index.GetAllDiagnostics(UriC);
+        var scpt014 = diags.FirstOrDefault(d => d.Code == DiagnosticCodes.AmbiguousConsumerCall);
+        Assert.Equal(DiagnosticCodes.AmbiguousConsumerCall, scpt014.Code);
+        Assert.Contains("Foo.greet", scpt014.Message);
+        Assert.Contains("Bar.greet", scpt014.Message);
+    }
+
+    [Fact]
+    public void CrossFile_DifferentNs_UndeclaredCall_Surfaces()
+    {
+        var index = new WorkspaceIndex();
+        Register(index, UriA, """
+            namespace Foo
+            interface greet(s: string) : void
+            """);
+        Register(index, UriB, """
+            namespace Foo
+            script s[
+            @unknown_call("hi")
+            ]
+            """);
+
+        var diags = index.GetAllDiagnostics(UriB);
+        var scpt005 = diags.FirstOrDefault(d => d.Code == DiagnosticCodes.UndeclaredConsumerCall);
+        Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, scpt005.Code);
+        Assert.Equal(UriB.ToString(), scpt005.FilePath);
+    }
 }

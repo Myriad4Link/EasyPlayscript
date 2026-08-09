@@ -463,4 +463,99 @@ public class PlayscriptStructureTests
         Assert.Null(result.Results[0].Variation);
         Assert.False(result.Results[0].IsDefault);
     }
+
+    // ─── Namespace Declaration Parsing ──────────────────────────────────────
+
+    [Fact]
+    public void ParseStructure_Namespace_SingleSegment()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("namespace Combat\nscript attack[Hi]");
+        Assert.Equal("Combat", result.Namespace);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_MultiSegment()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "namespace Alice.Bob.Charlie\nscript foo[Hi]");
+        Assert.Equal("Alice.Bob.Charlie", result.Namespace);
+    }
+
+    [Fact]
+    public void ParseStructure_NoNamespace_Null()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure("script foo[Hi]");
+        Assert.Null(result.Namespace);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_SetsOnInterfaces()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "namespace Foo\ninterface greet(s: string) : void");
+        Assert.Equal("Foo", result.Namespace);
+        Assert.Single(result.Interfaces);
+        Assert.Equal("Foo", result.Interfaces[0].Namespace);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_WithInterfaceOnly_NoErrors()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+            "namespace UI\ninterface play(s: string) : void");
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_WithBlockOnly_NoErrors()
+    {
+        var (_, errors) = PlayscriptStructureHelper.ParseStructureWithErrors(
+            "namespace UI\nscript menu[Hi]");
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_MixedBlocksAndInterfaces()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "namespace Foo\ninterface a() : void\nscript b[Hi]\ntext c[Hello]");
+        Assert.Equal("Foo", result.Namespace);
+        Assert.Single(result.Interfaces);
+        Assert.Equal("Foo", result.Interfaces[0].Namespace);
+        Assert.Equal(2, result.Results.Count);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_WithAsyncInterface()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "namespace API\nasync interface fetch(id: int) : string");
+        Assert.Equal("API", result.Namespace);
+        Assert.Single(result.Interfaces);
+        Assert.Equal("API", result.Interfaces[0].Namespace);
+        Assert.True(result.Interfaces[0].IsAsync);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_BeforeVariation()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "namespace Foo\nscript bar variation casual[Hi]");
+        Assert.Equal("Foo", result.Namespace);
+        Assert.Single(result.Results);
+        Assert.Equal("bar", result.Results[0].Name);
+        Assert.Equal("casual", result.Results[0].Variation);
+    }
+
+    [Fact]
+    public void ParseStructure_Namespace_BeforeDefaultVariation()
+    {
+        var result = PlayscriptStructureHelper.ParseStructure(
+            "namespace Foo\ntext intro default variation quick[Welcome]");
+        Assert.Equal("Foo", result.Namespace);
+        Assert.Single(result.Results);
+        Assert.Equal("intro", result.Results[0].Name);
+        Assert.Equal("quick", result.Results[0].Variation);
+        Assert.True(result.Results[0].IsDefault);
+    }
 }

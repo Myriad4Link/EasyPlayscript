@@ -32,6 +32,14 @@ public class InterfaceValidatorTests
         return new InterfaceDeclaration(name, parms, returnType, 1, 0) { FilePath = "test" };
     }
 
+    private static InterfaceDeclaration MakeInterfaceWithNs(string name, InterfaceType returnType, string? ns,
+        params (string n, InterfaceType t)[] parameters)
+    {
+        var parms = parameters.Select(p => new InterfaceParameter(p.n, p.t)).ToList();
+        return new InterfaceDeclaration(name, parms, returnType, 1, 0)
+            { FilePath = "test", Namespace = ns };
+    }
+
     // ─── GetConsumerCalls ─────────────────────────────────────────────────────
 
     [Fact]
@@ -403,5 +411,331 @@ public class InterfaceValidatorTests
         Assert.Equal(DiagnosticCodes.ArgumentCountMismatch, errors[0].Code);
         Assert.Contains("transition():void", errors[0].Message);
         Assert.Contains("transition(string, decimal):void", errors[0].Message);
+    }
+
+    // ─── GetQualifiedName / ParseQualifiedName ──────────────────────────────
+
+    [Fact]
+    public void GetQualifiedName_WithNamespace()
+    {
+        var result = PlayscriptCompilationData.GetQualifiedName("Alice", "foo");
+        Assert.Equal("Alice.foo", result);
+    }
+
+    [Fact]
+    public void GetQualifiedName_NullNamespace()
+    {
+        var result = PlayscriptCompilationData.GetQualifiedName(null, "foo");
+        Assert.Equal("foo", result);
+    }
+
+    [Fact]
+    public void ParseQualifiedName_MultiSegment()
+    {
+        var (ns, name) = PlayscriptCompilationData.ParseQualifiedName("Alice.Bob.foo");
+        Assert.Equal("Alice.Bob", ns);
+        Assert.Equal("foo", name);
+    }
+
+    [Fact]
+    public void ParseQualifiedName_TwoSegments()
+    {
+        var (ns, name) = PlayscriptCompilationData.ParseQualifiedName("Alice.foo");
+        Assert.Equal("Alice", ns);
+        Assert.Equal("foo", name);
+    }
+
+    [Fact]
+    public void ParseQualifiedName_SingleSegment()
+    {
+        var (ns, name) = PlayscriptCompilationData.ParseQualifiedName("foo");
+        Assert.Null(ns);
+        Assert.Equal("foo", name);
+    }
+
+    [Fact]
+    public void MakeSignatureKey_WithNamespace()
+    {
+        var decl = MakeInterfaceWithNs("bar", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var key = InterfaceValidator.MakeSignatureKey(decl);
+        Assert.Equal("Foo.bar(string):void", key);
+    }
+
+    [Fact]
+    public void MakeSignatureKey_NoNamespace()
+    {
+        var decl = MakeInterface("bar", InterfaceType.Void, ("s", InterfaceType.String));
+        var key = InterfaceValidator.MakeSignatureKey(decl);
+        Assert.Equal("bar(string):void", key);
+    }
+
+    // ─── Namespace-Aware Duplicate Detection (SCPT004) ─────────────────────
+
+    [Fact]
+    public void ValidateDuplicate_SameNameSameNs_Error()
+    {
+        var data = new PlayscriptCompilationData();
+        var source = new PlayscriptCompilationData();
+        source.Scripts["Foo.bar"] = new ScriptVariants { Unversioned = BuildScriptBlock("hello") };
+        source.ScriptLocations[("Foo.bar", "")] = ("file2", 2, 0);
+        // Pre-register the same key so MergeFrom detects the duplicate
+        data.Scripts["Foo.bar"] = new ScriptVariants { Unversioned = BuildScriptBlock("hi") };
+        data.ScriptLocations[("Foo.bar", "")] = ("file1", 1, 0);
+        var errors = data.MergeFrom(source);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.DuplicateScriptName, errors[0].Code);
+        Assert.Contains("Foo.bar", errors[0].Message);
+    }
+
+    // ─── Namespace-Aware Undeclared Call Resolution ────────────────────────
+
+    [Fact]
+    public void UndeclaredCall_SameNs_Resolves()
+    {
+        var iface = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["Foo.s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("Foo.s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void UndeclaredCall_DifferentNs_Undeclared()
+    {
+        var block = BuildScriptBlock("@greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Scripts["Bar.s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("Bar.s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, errors[0].Code);
+    }
+
+    [Fact]
+    public void UndeclaredCall_RootFile_GlobalUnique_Resolves()
+    {
+        var iface = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void UndeclaredCall_Ambiguous_ReportsScpt014()
+    {
+        var a = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var b = MakeInterfaceWithNs("greet", InterfaceType.Void, "Bar", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        data.Scripts["s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.AmbiguousConsumerCall, errors[0].Code);
+        Assert.Contains("Foo.greet", errors[0].Message);
+        Assert.Contains("Bar.greet", errors[0].Message);
+    }
+
+    [Fact]
+    public void UndeclaredCall_SameNsTakesPriority_OverGlobal()
+    {
+        var fooGreet = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var barGreet = MakeInterfaceWithNs("greet", InterfaceType.Void, "Bar", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { fooGreet, barGreet });
+        data.Scripts["Foo.s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("Foo.s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void UndeclaredCall_DotQualified_Resolves()
+    {
+        var iface = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@Foo.greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void UndeclaredCall_DotQualified_NotDeclared_Error()
+    {
+        var block = BuildScriptBlock("@Foo.greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Scripts["s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, errors[0].Code);
+    }
+
+    [Fact]
+    public void UndeclaredCall_DotQualified_BypassesSameNs()
+    {
+        var fooGreet = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var barGreet = MakeInterfaceWithNs("greet", InterfaceType.Void, "Bar", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@Bar.greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { fooGreet, barGreet });
+        // Script is in Foo namespace but uses Bar.greet explicitly
+        data.Scripts["Foo.s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("Foo.s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void UndeclaredCall_DotQualified_InTextBlock_Resolves()
+    {
+        var iface = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var block = BuildTextBlock("@Foo.greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Texts["t"] = new TextVariants { Unversioned = block };
+        data.TextLocations[("t", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
+    }
+
+    // ─── Namespace-Aware Duplicate Signatures (SCPT006) ────────────────────
+
+    [Fact]
+    public void DuplicateSignature_SameSigDifferentNs_NoError()
+    {
+        var a = MakeInterfaceWithNs("greet", InterfaceType.Void, "A", ("s", InterfaceType.String));
+        var b = MakeInterfaceWithNs("greet", InterfaceType.Void, "B", ("s", InterfaceType.String));
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        var errors = InterfaceValidator.ValidateDuplicateSignatures(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void DuplicateSignature_SameSigSameNs_Error()
+    {
+        var a = MakeInterfaceWithNs("greet", InterfaceType.Void, "A", ("s", InterfaceType.String));
+        var b = MakeInterfaceWithNs("greet", InterfaceType.Void, "A", ("s", InterfaceType.String));
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        var errors = InterfaceValidator.ValidateDuplicateSignatures(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.DuplicateInterfaceSignature, errors[0].Code);
+    }
+
+    // ─── Namespace-Aware Argument Validation ───────────────────────────────
+
+    [Fact]
+    public void ArgumentTypes_DotQualifiedCall_ResolvesCorrectOverload()
+    {
+        var iface = MakeInterfaceWithNs("foo", InterfaceType.Void, "A", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@A.foo(42)");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
+    }
+
+    [Fact]
+    public void ArgumentTypes_SameNsOverload_Match()
+    {
+        var a = MakeInterfaceWithNs("greet", InterfaceType.Void, "A", ("s", InterfaceType.String));
+        var b = MakeInterfaceWithNs("greet", InterfaceType.Void, "A", ("n", InterfaceType.Int));
+        var block = BuildScriptBlock("@greet(42)");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        data.Scripts["A.s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("A.s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ArgumentTypes_OverloadsAcrossNs_NoCrossResolve()
+    {
+        var a = MakeInterfaceWithNs("greet", InterfaceType.Void, "A", ("s", InterfaceType.String));
+        var b = MakeInterfaceWithNs("greet", InterfaceType.Void, "B", ("n", InterfaceType.Int));
+        var block = BuildScriptBlock("@greet(42)");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { a, b });
+        data.Scripts["A.s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("A.s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.ArgumentTypeMismatch, errors[0].Code);
+    }
+
+    [Fact]
+    public void ArgumentTypes_DotQualified_CountMismatch()
+    {
+        var iface = MakeInterfaceWithNs("foo", InterfaceType.Void, "A",
+            ("s", InterfaceType.String), ("n", InterfaceType.Int));
+        var block = BuildScriptBlock("@A.foo(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Scripts["s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateArgumentTypes(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.ArgumentCountMismatch, errors[0].Code);
+    }
+
+    // ─── GetAllCalls Namespace Assignment ──────────────────────────────────
+
+    [Fact]
+    public void GetAllCalls_SetsNamespaceOnItem()
+    {
+        // Same simple name in two namespaces. The script is in "Foo" ns,
+        // so same-ns resolution picks Foo.greet over Bar.greet.
+        var fooGreet = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var barGreet = MakeInterfaceWithNs("greet", InterfaceType.Void, "Bar", ("s", InterfaceType.String));
+        var block = BuildScriptBlock("@greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.AddRange(new[] { fooGreet, barGreet });
+        data.Scripts["Foo.s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("Foo.s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void GetAllCalls_RootNamespace_SetsNull()
+    {
+        var block = BuildScriptBlock("@bar()");
+        var data = new PlayscriptCompilationData();
+        data.Scripts["s"] = new ScriptVariants { Unversioned = block };
+        data.ScriptLocations[("s", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Single(errors);
+        Assert.Equal(DiagnosticCodes.UndeclaredConsumerCall, errors[0].Code);
+    }
+
+    [Fact]
+    public void GetAllCalls_TextBlock_SetsNamespace()
+    {
+        var iface = MakeInterfaceWithNs("greet", InterfaceType.Void, "Foo", ("s", InterfaceType.String));
+        var block = BuildTextBlock("@greet(\"hi\")");
+        var data = new PlayscriptCompilationData();
+        data.Interfaces.Add(iface);
+        data.Texts["Foo.t"] = new TextVariants { Unversioned = block };
+        data.TextLocations[("Foo.t", "")] = ("file", 1, 0);
+        var errors = InterfaceValidator.ValidateUndeclaredCalls(data);
+        Assert.Empty(errors);
     }
 }

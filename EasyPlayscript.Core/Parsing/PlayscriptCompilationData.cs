@@ -13,6 +13,9 @@ public class PlayscriptCompilationData
     public List<ImplementationInfo> Implementations { get; } = [];
     public bool HasErrors { get; set; }
 
+    public static string GetQualifiedName(string? ns, string name) =>
+        ns != null ? $"{ns}.{name}" : name;
+
     public List<ValidationDiagnostic> MergeFrom(PlayscriptCompilationData source)
     {
         var diagnostics = new List<ValidationDiagnostic>();

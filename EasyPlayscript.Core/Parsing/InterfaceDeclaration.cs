@@ -32,4 +32,5 @@ public class InterfaceDeclaration(
     public int Line { get; } = line;
     public int Col { get; } = col;
     public string FilePath { get; set; } = string.Empty;
+    public string? Namespace { get; set; }
 }

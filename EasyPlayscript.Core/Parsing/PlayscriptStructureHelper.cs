@@ -36,13 +36,26 @@ public static class PlayscriptStructureHelper
         var visitor = new StructureVisitor();
         visitor.Visit(tree);
 
-        return (new StructureParseResult(visitor.Results, visitor.Interfaces), errors);
+        var result = new StructureParseResult(visitor.Results, visitor.Interfaces)
+            { Namespace = visitor.Namespace };
+        foreach (var iface in result.Interfaces)
+            iface.Namespace = visitor.Namespace;
+
+        return (result, errors);
     }
 
     private class StructureVisitor : PlayscriptStructureParserBaseVisitor<string>
     {
         public List<StructureResult> Results { get; } = [];
         public List<InterfaceDeclaration> Interfaces { get; } = [];
+        public string? Namespace { get; private set; }
+
+        public override string VisitNamespaceDeclaration(PlayscriptStructureParser.NamespaceDeclarationContext context)
+        {
+            var identifiers = context.IDENTIFIER();
+            Namespace = string.Join(".", identifiers.Select(id => id.GetText()));
+            return string.Empty;
+        }
 
         public override string VisitTopLevelStatement(PlayscriptStructureParser.TopLevelStatementContext context)
         {

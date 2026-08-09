@@ -6,6 +6,7 @@ public class StructureParseResult(List<StructureResult> results, List<InterfaceD
 {
     public List<StructureResult> Results { get; } = results;
     public List<InterfaceDeclaration> Interfaces { get; } = interfaces;
+    public string? Namespace { get; set; }
 }
 
 /// <summary>

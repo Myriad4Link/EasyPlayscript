@@ -225,7 +225,7 @@ public class PlayscriptRuntimeEmitterTests
         };
         var code = PlayscriptRuntimeEmitter.Generate(scripts, EmptyTextsVar, DefaultOutputPath);
 
-        Assert.Contains("ScriptKeyToString", code);
+        Assert.Contains("ScriptKeyHelper", code);
         Assert.Contains("ScriptKey.intro => \"intro\"", code);
         Assert.Contains("ScriptKey.outro => \"outro\"", code);
         Assert.Contains("ArgumentOutOfRangeException", code);
@@ -303,7 +303,7 @@ public class PlayscriptRuntimeEmitterTests
         };
         var code = PlayscriptRuntimeEmitter.Generate(EmptyScriptsVar, texts, DefaultOutputPath);
 
-        Assert.Contains("TextKeyToString", code);
+        Assert.Contains("TextKeyHelper", code);
         Assert.Contains("TextKey.credits => \"credits\"", code);
     }
 

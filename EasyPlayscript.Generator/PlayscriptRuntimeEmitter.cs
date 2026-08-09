@@ -46,6 +46,79 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine();
         indented.WriteLine("namespace EasyPlayscript.Generated;");
         indented.WriteLine();
+
+        // ── Top-level enums (namespace scope, for Godot export compatibility) ──
+
+        // Per-script variation enums
+        EmitVariationEnums(scripts, "Script", indented);
+        EmitVariationEnums(texts, "Text", indented);
+
+        // ScriptKey enum + ToString switch
+        var sortedScripts = scripts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
+        if (sortedScripts.Count > 0)
+        {
+            indented.WriteLine("public enum ScriptKey");
+            indented.WriteLine("{");
+            indented.Indent++;
+            for (var i = 0; i < sortedScripts.Count; i++)
+            {
+                var suffix = i < sortedScripts.Count - 1 ? "," : "";
+                indented.WriteLine($"{EscapeKeyword(sortedScripts[i].Key)}{suffix}");
+            }
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+
+            indented.WriteLine("internal static class ScriptKeyHelper");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("public static string ToString(ScriptKey key) => key switch");
+            indented.WriteLine("{");
+            indented.Indent++;
+            foreach (var kvp in sortedScripts)
+                indented.WriteLine($"ScriptKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
+            indented.WriteLine("_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)");
+            indented.Indent--;
+            indented.WriteLine("};");
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+        }
+
+        // TextKey enum + ToString switch
+        var sortedTexts = texts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
+        if (sortedTexts.Count > 0)
+        {
+            if (sortedScripts.Count > 0) indented.WriteLine();
+            indented.WriteLine("public enum TextKey");
+            indented.WriteLine("{");
+            indented.Indent++;
+            for (var i = 0; i < sortedTexts.Count; i++)
+            {
+                var suffix = i < sortedTexts.Count - 1 ? "," : "";
+                indented.WriteLine($"{EscapeKeyword(sortedTexts[i].Key)}{suffix}");
+            }
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+
+            indented.WriteLine("internal static class TextKeyHelper");
+            indented.WriteLine("{");
+            indented.Indent++;
+            indented.WriteLine("public static string ToString(TextKey key) => key switch");
+            indented.WriteLine("{");
+            indented.Indent++;
+            foreach (var kvp in sortedTexts)
+                indented.WriteLine($"TextKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
+            indented.WriteLine("_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)");
+            indented.Indent--;
+            indented.WriteLine("};");
+            indented.Indent--;
+            indented.WriteLine("}");
+            indented.WriteLine();
+        }
+
+        // ── Class ──
         indented.WriteLine("public class PlayscriptRuntimeSession : PlayscriptSessionScope");
         indented.WriteLine("{");
         indented.Indent++;
@@ -121,31 +194,11 @@ public static class PlayscriptRuntimeEmitter
         indented.WriteLine("await Registry.DispatchCallAsync(call, this);");
         indented.Indent--;
         indented.WriteLine("}");
-
         indented.WriteLine();
 
-        // ── Per-script variation enums ──
-        EmitVariationEnums(scripts, "Script", indented);
-        EmitVariationEnums(texts, "Text", indented);
-
-        // ── ScriptKey enum + GetScript ──
-        var sortedScripts = scripts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
+        // ── GetScript overloads ──
         if (sortedScripts.Count > 0)
         {
-            indented.WriteLine("public enum ScriptKey");
-            indented.WriteLine("{");
-            indented.Indent++;
-            for (var i = 0; i < sortedScripts.Count; i++)
-            {
-                var suffix = i < sortedScripts.Count - 1 ? "," : "";
-                indented.WriteLine($"{EscapeKeyword(sortedScripts[i].Key)}{suffix}");
-            }
-
-            indented.Indent--;
-            indented.WriteLine("}");
-            indented.WriteLine();
-
-            // GetScript(string name) — unversioned, string key
             indented.WriteLine("public Script GetScript(string name)");
             indented.WriteLine("{");
             indented.Indent++;
@@ -168,7 +221,6 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetScript(string name, string variation) — variation, string key
             indented.WriteLine("public Script GetScript(string name, string variation)");
             indented.WriteLine("{");
             indented.Indent++;
@@ -191,15 +243,11 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetScript(key) — unversioned, enum key
-            indented.WriteLine("public Script GetScript(ScriptKey key) => GetScript(ScriptKeyToString(key));");
+            indented.WriteLine("public Script GetScript(ScriptKey key) => GetScript(ScriptKeyHelper.ToString(key));");
+            indented.WriteLine();
+            indented.WriteLine("public Script GetScript(ScriptKey key, string variation) => GetScript(ScriptKeyHelper.ToString(key), variation);");
             indented.WriteLine();
 
-            // GetScript(key, string variation) — enum key
-            indented.WriteLine("public Script GetScript(ScriptKey key, string variation) => GetScript(ScriptKeyToString(key), variation);");
-            indented.WriteLine();
-
-            // GetScript<TVar>(key, variation) — enum-based, delegates to string
             indented.WriteLine("public Script GetScript<TVar>(ScriptKey key, TVar variation)");
             indented.WriteLine("    where TVar : struct, Enum");
             indented.WriteLine("{");
@@ -207,37 +255,13 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("return GetScript(key, variation.ToString().ToLowerInvariant());");
             indented.Indent--;
             indented.WriteLine("}");
-            indented.WriteLine();
-
-            indented.WriteLine("private static string ScriptKeyToString(ScriptKey key) => key switch");
-            indented.WriteLine("{");
-            indented.Indent++;
-            foreach (var kvp in sortedScripts)
-                indented.WriteLine($"ScriptKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
-            indented.WriteLine("_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)");
-            indented.Indent--;
-            indented.WriteLine("};");
         }
 
-        // ── TextKey enum + GetText ──
-        var sortedTexts = texts.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToList();
+        // ── GetText overloads ──
         if (sortedTexts.Count > 0)
         {
             if (sortedScripts.Count > 0) indented.WriteLine();
-            indented.WriteLine("public enum TextKey");
-            indented.WriteLine("{");
-            indented.Indent++;
-            for (var i = 0; i < sortedTexts.Count; i++)
-            {
-                var suffix = i < sortedTexts.Count - 1 ? "," : "";
-                indented.WriteLine($"{EscapeKeyword(sortedTexts[i].Key)}{suffix}");
-            }
 
-            indented.Indent--;
-            indented.WriteLine("}");
-            indented.WriteLine();
-
-            // GetText(string name) — unversioned, string key
             indented.WriteLine("public Text GetText(string name)");
             indented.WriteLine("{");
             indented.Indent++;
@@ -260,7 +284,6 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetText(string name, string variation) — variation, string key
             indented.WriteLine("public Text GetText(string name, string variation)");
             indented.WriteLine("{");
             indented.Indent++;
@@ -283,15 +306,11 @@ public static class PlayscriptRuntimeEmitter
             indented.WriteLine("}");
             indented.WriteLine();
 
-            // GetText(key) — unversioned, enum key
-            indented.WriteLine("public Text GetText(TextKey key) => GetText(TextKeyToString(key));");
+            indented.WriteLine("public Text GetText(TextKey key) => GetText(TextKeyHelper.ToString(key));");
+            indented.WriteLine();
+            indented.WriteLine("public Text GetText(TextKey key, string variation) => GetText(TextKeyHelper.ToString(key), variation);");
             indented.WriteLine();
 
-            // GetText(key, string variation) — enum key
-            indented.WriteLine("public Text GetText(TextKey key, string variation) => GetText(TextKeyToString(key), variation);");
-            indented.WriteLine();
-
-            // GetText<TVar>(key, variation) — enum-based, delegates to string
             indented.WriteLine("public Text GetText<TVar>(TextKey key, TVar variation)");
             indented.WriteLine("    where TVar : struct, Enum");
             indented.WriteLine("{");
@@ -300,19 +319,9 @@ public static class PlayscriptRuntimeEmitter
             indented.Indent--;
             indented.WriteLine("}");
             indented.WriteLine();
-
-            indented.WriteLine("private static string TextKeyToString(TextKey key) => key switch");
-            indented.WriteLine("{");
-            indented.Indent++;
-            foreach (var kvp in sortedTexts)
-                indented.WriteLine($"TextKey.{EscapeKeyword(kvp.Key)} => \"{kvp.Key}\",");
-            indented.WriteLine("_ => throw new ArgumentOutOfRangeException(nameof(key), key, null)");
-            indented.Indent--;
-            indented.WriteLine("};");
         }
 
         // ── ResolvePath ──
-        indented.WriteLine();
         indented.WriteLine("private static string ResolvePath(string path) =>");
         indented.Indent++;
         indented.WriteLine(

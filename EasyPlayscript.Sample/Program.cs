@@ -129,7 +129,7 @@ public static class Program
 
         // ── Text rendering via session ──
         Console.WriteLine("\n=== 8. Texts (via global session) ===");
-        foreach (var key in Enum.GetValues<PlayscriptRuntimeSession.TextKey>())
+        foreach (var key in Enum.GetValues<TextKey>())
         {
             Console.WriteLine($"\n  [{key}]");
             Console.WriteLine($"  {globalSession.GetText(key).Render()}");
@@ -137,7 +137,7 @@ public static class Program
 
         // ── Navigation demo ──
         Console.WriteLine("\n=== 9. Script Navigation ===");
-        foreach (var key in Enum.GetValues<PlayscriptRuntimeSession.ScriptKey>())
+        foreach (var key in Enum.GetValues<ScriptKey>())
         {
             var script = globalSession.GetScript(key);
             if (script.Block.Pages.Count < 2) continue;
@@ -155,7 +155,7 @@ public static class Program
 
         // ── Async demo: async render (properly awaits async calls) ──
         Console.WriteLine("\n=== 10. Async Interfaces (async render — properly awaited) ===");
-        if (Enum.TryParse<PlayscriptRuntimeSession.ScriptKey>("async_demo", out var asyncKey))
+        if (Enum.TryParse<ScriptKey>("async_demo", out var asyncKey))
         {
             var script = globalSession.GetScript(asyncKey);
 
@@ -170,7 +170,7 @@ public static class Program
 
     private static void RunAllScripts(PlayscriptRuntimeSession session)
     {
-        foreach (var key in Enum.GetValues<PlayscriptRuntimeSession.ScriptKey>())
+        foreach (var key in Enum.GetValues<ScriptKey>())
         {
             if (key.ToString() == "async_demo") continue; // skip async demo in sync loop
             var script = session.GetScript(key);

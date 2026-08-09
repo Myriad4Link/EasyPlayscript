@@ -188,10 +188,10 @@ public class PlayscriptCodeBuilder(CancellationToken cancellationToken = default
 
     private ConsumerCallItem? ParseConsumerCall(PlayscriptContentParser.ConsumerCallContext callCtx)
     {
-        var identifier = callCtx.IDENTIFIER();
-        if (identifier == null) return null;
+        var qualifiedName = callCtx.qualifiedName();
+        if (qualifiedName == null) return null;
 
-        var callIdentifier = identifier.GetText();
+        var callIdentifier = qualifiedName.GetText();
         var args = new List<ArgumentValue>();
 
         foreach (var argCtx in callCtx.argument())

@@ -2,7 +2,7 @@ lexer grammar PlayscriptContentLexer;
 
 @header { namespace EasyPlayscript.Parsing; }
 
-tokens { AT, COMMENT, LPAREN, RPAREN, STRING_LITERAL, IDENTIFIER, COMMA, INTEGER_LITERAL, FLOAT_LITERAL, BOOLEAN_LITERAL, PLUS }
+tokens { AT, COMMENT, LPAREN, RPAREN, STRING_LITERAL, IDENTIFIER, COMMA, INTEGER_LITERAL, FLOAT_LITERAL, BOOLEAN_LITERAL, PLUS, DOT }
 
 // ─── DEFAULT MODE (content inside [...]) ─────────────────────────────────────
 
@@ -63,6 +63,10 @@ C_INTEGER_LITERAL
 
 C_BOOLEAN_LITERAL
     : ('true' | 'false') -> type(BOOLEAN_LITERAL)
+    ;
+
+C_DOT
+    : '.' -> type(DOT)
     ;
 
 C_IDENTIFIER

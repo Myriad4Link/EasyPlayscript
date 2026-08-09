@@ -106,7 +106,7 @@ public class PlayscriptContentTests
         Assert.Single(segment.consumerCall());
         Assert.Equal("Hello ", segment.TEXT()[0].GetText());
         Assert.Equal(" world", segment.TEXT()[1].GetText());
-        Assert.Equal("transition", segment.consumerCall(0).IDENTIFIER().GetText());
+        Assert.Equal("transition", segment.consumerCall(0).qualifiedName().GetText());
         Assert.Single(segment.consumerCall(0).argument());
         Assert.NotNull(segment.consumerCall(0).argument(0).STRING_LITERAL());
         Assert.Equal("\"fade_out\"", segment.consumerCall(0).argument(0).STRING_LITERAL().GetText());
@@ -123,7 +123,7 @@ public class PlayscriptContentTests
         var segment = tree.page(0).paragraph(0).line(0).segment(0);
         Assert.Empty(segment.TEXT());
         Assert.Single(segment.consumerCall());
-        Assert.Equal("transition", segment.consumerCall(0).IDENTIFIER().GetText());
+        Assert.Equal("transition", segment.consumerCall(0).qualifiedName().GetText());
         Assert.Single(segment.consumerCall(0).argument());
         Assert.NotNull(segment.consumerCall(0).argument(0).STRING_LITERAL());
         Assert.Equal("\"fade_out\"", segment.consumerCall(0).argument(0).STRING_LITERAL().GetText());
@@ -204,7 +204,7 @@ public class PlayscriptContentTests
         var segment = tree.page(0).paragraph(0).line(0).segment(0);
         Assert.Empty(segment.TEXT());
         Assert.Single(segment.consumerCall());
-        Assert.Equal("func", segment.consumerCall(0).IDENTIFIER().GetText());
+        Assert.Equal("func", segment.consumerCall(0).qualifiedName().GetText());
         Assert.Empty(segment.consumerCall(0).argument());
     }
 
@@ -218,7 +218,7 @@ public class PlayscriptContentTests
         Assert.Empty(errors);
         var segment = tree.page(0).paragraph(0).line(0).segment(0);
         Assert.Single(segment.consumerCall());
-        Assert.Equal("func", segment.consumerCall(0).IDENTIFIER().GetText());
+        Assert.Equal("func", segment.consumerCall(0).qualifiedName().GetText());
         Assert.Equal(3, segment.consumerCall(0).argument().Length);
         Assert.NotNull(segment.consumerCall(0).argument(0).STRING_LITERAL());
         Assert.Equal("\"a\"", segment.consumerCall(0).argument(0).STRING_LITERAL().GetText());
@@ -265,7 +265,7 @@ public class PlayscriptContentTests
 
         Assert.Empty(errors);
         var call = tree.page(0).paragraph(0).line(0).segment(0).consumerCall(0);
-        Assert.Equal("func", call.IDENTIFIER().GetText());
+        Assert.Equal("func", call.qualifiedName().GetText());
         Assert.Single(call.argument());
         Assert.NotNull(call.argument(0).INTEGER_LITERAL());
         Assert.Equal("42", call.argument(0).INTEGER_LITERAL().GetText());
@@ -546,7 +546,7 @@ public class PlayscriptContentTests
         Assert.Single(line.consumerCall());
         Assert.Equal("Hello ", line.TEXT()[0].GetText());
         Assert.Equal(" world", line.TEXT()[1].GetText());
-        Assert.Equal("get_name", line.consumerCall(0).IDENTIFIER().GetText());
+        Assert.Equal("get_name", line.consumerCall(0).qualifiedName().GetText());
     }
 
     [Fact]
@@ -578,7 +578,7 @@ public class PlayscriptContentTests
         // Paragraph 2: 4 lines (single newlines within paragraph)
         Assert.Equal(4, tree.textParagraph(1).textLine().Length);
         Assert.Single(tree.textParagraph(1).textLine(0).consumerCall());
-        Assert.Equal("get_name", tree.textParagraph(1).textLine(0).consumerCall(0).IDENTIFIER().GetText());
+        Assert.Equal("get_name", tree.textParagraph(1).textLine(0).consumerCall(0).qualifiedName().GetText());
         Assert.Single(tree.textParagraph(1).textLine(2).SLASH());
     }
 

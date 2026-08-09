@@ -2,6 +2,7 @@ lexer grammar PlayscriptStructureLexer;
 
 @header { namespace EasyPlayscript.Parsing; }
 
+NAMESPACE   : 'namespace' ;
 SCRIPT      : 'script' ;
 TEXT        : 'text' ;
 VARIATION   : 'variation' ;
@@ -22,6 +23,7 @@ DECIMAL_TYPE: 'decimal' ;
 BOOL_TYPE   : 'bool' ;
 VOID_TYPE   : 'void' ;
 
+DOT         : '.' ;
 IDENTIFIER  : [a-zA-Z_] [a-zA-Z0-9_]* ;
 
 WS          : [ \t]+ -> skip ;

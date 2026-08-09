@@ -4,7 +4,11 @@ options { tokenVocab = PlayscriptStructureLexer; }
 
 @header { namespace EasyPlayscript.Parsing; }
 
-playscript  : topLevelStatement* EOF ;
+playscript  : namespaceDeclaration? topLevelStatement* EOF ;
+
+namespaceDeclaration
+    : NAMESPACE IDENTIFIER (DOT IDENTIFIER)*
+    ;
 
 topLevelStatement
     : blockType IDENTIFIER (DEFAULT? VARIATION IDENTIFIER)? LBRACKET RAW_CONTENT RBRACKET

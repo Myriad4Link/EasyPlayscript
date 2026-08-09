@@ -45,7 +45,11 @@ pageBreak
     ;
 
 consumerCall
-    : AT IDENTIFIER LPAREN (argument (COMMA argument)*)? RPAREN
+    : AT qualifiedName LPAREN (argument (COMMA argument)*)? RPAREN
+    ;
+
+qualifiedName
+    : IDENTIFIER (DOT IDENTIFIER)*
     ;
 
 argument

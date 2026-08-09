@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from PlayscriptStructureParser.g4 by ANTLR 4.13.2
+// Generated from D:/Myriad-s-Projects/EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -37,28 +37,29 @@ public partial class PlayscriptStructureParser : Parser {
 	protected static DFA[] decisionToDFA;
 	protected static PredictionContextCache sharedContextCache = new PredictionContextCache();
 	public const int
-		SCRIPT=1, TEXT=2, VARIATION=3, DEFAULT=4, ASYNC=5, INTERFACE=6, LBRACKET=7, 
-		COLON=8, LPAREN=9, RPAREN=10, COMMA=11, STRING_TYPE=12, INT_TYPE=13, DECIMAL_TYPE=14, 
-		BOOL_TYPE=15, VOID_TYPE=16, IDENTIFIER=17, WS=18, NEWLINE=19, COMMENT=20, 
-		RAW_CONTENT=21, RBRACKET=22;
+		NAMESPACE=1, SCRIPT=2, TEXT=3, VARIATION=4, DEFAULT=5, ASYNC=6, INTERFACE=7, 
+		LBRACKET=8, COLON=9, LPAREN=10, RPAREN=11, COMMA=12, STRING_TYPE=13, INT_TYPE=14, 
+		DECIMAL_TYPE=15, BOOL_TYPE=16, VOID_TYPE=17, DOT=18, IDENTIFIER=19, WS=20, 
+		NEWLINE=21, COMMENT=22, RAW_CONTENT=23, RBRACKET=24;
 	public const int
-		RULE_playscript = 0, RULE_topLevelStatement = 1, RULE_blockType = 2, RULE_paramList = 3, 
-		RULE_parameter = 4, RULE_typeSpec = 5;
+		RULE_playscript = 0, RULE_namespaceDeclaration = 1, RULE_topLevelStatement = 2, 
+		RULE_blockType = 3, RULE_paramList = 4, RULE_parameter = 5, RULE_typeSpec = 6;
 	public static readonly string[] ruleNames = {
-		"playscript", "topLevelStatement", "blockType", "paramList", "parameter", 
-		"typeSpec"
+		"playscript", "namespaceDeclaration", "topLevelStatement", "blockType", 
+		"paramList", "parameter", "typeSpec"
 	};
 
 	private static readonly string[] _LiteralNames = {
-		null, "'script'", "'text'", "'variation'", "'default'", "'async'", "'interface'", 
-		"'['", "':'", "'('", "')'", "','", "'string'", "'int'", "'decimal'", "'bool'", 
-		"'void'", null, null, null, null, null, "']'"
+		null, "'namespace'", "'script'", "'text'", "'variation'", "'default'", 
+		"'async'", "'interface'", "'['", "':'", "'('", "')'", "','", "'string'", 
+		"'int'", "'decimal'", "'bool'", "'void'", "'.'", null, null, null, null, 
+		null, "']'"
 	};
 	private static readonly string[] _SymbolicNames = {
-		null, "SCRIPT", "TEXT", "VARIATION", "DEFAULT", "ASYNC", "INTERFACE", 
-		"LBRACKET", "COLON", "LPAREN", "RPAREN", "COMMA", "STRING_TYPE", "INT_TYPE", 
-		"DECIMAL_TYPE", "BOOL_TYPE", "VOID_TYPE", "IDENTIFIER", "WS", "NEWLINE", 
-		"COMMENT", "RAW_CONTENT", "RBRACKET"
+		null, "NAMESPACE", "SCRIPT", "TEXT", "VARIATION", "DEFAULT", "ASYNC", 
+		"INTERFACE", "LBRACKET", "COLON", "LPAREN", "RPAREN", "COMMA", "STRING_TYPE", 
+		"INT_TYPE", "DECIMAL_TYPE", "BOOL_TYPE", "VOID_TYPE", "DOT", "IDENTIFIER", 
+		"WS", "NEWLINE", "COMMENT", "RAW_CONTENT", "RBRACKET"
 	};
 	public static readonly IVocabulary DefaultVocabulary = new Vocabulary(_LiteralNames, _SymbolicNames);
 
@@ -94,6 +95,9 @@ public partial class PlayscriptStructureParser : Parser {
 
 	public partial class PlayscriptContext : ParserRuleContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode Eof() { return GetToken(PlayscriptStructureParser.Eof, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public NamespaceDeclarationContext namespaceDeclaration() {
+			return GetRuleContext<NamespaceDeclarationContext>(0);
+		}
 		[System.Diagnostics.DebuggerNonUserCode] public TopLevelStatementContext[] topLevelStatement() {
 			return GetRuleContexts<TopLevelStatementContext>();
 		}
@@ -124,19 +128,93 @@ public partial class PlayscriptStructureParser : Parser {
 			State = 15;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 102L) != 0)) {
+			if (_la==NAMESPACE) {
+				{
+				State = 14;
+				namespaceDeclaration();
+				}
+			}
+
+			State = 20;
+			ErrorHandler.Sync(this);
+			_la = TokenStream.LA(1);
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 204L) != 0)) {
 				{
 				{
-				State = 12;
+				State = 17;
 				topLevelStatement();
 				}
 				}
-				State = 17;
+				State = 22;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			}
-			State = 18;
+			State = 23;
 			Match(Eof);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			ErrorHandler.ReportError(this, re);
+			ErrorHandler.Recover(this, re);
+		}
+		finally {
+			ExitRule();
+		}
+		return _localctx;
+	}
+
+	public partial class NamespaceDeclarationContext : ParserRuleContext {
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode NAMESPACE() { return GetToken(PlayscriptStructureParser.NAMESPACE, 0); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] IDENTIFIER() { return GetTokens(PlayscriptStructureParser.IDENTIFIER); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER(int i) {
+			return GetToken(PlayscriptStructureParser.IDENTIFIER, i);
+		}
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] DOT() { return GetTokens(PlayscriptStructureParser.DOT); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode DOT(int i) {
+			return GetToken(PlayscriptStructureParser.DOT, i);
+		}
+		public NamespaceDeclarationContext(ParserRuleContext parent, int invokingState)
+			: base(parent, invokingState)
+		{
+		}
+		public override int RuleIndex { get { return RULE_namespaceDeclaration; } }
+		[System.Diagnostics.DebuggerNonUserCode]
+		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
+			IPlayscriptStructureParserVisitor<TResult> typedVisitor = visitor as IPlayscriptStructureParserVisitor<TResult>;
+			if (typedVisitor != null) return typedVisitor.VisitNamespaceDeclaration(this);
+			else return visitor.VisitChildren(this);
+		}
+	}
+
+	[RuleVersion(0)]
+	public NamespaceDeclarationContext namespaceDeclaration() {
+		NamespaceDeclarationContext _localctx = new NamespaceDeclarationContext(Context, State);
+		EnterRule(_localctx, 2, RULE_namespaceDeclaration);
+		int _la;
+		try {
+			EnterOuterAlt(_localctx, 1);
+			{
+			State = 25;
+			Match(NAMESPACE);
+			State = 26;
+			Match(IDENTIFIER);
+			State = 31;
+			ErrorHandler.Sync(this);
+			_la = TokenStream.LA(1);
+			while (_la==DOT) {
+				{
+				{
+				State = 27;
+				Match(DOT);
+				State = 28;
+				Match(IDENTIFIER);
+				}
+				}
+				State = 33;
+				ErrorHandler.Sync(this);
+				_la = TokenStream.LA(1);
+			}
 			}
 		}
 		catch (RecognitionException re) {
@@ -190,47 +268,47 @@ public partial class PlayscriptStructureParser : Parser {
 	[RuleVersion(0)]
 	public TopLevelStatementContext topLevelStatement() {
 		TopLevelStatementContext _localctx = new TopLevelStatementContext(Context, State);
-		EnterRule(_localctx, 2, RULE_topLevelStatement);
+		EnterRule(_localctx, 4, RULE_topLevelStatement);
 		int _la;
 		try {
-			State = 45;
+			State = 59;
 			ErrorHandler.Sync(this);
 			switch (TokenStream.LA(1)) {
 			case SCRIPT:
 			case TEXT:
 				EnterOuterAlt(_localctx, 1);
 				{
-				State = 20;
+				State = 34;
 				blockType();
-				State = 21;
+				State = 35;
 				Match(IDENTIFIER);
-				State = 27;
+				State = 41;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 				if (_la==VARIATION || _la==DEFAULT) {
 					{
-					State = 23;
+					State = 37;
 					ErrorHandler.Sync(this);
 					_la = TokenStream.LA(1);
 					if (_la==DEFAULT) {
 						{
-						State = 22;
+						State = 36;
 						Match(DEFAULT);
 						}
 					}
 
-					State = 25;
+					State = 39;
 					Match(VARIATION);
-					State = 26;
+					State = 40;
 					Match(IDENTIFIER);
 					}
 				}
 
-				State = 29;
+				State = 43;
 				Match(LBRACKET);
-				State = 30;
+				State = 44;
 				Match(RAW_CONTENT);
-				State = 31;
+				State = 45;
 				Match(RBRACKET);
 				}
 				break;
@@ -238,37 +316,37 @@ public partial class PlayscriptStructureParser : Parser {
 			case INTERFACE:
 				EnterOuterAlt(_localctx, 2);
 				{
-				State = 34;
+				State = 48;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 				if (_la==ASYNC) {
 					{
-					State = 33;
+					State = 47;
 					Match(ASYNC);
 					}
 				}
 
-				State = 36;
+				State = 50;
 				Match(INTERFACE);
-				State = 37;
+				State = 51;
 				Match(IDENTIFIER);
-				State = 38;
+				State = 52;
 				Match(LPAREN);
-				State = 40;
+				State = 54;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 				if (_la==IDENTIFIER) {
 					{
-					State = 39;
+					State = 53;
 					paramList();
 					}
 				}
 
-				State = 42;
+				State = 56;
 				Match(RPAREN);
-				State = 43;
+				State = 57;
 				Match(COLON);
-				State = 44;
+				State = 58;
 				typeSpec();
 				}
 				break;
@@ -306,12 +384,12 @@ public partial class PlayscriptStructureParser : Parser {
 	[RuleVersion(0)]
 	public BlockTypeContext blockType() {
 		BlockTypeContext _localctx = new BlockTypeContext(Context, State);
-		EnterRule(_localctx, 4, RULE_blockType);
+		EnterRule(_localctx, 6, RULE_blockType);
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 47;
+			State = 61;
 			_la = TokenStream.LA(1);
 			if ( !(_la==SCRIPT || _la==TEXT) ) {
 			ErrorHandler.RecoverInline(this);
@@ -360,26 +438,26 @@ public partial class PlayscriptStructureParser : Parser {
 	[RuleVersion(0)]
 	public ParamListContext paramList() {
 		ParamListContext _localctx = new ParamListContext(Context, State);
-		EnterRule(_localctx, 6, RULE_paramList);
+		EnterRule(_localctx, 8, RULE_paramList);
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 49;
+			State = 63;
 			parameter();
-			State = 54;
+			State = 68;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
 			while (_la==COMMA) {
 				{
 				{
-				State = 50;
+				State = 64;
 				Match(COMMA);
-				State = 51;
+				State = 65;
 				parameter();
 				}
 				}
-				State = 56;
+				State = 70;
 				ErrorHandler.Sync(this);
 				_la = TokenStream.LA(1);
 			}
@@ -418,15 +496,15 @@ public partial class PlayscriptStructureParser : Parser {
 	[RuleVersion(0)]
 	public ParameterContext parameter() {
 		ParameterContext _localctx = new ParameterContext(Context, State);
-		EnterRule(_localctx, 8, RULE_parameter);
+		EnterRule(_localctx, 10, RULE_parameter);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 57;
+			State = 71;
 			Match(IDENTIFIER);
-			State = 58;
+			State = 72;
 			Match(COLON);
-			State = 59;
+			State = 73;
 			typeSpec();
 			}
 		}
@@ -463,14 +541,14 @@ public partial class PlayscriptStructureParser : Parser {
 	[RuleVersion(0)]
 	public TypeSpecContext typeSpec() {
 		TypeSpecContext _localctx = new TypeSpecContext(Context, State);
-		EnterRule(_localctx, 10, RULE_typeSpec);
+		EnterRule(_localctx, 12, RULE_typeSpec);
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
-			State = 61;
+			State = 75;
 			_la = TokenStream.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 126976L) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 253952L) != 0)) ) {
 			ErrorHandler.RecoverInline(this);
 			}
 			else {
@@ -491,24 +569,28 @@ public partial class PlayscriptStructureParser : Parser {
 	}
 
 	private static int[] _serializedATN = {
-		4,1,22,64,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,5,0,14,8,
-		0,10,0,12,0,17,9,0,1,0,1,0,1,1,1,1,1,1,3,1,24,8,1,1,1,1,1,3,1,28,8,1,1,
-		1,1,1,1,1,1,1,1,1,3,1,35,8,1,1,1,1,1,1,1,1,1,3,1,41,8,1,1,1,1,1,1,1,3,
-		1,46,8,1,1,2,1,2,1,3,1,3,1,3,5,3,53,8,3,10,3,12,3,56,9,3,1,4,1,4,1,4,1,
-		4,1,5,1,5,1,5,0,0,6,0,2,4,6,8,10,0,2,1,0,1,2,1,0,12,16,64,0,15,1,0,0,0,
-		2,45,1,0,0,0,4,47,1,0,0,0,6,49,1,0,0,0,8,57,1,0,0,0,10,61,1,0,0,0,12,14,
-		3,2,1,0,13,12,1,0,0,0,14,17,1,0,0,0,15,13,1,0,0,0,15,16,1,0,0,0,16,18,
-		1,0,0,0,17,15,1,0,0,0,18,19,5,0,0,1,19,1,1,0,0,0,20,21,3,4,2,0,21,27,5,
-		17,0,0,22,24,5,4,0,0,23,22,1,0,0,0,23,24,1,0,0,0,24,25,1,0,0,0,25,26,5,
-		3,0,0,26,28,5,17,0,0,27,23,1,0,0,0,27,28,1,0,0,0,28,29,1,0,0,0,29,30,5,
-		7,0,0,30,31,5,21,0,0,31,32,5,22,0,0,32,46,1,0,0,0,33,35,5,5,0,0,34,33,
-		1,0,0,0,34,35,1,0,0,0,35,36,1,0,0,0,36,37,5,6,0,0,37,38,5,17,0,0,38,40,
-		5,9,0,0,39,41,3,6,3,0,40,39,1,0,0,0,40,41,1,0,0,0,41,42,1,0,0,0,42,43,
-		5,10,0,0,43,44,5,8,0,0,44,46,3,10,5,0,45,20,1,0,0,0,45,34,1,0,0,0,46,3,
-		1,0,0,0,47,48,7,0,0,0,48,5,1,0,0,0,49,54,3,8,4,0,50,51,5,11,0,0,51,53,
-		3,8,4,0,52,50,1,0,0,0,53,56,1,0,0,0,54,52,1,0,0,0,54,55,1,0,0,0,55,7,1,
-		0,0,0,56,54,1,0,0,0,57,58,5,17,0,0,58,59,5,8,0,0,59,60,3,10,5,0,60,9,1,
-		0,0,0,61,62,7,1,0,0,62,11,1,0,0,0,7,15,23,27,34,40,45,54
+		4,1,24,78,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,1,0,
+		3,0,16,8,0,1,0,5,0,19,8,0,10,0,12,0,22,9,0,1,0,1,0,1,1,1,1,1,1,1,1,5,1,
+		30,8,1,10,1,12,1,33,9,1,1,2,1,2,1,2,3,2,38,8,2,1,2,1,2,3,2,42,8,2,1,2,
+		1,2,1,2,1,2,1,2,3,2,49,8,2,1,2,1,2,1,2,1,2,3,2,55,8,2,1,2,1,2,1,2,3,2,
+		60,8,2,1,3,1,3,1,4,1,4,1,4,5,4,67,8,4,10,4,12,4,70,9,4,1,5,1,5,1,5,1,5,
+		1,6,1,6,1,6,0,0,7,0,2,4,6,8,10,12,0,2,1,0,2,3,1,0,13,17,79,0,15,1,0,0,
+		0,2,25,1,0,0,0,4,59,1,0,0,0,6,61,1,0,0,0,8,63,1,0,0,0,10,71,1,0,0,0,12,
+		75,1,0,0,0,14,16,3,2,1,0,15,14,1,0,0,0,15,16,1,0,0,0,16,20,1,0,0,0,17,
+		19,3,4,2,0,18,17,1,0,0,0,19,22,1,0,0,0,20,18,1,0,0,0,20,21,1,0,0,0,21,
+		23,1,0,0,0,22,20,1,0,0,0,23,24,5,0,0,1,24,1,1,0,0,0,25,26,5,1,0,0,26,31,
+		5,19,0,0,27,28,5,18,0,0,28,30,5,19,0,0,29,27,1,0,0,0,30,33,1,0,0,0,31,
+		29,1,0,0,0,31,32,1,0,0,0,32,3,1,0,0,0,33,31,1,0,0,0,34,35,3,6,3,0,35,41,
+		5,19,0,0,36,38,5,5,0,0,37,36,1,0,0,0,37,38,1,0,0,0,38,39,1,0,0,0,39,40,
+		5,4,0,0,40,42,5,19,0,0,41,37,1,0,0,0,41,42,1,0,0,0,42,43,1,0,0,0,43,44,
+		5,8,0,0,44,45,5,23,0,0,45,46,5,24,0,0,46,60,1,0,0,0,47,49,5,6,0,0,48,47,
+		1,0,0,0,48,49,1,0,0,0,49,50,1,0,0,0,50,51,5,7,0,0,51,52,5,19,0,0,52,54,
+		5,10,0,0,53,55,3,8,4,0,54,53,1,0,0,0,54,55,1,0,0,0,55,56,1,0,0,0,56,57,
+		5,11,0,0,57,58,5,9,0,0,58,60,3,12,6,0,59,34,1,0,0,0,59,48,1,0,0,0,60,5,
+		1,0,0,0,61,62,7,0,0,0,62,7,1,0,0,0,63,68,3,10,5,0,64,65,5,12,0,0,65,67,
+		3,10,5,0,66,64,1,0,0,0,67,70,1,0,0,0,68,66,1,0,0,0,68,69,1,0,0,0,69,9,
+		1,0,0,0,70,68,1,0,0,0,71,72,5,19,0,0,72,73,5,9,0,0,73,74,3,12,6,0,74,11,
+		1,0,0,0,75,76,7,1,0,0,76,13,1,0,0,0,9,15,20,31,37,41,48,54,59,68
 	};
 
 	public static readonly ATN _ATN =

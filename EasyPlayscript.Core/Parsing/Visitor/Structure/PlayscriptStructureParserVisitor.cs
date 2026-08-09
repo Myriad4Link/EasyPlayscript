@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from PlayscriptStructureParser.g4 by ANTLR 4.13.2
+// Generated from D:/Myriad-s-Projects/EasyPlayscript/EasyPlayscript.Core/core/playscript/definition/PlayscriptStructureParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -38,6 +38,12 @@ public interface IPlayscriptStructureParserVisitor<Result> : IParseTreeVisitor<R
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitPlayscript([NotNull] PlayscriptStructureParser.PlayscriptContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.namespaceDeclaration"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitNamespaceDeclaration([NotNull] PlayscriptStructureParser.NamespaceDeclarationContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="PlayscriptStructureParser.topLevelStatement"/>.
 	/// </summary>

@@ -93,6 +93,12 @@ public interface IPlayscriptContentParserVisitor<Result> : IParseTreeVisitor<Res
 	/// <return>The visitor result.</return>
 	Result VisitConsumerCall([NotNull] PlayscriptContentParser.ConsumerCallContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.qualifiedName"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitQualifiedName([NotNull] PlayscriptContentParser.QualifiedNameContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="PlayscriptContentParser.argument"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

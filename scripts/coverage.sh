@@ -17,6 +17,12 @@ TEST_PROJECTS=(
 
 cd "${REPO_ROOT}"
 
+if ! command -v reportgenerator >/dev/null 2>&1; then
+  echo "reportgenerator is not installed or not on PATH." >&2
+  echo "Install with: dotnet tool install -g dotnet-reportgenerator-globaltool" >&2
+  exit 1
+fi
+
 # Clean stale coverage data so old XMLs and HTMLs don't pollute the report.
 rm -rf "${RESULTS_ROOT}" "${REPORT_DIR}"
 
@@ -43,7 +49,7 @@ if [[ "${#xml_paths[@]}" -eq 0 ]]; then
 fi
 
 # reportgenerator accepts ';' as the report path separator on all platforms.
-reports_joined="$(IFS='; echo "${xml_paths[*]}")"
+reports_joined="$(IFS=';'; echo "${xml_paths[*]}")"
 reports_arg="-reports:${reports_joined}"
 
 echo ""

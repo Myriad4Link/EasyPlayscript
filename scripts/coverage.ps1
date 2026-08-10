@@ -11,6 +11,11 @@ $testProjects = @(
     "EasyPlayscript.LSP.Tests"
 )
 
+if (-not (Get-Command reportgenerator -ErrorAction SilentlyContinue)) {
+    Write-Error "reportgenerator is not installed or not on PATH. Install with: dotnet tool install -g dotnet-reportgenerator-globaltool"
+    exit 1
+}
+
 Push-Location $repoRoot
 try {
     # Clean stale coverage data so old XMLs and HTMLs don't pollute the report.

@@ -29,7 +29,8 @@ No `CHANGELOG.md` anywhere. Required for any release — users need to know what
 
 ### 1.4 No CI/CD
 
-No `.github/workflows/`, no Azure DevOps, nothing. `dotnet test` is manual via `coverage.ps1`/`pack-local.ps1`. A release today has zero automated gate (no PR builds, no package publishing).
+No `.github/workflows/`, no Azure DevOps, nothing. `dotnet test` is manual via `just coverage` / `just pack-local` (scripts under `scripts/`). A release today has zero automated gate (no PR builds, no package publishing).
+
 
 ### 1.5 LSP doesn't actually show sema errors
 

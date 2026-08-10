@@ -27,15 +27,20 @@ dotnet test --filter "PlayscriptGeneratorTests"  # Run specific test class
 dotnet test EasyPlayscript.Tests          # Run only Core/Generator tests
 dotnet test EasyPlayscript.LSP.Tests      # Run only LSP tests
 dotnet run --project EasyPlayscript.Sample       # Run sample app
-./pack-local.ps1                          # Rebuild, repack NuGet packages into nuget-local/, + publish LSP to published/
-./coverage.ps1                            # Run tests + generate HTML coverage report (requires `reportgenerator` on PATH)
+just pack-local                           # Rebuild, repack NuGet packages into nuget-local/, + publish LSP to published/
+just coverage                             # Run tests + generate HTML coverage report (requires `reportgenerator` on PATH)
+# Or call scripts directly:
+#   ./scripts/pack-local.ps1 | ./scripts/pack-local.sh
+#   ./scripts/coverage.ps1   | ./scripts/coverage.sh
 ```
+
 
 **Note**: `dotnet test` takes the project path as a positional argument, not `--project`. Use `dotnet test EasyPlayscript.LSP.Tests`, not `dotnet test --project EasyPlayscript.LSP.Tests`.
 
 **SDK**: .NET 10.0.301 required (`global.json` with `rollForward: latestMinor`).
 
-**NuGet lock issue**: Running the LSP via `dotnet run --project` loads `Antlr4.Runtime.Standard.dll` from the build output, which can lock the same DLL in the NuGet cache for other projects. The fix: `pack-local.ps1` now publishes the LSP to `published/EasyPlayscript.LSP/` — point your editor/LSP config at `published/EasyPlayscript.LSP/EasyPlayscript.LSP.exe` instead of `dotnet run`. If restore still fails, use `dotnet build --no-restore`.
+**NuGet lock issue**: Running the LSP via `dotnet run --project` loads `Antlr4.Runtime.Standard.dll` from the build output, which can lock the same DLL in the NuGet cache for other projects. The fix: `scripts/pack-local.*` now publishes the LSP to `published/EasyPlayscript.LSP/` — point your editor/LSP config at `published/EasyPlayscript.LSP/EasyPlayscript.LSP.exe` instead of `dotnet run`. If restore still fails, use `dotnet build --no-restore`.
+
 
 **MSBuild diagnostic verbosity**: To see how the build task is invoked (and which `.scpt` files it's processing), build with `dotnet build -v:n` or higher. Useful when `playscripts.bin` is missing or stale.
 
@@ -234,7 +239,8 @@ Emitter tests (`PlayscriptRegistryEmitterTests`, `PlayscriptRuntimeEmitterTests`
 ## Gotchas
 
 - The `.uid` files are JetBrains Rider cache — ignore them
-- `EasyPlayscript.Sample` references NuGet packages (not project references). After changing Core, Generator, or BuildTask, run `./pack-local.ps1` before building the Sample
+- `EasyPlayscript.Sample` references NuGet packages (not project references). After changing Core, Generator, or BuildTask, run `just pack-local` (or `./scripts/pack-local.ps1` / `./scripts/pack-local.sh`) before building the Sample
+
 - `nuget-local/` is the local NuGet feed; `NuGet.Config` clears default sources and adds only `nuget.org` + `./nuget-local`
 - No CI workflows exist — this is a local development repo
 - `Script.g.cs` and `Text.g.cs` are emitted via `RegisterPostInitializationOutput` (runs before other generators). They reference `PlayscriptRuntimeSession` by name, which is generated later. This works because all generated sources compile together

@@ -434,8 +434,10 @@ dotnet test EasyPlayscript.Tests
 dotnet run --project EasyPlayscript.Sample
 
 # Rebuild & repack NuGet packages for local development
-./pack-local.ps1
+just pack-local
+# or: ./scripts/pack-local.ps1 | ./scripts/pack-local.sh
 ```
+
 
 ### Parent-child sessions
 

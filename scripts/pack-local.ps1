@@ -18,7 +18,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repoRoot = $PSScriptRoot
+$repoRoot = Split-Path -Parent $PSScriptRoot
 $outputDir = Join-Path $repoRoot "nuget-local"
 
 Write-Host "==> Cleaning old packages" -ForegroundColor Cyan
